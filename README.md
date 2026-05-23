@@ -6,6 +6,38 @@ Task management for coding agents. Define work as scoped YAML specs, compile the
 - Works with any agent: Claude Code, Codex, Cursor, Aider, Goose, or a plain chat window.
 - Gives agents a consistent scope: goals, acceptance criteria, allowed paths, and verification commands.
 
+## 30-Second Demo
+
+**Before:** a messy prompt in chat:
+
+> Please clean up the login flow, fix any weird session bugs, update tests if needed, and make sure the auth pages still work.
+
+**After:** Assignr turns it into a task an agent can run and a reviewer can check:
+
+```bash
+assignr new "Harden login session flow" --type implementation --domain auth --priority high
+assignr compile harden-login-session-flow
+```
+
+```yaml
+goal: Fix login session refresh and error handling without touching admin auth.
+acceptance_criteria:
+  - Expired sessions redirect to login with a clear message.
+  - Valid sessions stay active after page refresh.
+allowed_paths:
+  - src/features/auth/**
+  - tests/auth/**
+verification:
+  commands:
+    - pnpm test -- auth
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+```
+
+The compiled prompt gives the agent the scope, success criteria, files it may touch, commands to run, and the handoff details reviewers need.
+
 ## Why
 
 Ad-hoc prompts don't scale. Problems with the typical "paste a description into an agent" workflow:

@@ -10,6 +10,7 @@ import { STATUSES } from "./constants.js";
 import type { Status } from "./constants.js";
 import { loadTasks } from "./specs/loadTasks.js";
 import { validateTasks } from "./specs/validateTasks.js";
+import { listTasksForMcp } from "./mcpList.js";
 import { buildRunLog, timestamp } from "./commands/runLog.js";
 import {
   IMPLEMENTATION_TEMPLATE,
@@ -108,20 +109,7 @@ server.registerTool(
   },
   ({ status, domain }) =>
     toolResult(() => {
-      let tasks = loadTasksOrError();
-      if (status) tasks = tasks.filter((task) => task.spec.status === status);
-      if (domain) tasks = tasks.filter((task) => task.spec.domain === domain);
-
-      return jsonResult(
-        tasks.map(({ spec }) => ({
-          id: spec.id,
-          title: spec.title,
-          status: spec.status,
-          domain: spec.domain,
-          priority: spec.priority,
-          dep_count: spec.depends_on?.length ?? 0,
-        }))
-      );
+      return jsonResult(listTasksForMcp(p.specsTasks, cwd, { status, domain }));
     })
 );
 
