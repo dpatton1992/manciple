@@ -1,13 +1,11 @@
 # Assignr
 
-Assignr is a repo-native workflow layer for existing coding agents.
+Assignr helps developers turn AI coding work into scoped, reviewable, repeatable tasks that live in the repo.
 
 It does not run models.
 It does not replace Claude Code, Codex, Cursor, Aider, Goose, or other agent harnesses.
 
-Instead, it helps you package work for them.
-
-Assignr turns structured task specs into scoped, reviewable, agent-ready prompts, then tracks execution state, run logs, risks, and follow-up tasks inside your repo.
+Instead, it sits one layer earlier: helping you break work into constrained, agent-sized tasks, compile them into structured prompts, and track what ran, what changed, what failed, and what needs review — across multiple sessions and tools.
 
 ## Why
 
@@ -25,13 +23,13 @@ Assignr fixes the workflow, not the model.
 ## Install
 
 ```bash
-npm install -g assignr
+npm install -g @dpatt/assignr
 ```
 
 Or with pnpm:
 
 ```bash
-pnpm add -g assignr
+pnpm add -g @dpatt/assignr
 ```
 
 After installing, verify with:
@@ -39,6 +37,50 @@ After installing, verify with:
 ```bash
 assignr --help
 ```
+
+## What it looks like
+
+**Without Assignr**, you paste something like this into an agent:
+
+> "Add license expiration reminders to the credentialing module"
+
+The agent touches files it should not, drifts out of scope, and you have no record of what it did.
+
+**With Assignr**, you compile a structured prompt from a task spec:
+
+```yaml
+# .assignr/specs/tasks/license-expiration-reminders.yaml
+id: license-expiration-reminders
+title: License expiration reminders
+type: implementation
+domain: credentialing
+priority: high
+goal: >
+  Add expiration reminder support for provider licenses so users can set
+  an expiration date and see expiring licenses in the dashboard.
+acceptance_criteria:
+  - Users can set an expiration date on a provider license.
+  - Expiring licenses (within 30 days) appear in the dashboard with a warning.
+  - Expired licenses are visually distinct from active ones.
+allowed_paths:
+  - src/features/licenses/**
+  - src/components/dashboard/**
+forbidden_paths:
+  - src/auth/**
+  - src/billing/**
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test -- licenses
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+```
+
+Running `assignr compile license-expiration-reminders` produces a ready-to-paste agent prompt at `.assignr/prompts/generated/license-expiration-reminders.md` with the goal, constraints, acceptance criteria, and required outputs pre-filled.
+
+After the agent runs, `assignr run-log` creates an audit stub, `assignr set-status` tracks progress, and `assignr review` generates a review prompt scoped to what the task was actually supposed to do.
 
 ## Usage
 
@@ -63,8 +105,8 @@ After `assignr init`:
 
   specs/
     tasks/                  # Task specs (YAML)
-    domains/                # Domain context specs
-    contracts/              # Contract specs (future)
+    domains/                # Domain context (placeholder — V1)
+    contracts/              # Contract specs (placeholder — V1)
 
   prompts/
     templates/              # Prompt templates

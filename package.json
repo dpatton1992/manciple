@@ -3,6 +3,16 @@
   "version": "0.1.0",
   "description": "A repo-native workflow layer for existing coding agents.",
   "license": "MIT",
+  "author": "Daniel Patton",
+  "homepage": "https://github.com/dpatton1992/assignr#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dpatton1992/assignr.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dpatton1992/assignr/issues"
+  },
+  "preferGlobal": true,
   "type": "module",
   "engines": {
     "node": ">=18.0.0"
