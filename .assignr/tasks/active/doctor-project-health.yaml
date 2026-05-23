@@ -1,0 +1,52 @@
+id: doctor-project-health
+title: Add or harden assignr doctor project health checks
+status: pending
+type: implementation
+domain: core
+priority: high
+depends_on: []
+
+goal: >
+  `assignr doctor` should give a concise health report for the current project.
+  It must confirm the detected project root, config file, task directories,
+  active task count, and installed package version so users can quickly debug
+  setup problems.
+
+acceptance_criteria:
+  - '`assignr doctor` prints the resolved project root and Assignr root.'
+  - '`assignr doctor` confirms whether `.assignr/config.yaml` exists and can be read.'
+  - '`assignr doctor` confirms active, completed, and archived task directory presence.'
+  - '`assignr doctor` prints the active task count.'
+  - '`assignr doctor` prints the package version from package metadata.'
+  - 'Missing config or task directories produce clear failed checks and a non-zero exit.'
+  - 'A healthy initialized project exits zero.'
+  - 'Tests cover healthy and missing-structure cases.'
+  - 'All existing tests continue to pass.'
+
+allowed_paths:
+  - src/commands/doctor.ts
+  - src/cli.ts
+  - src/utils/
+  - tests/
+  - README.md
+
+forbidden_paths:
+  - .assignr/tasks/
+  - dist/
+  - bin/
+
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test
+    - pnpm build
+    - node bin/assignr.js doctor
+
+outputs_required:
+  - files_changed
+  - doctor_output_example
+  - risks
+
+notes:
+  - 'There is already a doctor command in this codebase; extend it rather than replacing it if possible.'
+  - 'Keep terminal output compact and scannable.'

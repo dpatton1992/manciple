@@ -1,0 +1,49 @@
+id: readme-demo-trim
+title: Make npm README shorter and more demo-driven
+status: pending
+type: docs
+domain: core
+priority: medium
+depends_on: []
+
+goal: >
+  Shorten the npm README so prospective users can understand Assignr through a
+  compact demo-first flow. Keep the essential install, quickstart, command
+  reference, and MCP/agent integration details, but remove repetitive or overly
+  long explanation.
+
+acceptance_criteria:
+  - 'The README opens with a short description and a runnable demo sequence.'
+  - 'The demo shows `assignr init`, `assignr new`, `assignr validate`, `assignr status`, and `assignr compile` in a realistic order.'
+  - 'Long worked examples are trimmed or collapsed so the README is significantly shorter than the current version.'
+  - 'Install instructions for npm global usage remain clear.'
+  - 'Command reference remains accurate for implemented commands.'
+  - 'MCP and agent skill sections are concise and link or point to the relevant files without duplicating too much detail.'
+  - 'No docs claim an unimplemented command exists unless the related implementation has landed.'
+  - 'README formatting renders cleanly on npm.'
+
+allowed_paths:
+  - README.md
+  - package.json
+
+forbidden_paths:
+  - src/
+  - tests/
+  - bin/
+  - dist/
+  - .assignr/tasks/
+
+verification:
+  commands:
+    - 'wc -l README.md'
+    - 'rg -n "assignr init|assignr new|assignr validate|assignr status|assignr compile" README.md'
+    - 'rg -n "PromptOps|promptops" README.md'
+
+outputs_required:
+  - files_changed
+  - before_after_readme_line_count
+  - risks
+
+notes:
+  - 'If the PromptOps search exits 1 because no matches remain, treat that as success.'
+  - 'Prefer one strong demo over multiple partial examples.'
