@@ -1,0 +1,50 @@
+id: dep-validation-circular
+title: Detect circular dependency chains during validate
+status: pending
+type: implementation
+domain: core
+priority: high
+depends_on:
+  - dep-validation-missing-refs
+
+goal: >
+  Once missing reference validation is in place, `assignr validate` should
+  also detect cycles in the `depends_on` graph. A cycle means task A depends
+  on B which depends (directly or transitively) on A, making the work
+  unorderable. The check should use a standard depth-first search with a
+  visited/in-stack set and report the full cycle path so the user knows
+  exactly what to unlink.
+
+acceptance_criteria:
+  - "Running `assignr validate` when a cycle exists exits non-zero and prints the cycle path, e.g. Circular dependency detected: alpha \u2192 beta \u2192 alpha"
+  - Direct cycles (A → A) are caught
+  - Indirect cycles (A → B → C → A) are caught and the full path is shown
+  - Acyclic graphs of any depth pass without error
+  - The check only runs after missing-ref validation passes so a missing ref does not cause a spurious cycle error
+  - All existing vitest tests continue to pass
+
+allowed_paths:
+  - src/specs/validateTasks.ts
+  - src/commands/validate.ts
+
+forbidden_paths:
+  - src/specs/schema.ts
+  - src/commands/list.ts
+  - bin/
+
+verification:
+  commands:
+    - pnpm build
+    - pnpm test
+    - "node bin/assignr.js validate"
+
+outputs_required:
+  - files_changed
+  - risks
+
+notes:
+  - A clean DFS implementation is ~30 lines; avoid pulling in a graph library
+  - Build the adjacency map from the already-loaded specs array; do not
+    re-read files
+  - Report all cycles found before exiting, not just the first one
+  - The cycle path in the error should be human-readable, not a JSON dump

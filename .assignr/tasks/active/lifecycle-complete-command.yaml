@@ -1,0 +1,66 @@
+id: lifecycle-complete-command
+title: Add assignr complete command to mark and move finished tasks
+status: pending
+type: implementation
+domain: core
+priority: high
+depends_on:
+  - lifecycle-task-discovery
+
+goal: >
+  There is no explicit way to mark a task done and move it out of the active
+  working set. `assignr complete <task-id>` should locate the task in
+  `tasks/active`, set its `status` field to `"complete"`, and move the file
+  to `tasks/completed`. This creates a clean separation between work in
+  progress and work that is done.
+
+acceptance_criteria:
+  - "`assignr complete <task-id>` finds the task YAML in tasks/active"
+  - "The command updates the `status` field to `"complete"` in the YAML
+    before moving it"
+  - "The file is moved from tasks/active/<id>.yaml to
+    tasks/completed/<id>.yaml using rename (or copy + delete)"
+  - "If a file with the same name already exists in tasks/completed, the
+    command exits non-zero with the error:
+    'Task <id> already exists in completed. Use assignr reopen first.'"
+  - "If the task is not found in tasks/active, the command exits non-zero
+    with the error: 'Task <id> not found in active tasks.'"
+  - "On success, the command prints:
+    'Completed: <id> → .assignr/tasks/completed/<id>.yaml'"
+  - "The tasks/completed directory is created if it does not exist"
+  - "All existing tests continue to pass"
+
+allowed_paths:
+  - src/commands/complete.ts
+  - src/cli.ts
+
+forbidden_paths:
+  - src/specs/schema.ts
+  - src/specs/validateTasks.ts
+  - src/commands/validate.ts
+  - src/commands/compile.ts
+  - bin/
+
+verification:
+  commands:
+    - pnpm build
+    - pnpm test
+    - "node bin/assignr.js new 'Lifecycle complete test' --type implementation --domain core"
+    - "node bin/assignr.js complete lifecycle-complete-test"
+    - "ls .assignr/tasks/completed/"
+
+outputs_required:
+  - files_changed
+  - risks
+
+notes:
+  - Create src/commands/complete.ts as a new file; follow the pattern of
+    src/commands/setStatus.ts for reading, modifying, and writing the YAML
+  - Use fs.renameSync for the move; it is atomic on the same filesystem.
+    If tasks/active and tasks/completed are on different filesystems,
+    renameSync throws EXDEV; catch that and fall back to
+    copyFileSync + unlinkSync
+  - Register the command in cli.ts as "complete <task-id>"
+  - The status value "complete" already exists in STATUSES; no schema
+    change is needed
+  - Do not add a --message or --note flag in this task; keep scope tight

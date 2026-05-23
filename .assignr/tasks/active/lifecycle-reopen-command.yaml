@@ -1,0 +1,67 @@
+id: lifecycle-reopen-command
+title: Add assignr reopen command to move tasks back to active
+status: pending
+type: implementation
+domain: core
+priority: medium
+depends_on:
+  - lifecycle-complete-command
+  - lifecycle-archive-command
+
+goal: >
+  Completed or archived tasks sometimes need to be reopened when requirements
+  change or an implementation needs revisiting. `assignr reopen <task-id>`
+  should find the task in `tasks/completed` or `tasks/archived`, set its
+  status to `"in_progress"`, and move it back to `tasks/active`. The command
+  should check completed first, then archived, so the caller does not need
+  to specify where the task currently lives.
+
+acceptance_criteria:
+  - "`assignr reopen <task-id>` searches tasks/completed first, then
+    tasks/archived for the given id"
+  - "The found file is updated to status 'in_progress' and moved to
+    tasks/active/<id>.yaml"
+  - "If a file with the same id already exists in tasks/active, the command
+    exits non-zero with:
+    'Task <id> already exists in active tasks.'"
+  - "If the task is not found in completed or archived, the command exits
+    non-zero with:
+    'Task <id> not found in completed or archived tasks.'"
+  - "On success, the command prints the source tier and destination:
+    'Reopened: <id> (from completed) → .assignr/tasks/active/<id>.yaml'"
+  - "The tasks/active directory is created if it does not exist"
+  - "All existing tests continue to pass"
+
+allowed_paths:
+  - src/commands/reopen.ts
+  - src/cli.ts
+
+forbidden_paths:
+  - src/specs/schema.ts
+  - src/specs/validateTasks.ts
+  - src/commands/validate.ts
+  - src/commands/compile.ts
+  - src/constants.ts
+  - bin/
+
+verification:
+  commands:
+    - pnpm build
+    - pnpm test
+    - "node bin/assignr.js new 'Lifecycle reopen test' --type implementation --domain core"
+    - "node bin/assignr.js complete lifecycle-reopen-test"
+    - "node bin/assignr.js reopen lifecycle-reopen-test"
+    - "ls .assignr/tasks/active/"
+
+outputs_required:
+  - files_changed
+  - risks
+
+notes:
+  - Create src/commands/reopen.ts following the same structure as
+    complete.ts and archive.ts
+  - The search order (completed → archived) is important; document it in
+    the command's --help description
+  - Status "in_progress" already exists in STATUSES; no schema change needed
+  - Use the same renameSync-with-EXDEV-fallback pattern
+  - Register as "reopen <task-id>" in cli.ts

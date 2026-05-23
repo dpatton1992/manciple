@@ -1,0 +1,50 @@
+id: list-command-filter
+title: Add --status and --domain filter flags to assignr list
+status: pending
+type: implementation
+domain: core
+priority: medium
+depends_on:
+  - list-command-basic
+
+goal: >
+  The basic `assignr list` command shows all tasks. Most repos will quickly
+  have enough tasks that filtering is necessary. This task adds two optional
+  flags: `--status <value>` to show only tasks matching a given status string,
+  and `--domain <value>` to show only tasks in a given domain. Both flags are
+  independent and can be combined (AND semantics). Invalid status values should
+  print a warning but not crash; they will simply match nothing.
+
+acceptance_criteria:
+  - Running with `--status pending` shows only tasks whose status field equals "pending"
+  - Running with `--domain core` shows only tasks whose domain field equals "core"
+  - Running with both `--status in_progress` and `--domain core` applies both filters (AND semantics)
+  - When filters match no tasks the command prints "No tasks match the given filters." and exits 0
+  - Running without flags preserves the existing all-tasks behaviour
+  - The help text for both flags is clear and shown in --help output
+
+allowed_paths:
+  - src/commands/list.ts
+  - src/cli.ts
+
+forbidden_paths:
+  - src/specs/schema.ts
+  - src/specs/validateTasks.ts
+  - bin/
+
+verification:
+  commands:
+    - pnpm build
+    - pnpm test
+    - "node bin/assignr.js list --status pending"
+    - "node bin/assignr.js list --domain core"
+    - "node bin/assignr.js list --status complete --domain core"
+
+outputs_required:
+  - files_changed
+  - risks
+
+notes:
+  - The filter is case-sensitive to keep it simple; document this in --help
+  - Do not add fuzzy matching or regex support in this task
+  - Filtering logic should live inside list.ts, not in loadTasks.ts
