@@ -1,54 +1,37 @@
 id: dep-validation-missing-refs
 title: Validate that depends_on IDs resolve to real tasks
-status: pending
+status: complete
 type: implementation
 domain: core
 priority: high
 depends_on: []
-
-goal: >
-  `assignr validate` does not currently check whether the IDs listed in
-  `depends_on` correspond to actual task files. A typo or stale reference
-  silently passes validation. This task adds a post-schema check that loads
-  all task specs, builds a set of known IDs, then verifies every `depends_on`
-  entry in every spec resolves to a member of that set. Unknown references
-  must produce a clear error that names both the offending task and the
-  unresolved ID.
-
+goal: |
+  `assignr validate` does not currently check whether the IDs listed in `depends_on` correspond to actual task files. A typo or stale reference silently passes validation. This task adds a post-schema check that loads all task specs, builds a set of known IDs, then verifies every `depends_on` entry in every spec resolves to a member of that set. Unknown references must produce a clear error that names both the offending task and the unresolved ID.
 acceptance_criteria:
   - Running `assignr validate` against a spec with an unknown `depends_on` ID exits non-zero and prints an error naming both the offending task and the unresolved ID
   - Valid specs with no `depends_on` or with all IDs resolved pass without error (existing behaviour preserved)
   - The check runs as part of the existing validate command; no new command is introduced
   - The error message includes the file path of the offending spec to aid debugging
   - All existing vitest tests continue to pass
-
 allowed_paths:
   - src/commands/validate.ts
   - src/specs/validateTasks.ts
   - src/specs/loadTasks.ts
-
 forbidden_paths:
   - src/commands/list.ts
   - src/commands/review.ts
   - src/specs/schema.ts
   - bin/
-
 verification:
   commands:
     - pnpm build
     - pnpm test
-    - "node bin/assignr.js validate"
-
+    - node bin/assignr.js validate
 outputs_required:
   - files_changed
   - risks
-
 notes:
-  - loadTasks.ts already loads all specs from the tasks directory; reuse it
-    rather than duplicating the glob logic
-  - Collect all unknown-ref errors across all specs before exiting so the
-    user sees every problem at once, not just the first one
-  - Do not change the Zod schema; `depends_on` is already typed as
-    string[]; this is a semantic check, not a structural one
-  - Keep the new validation function in validateTasks.ts to stay consistent
-    with where schema validation already lives
+  - loadTasks.ts already loads all specs from the tasks directory; reuse it rather than duplicating the glob logic
+  - Collect all unknown-ref errors across all specs before exiting so the user sees every problem at once, not just the first one
+  - Do not change the Zod schema; `depends_on` is already typed as string[]; this is a semantic check, not a structural one
+  - Keep the new validation function in validateTasks.ts to stay consistent with where schema validation already lives

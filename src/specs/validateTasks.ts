@@ -57,7 +57,7 @@ export function validateTasks(tasks: LoadedTask[]): ValidationResult {
         errors.push({
           filePath,
           field: "depends_on",
-          message: `Dependency "${dep}" references a missing task`,
+          message: `Task "${spec.id}" depends on missing task "${dep}"`,
           severity: "error",
         });
       }
