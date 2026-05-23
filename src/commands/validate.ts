@@ -17,6 +17,10 @@ export function validateCommand(specsTasksDir: string, cwd: string): void {
     console.error(`    ${error}`);
   }
 
+  if (tasks.length === 0 && loadErrors.length === 0) {
+    console.warn(`  ⚠ No tasks found. Run "assignr new" to create your first task.`);
+  }
+
   const { valid, invalid, warnings } = validateTasks(tasks, { specsDomainsDir });
 
   for (const { filePath, errors } of invalid) {

@@ -91,6 +91,32 @@ export function validateTasks(
         });
       }
     }
+
+    // Warn about TODO placeholder values
+    if (spec.goal?.startsWith("TODO:")) {
+      warnings.push({
+        filePath,
+        field: "goal",
+        message: `Field "goal" still contains a TODO placeholder — replace with a real goal`,
+        severity: "warning",
+      });
+    }
+    if (spec.acceptance_criteria?.some((c) => c.startsWith("TODO:"))) {
+      warnings.push({
+        filePath,
+        field: "acceptance_criteria",
+        message: `Field "acceptance_criteria" still contains a TODO placeholder — replace with real criteria`,
+        severity: "warning",
+      });
+    }
+    if (spec.verification?.commands?.some((c) => c.startsWith("TODO:"))) {
+      warnings.push({
+        filePath,
+        field: "verification.commands",
+        message: `Field "verification.commands" still contains a TODO placeholder — replace with real commands`,
+        severity: "warning",
+      });
+    }
   }
 
   if (options.specsDomainsDir) {

@@ -1,66 +1,67 @@
 {
-  "name": "@dpatt/assignr",
-  "version": "0.2.0",
-  "description": "A repo-native workflow layer for existing coding agents.",
-  "license": "MIT",
-  "author": "Daniel Patton",
-  "homepage": "https://github.com/dpatton1992/assignr#readme",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/dpatton1992/assignr.git"
-  },
-  "bugs": {
-    "url": "https://github.com/dpatton1992/assignr/issues"
-  },
-  "preferGlobal": true,
-  "type": "module",
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "files": [
-    "bin/",
-    "bin/assignr-mcp.js",
-    "dist/",
-    "README.md"
-  ],
-  "keywords": [
-    "assignr",
-    "ai",
-    "agents",
-    "coding-agents",
-    "llm",
-    "workflow",
-    "prompt-engineering",
-    "task-management",
-    "cli"
-  ],
-  "publishConfig": {
-    "access": "public"
-  },
-  "bin": {
-    "assignr": "./bin/assignr.js",
-    "assignr-mcp": "./bin/assignr-mcp.js"
-  },
-  "scripts": {
-    "build": "tsc",
-    "dev": "tsx src/cli.ts",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "typecheck": "tsc --noEmit",
-    "prepublishOnly": "pnpm run build && pnpm run test"
-  },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
-    "commander": "^12.1.0",
-    "fs-extra": "^11.2.0",
-    "yaml": "^2.7.0",
-    "zod": "^3.24.1"
-  },
-  "devDependencies": {
-    "@types/fs-extra": "^11.0.4",
-    "@types/node": "^22.0.0",
-    "tsx": "^4.19.0",
-    "typescript": "^5.7.0",
-    "vitest": "^2.1.0"
-  }
+	"name": "@dpatt/assignr",
+	"version": "0.2.0",
+	"description": "A repo-native workflow layer for existing coding agents.",
+	"license": "MIT",
+	"author": "Daniel Patton",
+	"homepage": "https://github.com/dpatton1992/assignr#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/dpatton1992/assignr.git"
+	},
+	"bugs": {
+		"url": "https://github.com/dpatton1992/assignr/issues"
+	},
+	"preferGlobal": true,
+	"type": "module",
+	"engines": {
+		"node": ">=18.0.0"
+	},
+	"files": [
+		"bin/",
+		"dist/",
+		"README.md",
+		".codex/skills/",
+		".claude/skills/"
+	],
+	"keywords": [
+		"assignr",
+		"ai",
+		"agents",
+		"coding-agents",
+		"llm",
+		"workflow",
+		"prompt-engineering",
+		"task-management",
+		"cli"
+	],
+	"publishConfig": {
+		"access": "public"
+	},
+	"bin": {
+		"assignr": "./bin/assignr.js",
+		"assignr-mcp": "./bin/assignr-mcp.js"
+	},
+	"scripts": {
+		"build": "tsc",
+		"dev": "tsx src/cli.ts",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"typecheck": "tsc --noEmit",
+		"prepublishOnly": "pnpm run build && pnpm run test"
+	},
+	"dependencies": {
+		"@modelcontextprotocol/sdk": "^1.29.0",
+		"commander": "^12.1.0",
+		"fs-extra": "^11.2.0",
+		"yaml": "^2.7.0",
+		"zod": "^3.24.1"
+	},
+	"devDependencies": {
+		"@types/fs-extra": "^11.0.4",
+		"@types/node": "^22.0.0",
+		"tsx": "^4.19.0",
+		"typescript": "^5.7.0",
+		"vitest": "^2.1.0"
+	}
 }

@@ -19,6 +19,7 @@ export function doctorCommand(cwd: string, root: string): void {
 
   results.push(check("config.yaml exists", existsSync(p.config)));
   results.push(check("specs/tasks/ exists", existsSync(p.specsTasks)));
+  results.push(check("tasks/active/ exists", existsSync(p.tasksActive)));
   results.push(check("prompts/templates/ exists", existsSync(p.promptsTemplates)));
   results.push(check("prompts/generated/ exists", existsSync(p.promptsGenerated)));
   results.push(check("runs/ exists", existsSync(p.runs)));

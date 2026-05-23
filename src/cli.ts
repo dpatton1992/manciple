@@ -61,7 +61,7 @@ program
       console.error(`Invalid priority: "${priority}". Allowed: ${PRIORITIES.join(", ")}`);
       process.exit(1);
     }
-    newCommand(title, { type, domain: opts.domain, priority, goal: opts.goal, cwd, specsTasksDir: p.specsTasks });
+    newCommand(title, { type, domain: opts.domain, priority, goal: opts.goal, cwd, activeDir: p.tasksActive });
   });
 
 // validate

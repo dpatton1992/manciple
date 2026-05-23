@@ -10,11 +10,11 @@ export interface NewTaskOptions {
   priority: Priority;
   goal?: string;
   cwd: string;
-  specsTasksDir: string;
+  activeDir: string;
 }
 
 export function newCommand(title: string, options: NewTaskOptions): void {
-  const { type, domain, priority, goal, cwd, specsTasksDir } = options;
+  const { type, domain, priority, goal, cwd, activeDir } = options;
   const id = slugify(title);
 
   if (!id) {
@@ -33,15 +33,15 @@ export function newCommand(title: string, options: NewTaskOptions): void {
       })()
     : "TODO: describe the goal of this task.";
 
-  const filePath = join(specsTasksDir, `${id}.yaml`);
+  const filePath = join(activeDir, `${id}.yaml`);
 
   if (existsSync(filePath)) {
     console.error(`Error: task spec already exists at ${filePath.replace(cwd + "/", "")}`);
     process.exit(1);
   }
 
-  if (!existsSync(specsTasksDir)) {
-    mkdirSync(specsTasksDir, { recursive: true });
+  if (!existsSync(activeDir)) {
+    mkdirSync(activeDir, { recursive: true });
   }
 
   const spec = {

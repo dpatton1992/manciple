@@ -1,8 +1,8 @@
-import { readFileSync, writeFileSync, existsSync } from "fs";
-import { join } from "path";
+import { readFileSync, writeFileSync } from "fs";
 import { parse, stringify } from "yaml";
 import { STATUSES } from "../constants.js";
 import type { Status } from "../constants.js";
+import { loadTasks } from "../specs/loadTasks.js";
 
 export function setStatusCommand(
   taskId: string,
@@ -17,25 +17,26 @@ export function setStatusCommand(
     process.exit(1);
   }
 
-  const filePath = join(specsTasksDir, `${taskId}.yaml`);
+  const { tasks } = loadTasks(specsTasksDir, "all");
+  const found = tasks.find((t) => t.spec.id === taskId);
 
-  if (!existsSync(filePath)) {
+  if (!found) {
     console.error(
-      `Task not found: ${filePath.replace(cwd + "/", "")}\n` +
-        `Run "assignr status" to see available tasks.`
+      `Task not found: ${taskId}\n` +
+        `Run "assignr list" to see available tasks.`
     );
     process.exit(1);
   }
 
-  const raw = readFileSync(filePath, "utf-8");
+  const raw = readFileSync(found.filePath, "utf-8");
   const parsed = parse(raw) as Record<string, unknown>;
   const previousStatus = parsed["status"];
   parsed["status"] = newStatus;
 
-  writeFileSync(filePath, stringify(parsed, { lineWidth: 0 }), "utf-8");
+  writeFileSync(found.filePath, stringify(parsed, { lineWidth: 0 }), "utf-8");
 
   console.log(
-    `Updated: ${filePath.replace(cwd + "/", "")}\n` +
+    `Updated: ${found.filePath.replace(cwd + "/", "")}\n` +
       `  ${previousStatus} → ${newStatus}`
   );
 }

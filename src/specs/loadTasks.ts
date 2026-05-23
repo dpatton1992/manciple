@@ -71,6 +71,21 @@ function loadTasksFromDir(tasksDir: string, tier: TaskTier): LoadResult {
 
 export function loadTasks(tasksDir: string, tier: LoadTaskTier = "active"): LoadResult {
   const tasksRoot = getTasksRoot(tasksDir);
+
+  // Emit a one-time migration warning when legacy specs/tasks/ files are present
+  // but are being bypassed because loadTasks now reads from tasks/{tier}/.
+  const lastSegment = basename(tasksDir);
+  const parentSegment = basename(dirname(tasksDir));
+  if (lastSegment === "tasks" && parentSegment === "specs" && existsSync(tasksDir)) {
+    const legacyFiles = readdirSync(tasksDir).filter((f) => f.endsWith(".yaml"));
+    if (legacyFiles.length > 0) {
+      console.warn(
+        `\n  ⚠ Migration: ${legacyFiles.length} task file(s) in specs/tasks/ are not visible to assignr commands.` +
+          `\n    Move them to tasks/active/ or run "assignr migrate-tasks" when available.\n`
+      );
+    }
+  }
+
   const tiers = tier === "all" ? TASK_TIERS : [tier];
   const tasks: LoadedTaskWithTier[] = [];
   const errors: Array<{ filePath: string; error: string }> = [];
