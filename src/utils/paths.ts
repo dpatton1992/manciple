@@ -1,0 +1,36 @@
+import { join } from "path";
+
+export interface PromptOpsPaths {
+  root: string;
+  config: string;
+  specs: string;
+  specsTasks: string;
+  specsDomains: string;
+  specsContracts: string;
+  prompts: string;
+  promptsTemplates: string;
+  promptsGenerated: string;
+  runs: string;
+  state: string;
+  stateFile: string;
+  commands: string;
+}
+
+export function getPaths(cwd: string, root: string): PromptOpsPaths {
+  const r = join(cwd, root);
+  return {
+    root: r,
+    config: join(r, "config.yaml"),
+    specs: join(r, "specs"),
+    specsTasks: join(r, "specs", "tasks"),
+    specsDomains: join(r, "specs", "domains"),
+    specsContracts: join(r, "specs", "contracts"),
+    prompts: join(r, "prompts"),
+    promptsTemplates: join(r, "prompts", "templates"),
+    promptsGenerated: join(r, "prompts", "generated"),
+    runs: join(r, "runs"),
+    state: join(r, "state"),
+    stateFile: join(r, "state", "tasks.json"),
+    commands: join(r, "commands"),
+  };
+}

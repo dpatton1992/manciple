@@ -1,0 +1,99 @@
+import { mkdirSync, writeFileSync, existsSync } from "fs";
+import { getPaths } from "../utils/paths.js";
+import {
+  IMPLEMENTATION_TEMPLATE,
+  REVIEW_TEMPLATE,
+  TEST_TEMPLATE,
+} from "../templates/renderTemplate.js";
+
+const CONFIG_YAML = `# PromptOps configuration
+root: .promptops
+`;
+
+const STATE_JSON = JSON.stringify({ version: 1, tasks: [] }, null, 2);
+
+const COMMANDS_README = `# PromptOps Commands
+
+This directory holds command reference files and local workflow notes.
+
+## Usage
+
+Run \`promptops --help\` to see all available commands.
+
+## Workflow
+
+\`\`\`bash
+promptops new "My task title" --type implementation --domain core --priority high
+promptops validate
+promptops compile my-task-title
+# Run the generated prompt in your preferred coding agent
+promptops run-log my-task-title
+promptops set-status my-task-title needs_review
+promptops review my-task-title
+\`\`\`
+`;
+
+export async function initCommand(options: {
+  force: boolean;
+  cwd: string;
+  root: string;
+}): Promise<void> {
+  const { force, cwd, root } = options;
+  const p = getPaths(cwd, root);
+
+  const dirs = [
+    p.root,
+    p.specs,
+    p.specsTasks,
+    p.specsDomains,
+    p.specsContracts,
+    p.prompts,
+    p.promptsTemplates,
+    p.promptsGenerated,
+    p.runs,
+    p.state,
+    p.commands,
+  ];
+
+  for (const dir of dirs) {
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+  }
+
+  const filesToCreate: Array<{ path: string; content: string }> = [
+    { path: p.config, content: CONFIG_YAML },
+    { path: `${p.promptsTemplates}/implementation.md`, content: IMPLEMENTATION_TEMPLATE },
+    { path: `${p.promptsTemplates}/review.md`, content: REVIEW_TEMPLATE },
+    { path: `${p.promptsTemplates}/test.md`, content: TEST_TEMPLATE },
+    { path: p.stateFile, content: STATE_JSON },
+    { path: `${p.commands}/README.md`, content: COMMANDS_README },
+  ];
+
+  const created: string[] = [];
+  const skipped: string[] = [];
+
+  for (const { path, content } of filesToCreate) {
+    if (existsSync(path) && !force) {
+      skipped.push(path);
+    } else {
+      writeFileSync(path, content, "utf-8");
+      created.push(path);
+    }
+  }
+
+  for (const dir of dirs) {
+    console.log(`  ✓ ${dir.replace(cwd + "/", "")}/`);
+  }
+  for (const f of created) {
+    console.log(`  ✓ ${f.replace(cwd + "/", "")}`);
+  }
+  if (skipped.length > 0) {
+    console.log(`\n  Skipped (already exist — use --force to overwrite):`);
+    for (const f of skipped) {
+      console.log(`  - ${f.replace(cwd + "/", "")}`);
+    }
+  }
+
+  console.log(`\nPromptOps initialized at ${root}/`);
+}
