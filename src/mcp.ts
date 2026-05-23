@@ -15,6 +15,7 @@ import {
   IMPLEMENTATION_TEMPLATE,
   REVIEW_TEMPLATE,
   TEST_TEMPLATE,
+  renderDomainContext,
   renderTemplate,
 } from "./templates/renderTemplate.js";
 import { getPaths } from "./utils/paths.js";
@@ -55,6 +56,24 @@ function getTemplate(type: TaskSpec["type"]): string {
     default:
       return IMPLEMENTATION_TEMPLATE;
   }
+}
+
+function loadDomainContext(domain: string): { content?: string; warning?: string } {
+  const domainPath = join(p.specsDomains, `${domain}.yaml`);
+
+  if (!existsSync(domainPath)) {
+    return {
+      warning: `Domain context not found for "${domain}" at ${relative(cwd, domainPath)}`,
+    };
+  }
+
+  const raw = readFileSync(domainPath, "utf-8");
+  const parsed = parse(raw);
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return {};
+  }
+
+  return { content: renderDomainContext(parsed as Record<string, unknown>) };
 }
 
 function findTask(taskId: string): LoadedTask | undefined {
@@ -237,11 +256,20 @@ server.registerTool(
         mkdirSync(p.promptsGenerated, { recursive: true });
       }
 
-      const content = renderTemplate(getTemplate(found.spec.type), found.spec);
+      const domainContext = loadDomainContext(found.spec.domain);
+      const content = renderTemplate(
+        getTemplate(found.spec.type),
+        found.spec,
+        domainContext.content
+      );
       const outputPath = join(p.promptsGenerated, `${found.spec.id}.md`);
       writeFileSync(outputPath, content, "utf-8");
 
-      return jsonResult({ output_path: outputPath, content });
+      return jsonResult({
+        output_path: outputPath,
+        content,
+        ...(domainContext.warning ? { warning: domainContext.warning } : {}),
+      });
     })
 );
 
