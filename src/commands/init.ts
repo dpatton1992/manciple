@@ -13,6 +13,14 @@ root: .assignr
 
 const STATE_JSON = JSON.stringify({ version: 1, tasks: [] }, null, 2);
 
+const CORE_DOMAIN_YAML = `id: core
+name: Core
+description: General project work that does not belong to a more specific domain.
+conventions: []
+constraints: []
+context: []
+`;
+
 const COMMANDS_README = `# Assignr Commands
 
 This directory holds command reference files and local workflow notes.
@@ -90,6 +98,7 @@ export async function initCommand(options: {
 
   const filesToCreate: Array<{ path: string; content: string }> = [
     { path: p.config, content: CONFIG_YAML },
+    { path: `${p.specsDomains}/core.yaml`, content: CORE_DOMAIN_YAML },
     { path: `${p.promptsTemplates}/implementation.md`, content: IMPLEMENTATION_TEMPLATE },
     { path: `${p.promptsTemplates}/review.md`, content: REVIEW_TEMPLATE },
     { path: `${p.promptsTemplates}/test.md`, content: TEST_TEMPLATE },
@@ -101,7 +110,8 @@ export async function initCommand(options: {
   const skipped: string[] = [];
 
   for (const { path, content } of filesToCreate) {
-    if (existsSync(path) && !force) {
+    const isCoreDomain = path === `${p.specsDomains}/core.yaml`;
+    if (existsSync(path) && (!force || isCoreDomain)) {
       skipped.push(path);
     } else {
       writeFileSync(path, content, "utf-8");
@@ -116,7 +126,7 @@ export async function initCommand(options: {
     console.log(`  ✓ ${f.replace(cwd + "/", "")}`);
   }
   if (skipped.length > 0) {
-    console.log(`\n  Skipped (already exist — use --force to overwrite):`);
+    console.log(`\n  Skipped (already exist):`);
     for (const f of skipped) {
       console.log(`  - ${f.replace(cwd + "/", "")}`);
     }

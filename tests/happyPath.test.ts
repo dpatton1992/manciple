@@ -2,8 +2,8 @@
  * Happy-path integration test for the core CLI workflow:
  *   init → new → list → validate → compile → set-status
  */
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { existsSync, mkdtempSync, mkdirSync, rmSync, readFileSync, writeFileSync } from "fs";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { existsSync, mkdtempSync, rmSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { parse } from "yaml";
@@ -44,6 +44,18 @@ describe("assignr init", () => {
   it("creates prompts/templates and state", () => {
     expect(existsSync(p.promptsTemplates)).toBe(true);
     expect(existsSync(p.stateFile)).toBe(true);
+  });
+
+  it("creates a default core domain without overwriting user edits", async () => {
+    const coreDomainPath = join(p.specsDomains, "core.yaml");
+
+    expect(existsSync(coreDomainPath)).toBe(true);
+    expect(readFileSync(coreDomainPath, "utf-8")).toContain("id: core");
+
+    writeFileSync(coreDomainPath, "id: core\nname: Custom Core\n", "utf-8");
+    await initCommand({ force: true, cwd, root: ".assignr" });
+
+    expect(readFileSync(coreDomainPath, "utf-8")).toBe("id: core\nname: Custom Core\n");
   });
 });
 
@@ -132,6 +144,39 @@ describe("assignr list", () => {
 });
 
 describe("assignr validate", () => {
+  it("validates a clean-init core task with TODO warnings but no missing-domain error", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
+      throw new Error(`process.exit(${code})`);
+    }) as never);
+
+    try {
+      newCommand("Test task", {
+        type: "implementation",
+        domain: "core",
+        priority: "high",
+        cwd,
+        activeDir: p.tasksActive,
+      });
+
+      expect(() => validateCommand(p.specsTasks, cwd)).not.toThrow();
+
+      const errorOutput = errorSpy.mock.calls.flat().join("\n");
+      const warningOutput = warnSpy.mock.calls.flat().join("\n");
+
+      expect(errorOutput).not.toContain('references missing domain "core"');
+      expect(warningOutput).toContain("TODO placeholder");
+      expect(exitSpy).not.toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+      errorSpy.mockRestore();
+      logSpy.mockRestore();
+      exitSpy.mockRestore();
+    }
+  });
+
   it("validateCommand succeeds and discovers the new task", () => {
     newCommand("License expiration reminders", {
       type: "implementation",
@@ -160,9 +205,43 @@ describe("assignr validate", () => {
 });
 
 describe("assignr compile", () => {
+  it("compiles a clean-init core task without missing-domain warnings", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
+      throw new Error(`process.exit(${code})`);
+    }) as never);
+
+    try {
+      newCommand("Test task", {
+        type: "implementation",
+        domain: "core",
+        priority: "high",
+        cwd,
+        activeDir: p.tasksActive,
+      });
+
+      expect(() =>
+        compileCommand({
+          specsTasksDir: p.specsTasks,
+          generatedDir: p.promptsGenerated,
+          cwd,
+          taskId: "test-task",
+        })
+      ).not.toThrow();
+
+      const promptFile = join(p.promptsGenerated, "test-task.md");
+      expect(existsSync(promptFile)).toBe(true);
+      expect(errorSpy.mock.calls.flat().join("\n")).not.toContain("domain context not found");
+      expect(exitSpy).not.toHaveBeenCalled();
+    } finally {
+      errorSpy.mockRestore();
+      logSpy.mockRestore();
+      exitSpy.mockRestore();
+    }
+  });
+
   it("compiles a task to prompts/generated/<id>.md", () => {
-    // Create a domain file so compile doesn't fail with a domain error
-    mkdirSync(p.specsDomains, { recursive: true });
     writeFileSync(
       join(p.specsDomains, "credentialing.yaml"),
       "id: credentialing\ndescription: Provider credentialing workflows.\n",

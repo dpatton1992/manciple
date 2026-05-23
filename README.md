@@ -214,7 +214,7 @@ approved | needs_changes | blocked
 
 ```bash
 assignr init
-assignr new "License expiration reminders" --type implementation --domain credentialing --priority high
+assignr new "License expiration reminders" --type implementation --domain core --priority high
 assignr validate
 assignr compile license-expiration-reminders
 # Run the generated prompt in Claude Code, Codex, Cursor, Aider, etc.
@@ -238,7 +238,8 @@ After `assignr init`:
 
   specs/
     tasks/                  # Legacy task location (preserved for backward compat)
-    domains/                # Domain context (placeholder — V1)
+    domains/                # Domain context
+      core.yaml             # Default general-purpose domain
     contracts/              # Contract specs (placeholder — V1)
 
   prompts/
@@ -274,7 +275,7 @@ Task specs are YAML files in `.assignr/tasks/active/`. Each file describes one u
 | `title` | Human-readable title |
 | `status` | `pending`, `in_progress`, `needs_review`, `complete`, `blocked`, `failed`, `partial` |
 | `type` | `planning`, `implementation`, `review`, `test`, `refactor`, `docs`, `research`, `hardening` |
-| `domain` | Area of the codebase (e.g. `credentialing`, `billing`) |
+| `domain` | Area of the codebase (use `core` for general project work) |
 | `goal` | What this task should accomplish |
 | `acceptance_criteria` | List of conditions for completion |
 | `verification.commands` | Commands to verify the implementation |
@@ -296,7 +297,7 @@ id: license-expiration-reminders
 title: License expiration reminders
 status: pending
 type: implementation
-domain: credentialing
+domain: core
 priority: high
 
 depends_on:
@@ -347,8 +348,10 @@ Create a new task spec.
 
 ```bash
 assignr new "License expiration reminders"
-assignr new "License expiration reminders" --type implementation --domain credentialing --priority high
+assignr new "License expiration reminders" --type implementation --domain core --priority high
 ```
+
+Fresh projects include `.assignr/specs/domains/core.yaml`; use `--domain core` for general work that does not belong to a more specific domain.
 
 ### `assignr validate`
 
@@ -524,11 +527,11 @@ assignr init
 # 2. Create a task
 assignr new "License expiration reminders" \
   --type implementation \
-  --domain credentialing \
+  --domain core \
   --priority high
 
 # 3. Fill in the spec
-# Edit .assignr/specs/tasks/license-expiration-reminders.yaml
+# Edit .assignr/tasks/active/license-expiration-reminders.yaml
 
 # 4. Validate
 assignr validate

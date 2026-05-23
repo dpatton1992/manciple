@@ -47,7 +47,7 @@ program
   .command("new <title>")
   .description("Create a new task spec.")
   .option("--type <type>", `Task type (${TASK_TYPES.join(", ")})`, "implementation")
-  .option("--domain <domain>", "Domain for this task.", "general")
+  .option("--domain <domain>", "Domain for this task.", "core")
   .option("--priority <priority>", `Priority (${PRIORITIES.join(", ")})`, "medium")
   .option("--goal <goal>", "Pre-fill the goal field.")
   .action((title: string, opts: { type: string; domain: string; priority: string; goal?: string }) => {

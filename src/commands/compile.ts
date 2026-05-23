@@ -28,7 +28,7 @@ function loadDomainContext(specsTasksDir: string, domain: string, cwd: string): 
 
   if (!existsSync(domainPath)) {
     console.error(
-      `Warning: domain context not found for "${domain}" at ${domainPath.replace(cwd + "/", "")}`
+      `Warning: optional domain context not found for "${domain}" at ${domainPath.replace(cwd + "/", "")}; compiling without domain context.`
     );
     return undefined;
   }

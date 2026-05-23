@@ -63,7 +63,7 @@ function loadDomainContext(domain: string): { content?: string; warning?: string
 
   if (!existsSync(domainPath)) {
     return {
-      warning: `Domain context not found for "${domain}" at ${relative(cwd, domainPath)}`,
+      warning: `Optional domain context not found for "${domain}" at ${relative(cwd, domainPath)}; compiled without domain context.`,
     };
   }
 
