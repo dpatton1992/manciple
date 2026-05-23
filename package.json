@@ -1,5 +1,5 @@
 {
-  "name": "@dpatton1992/assignr",
+  "name": "@dpatt/assignr",
   "version": "0.1.0",
   "description": "A repo-native workflow layer for existing coding agents.",
   "license": "MIT",
@@ -23,6 +23,9 @@
     "task-management",
     "cli"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "assignr": "./bin/assignr.js"
   },
@@ -42,7 +45,6 @@
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
-    "@types/jest": "^30.0.0",
     "@types/node": "^22.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
