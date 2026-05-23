@@ -1,0 +1,48 @@
+id: review-prompt-naming-consistency
+title: Make review prompt filenames consistent and discoverable
+status: pending
+type: implementation
+domain: core
+priority: medium
+depends_on: []
+goal: >
+  `assignr compile test-task` creates `test-task.md`, while `assignr review test-task`
+  creates `review-test-task.md`. The prefix is reasonable, but the relationship is not
+  obvious. Make the naming convention discoverable in command output and docs, and avoid
+  surprises for users looking in `.assignr/prompts/generated`.
+acceptance_criteria:
+  - "`assignr review <task-id>` prints output that clearly names the generated review
+    prompt path and explains it is separate from the compiled implementation prompt."
+  - README command docs state that compile prompts use `<task-id>.md` and review prompts
+    use `review-<task-id>.md`."
+  - If prompt generation code has duplicated filename logic, it is centralized or named
+    clearly enough that future commands do not invent another convention by accident.
+  - Existing generated file paths remain backward compatible unless the README and tests
+    explicitly document a migration.
+  - Tests cover the review prompt output path and at least one compile prompt output
+    path.
+allowed_paths:
+  - src/commands/review.ts
+  - src/commands/compile.ts
+  - src/templates/renderTemplate.ts
+  - tests/
+  - README.md
+forbidden_paths:
+  - bin/
+  - dist/
+  - .assignr/tasks/
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test
+    - pnpm build
+    - node bin/assignr.js review review-prompt-naming-consistency
+outputs_required:
+  - files_changed
+  - generated_prompt_paths_example
+  - risks
+notes:
+  - Prefer clarifying the convention over renaming existing review files unless a rename
+    is truly simpler and well documented.
+  - This task intentionally follows `review-prompt-enrich`; keep any content enrichment
+    work out of scope unless it is already merged.

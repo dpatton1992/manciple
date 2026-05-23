@@ -1,0 +1,53 @@
+id: status-lifecycle-summary
+title: Make assignr status display completed lifecycle counts clearly
+status: pending
+type: implementation
+domain: core
+priority: medium
+depends_on: []
+goal: >
+  After `assignr complete` moves finished tasks out of active, `assignr status` can show
+  `complete: 0` even though completed tasks exist in `.assignr/tasks/completed`. Adjust
+  the status output so lifecycle movement is visually clear instead of looking like work
+  disappeared.
+acceptance_criteria:
+  - "`assignr status` distinguishes active status counts from completed lifecycle counts
+    in its terminal output."
+  - "When `.assignr/tasks/completed` contains completed tasks, the output shows the
+    completed count even if no active task has `status: complete`."
+  - "The active status summary no longer presents `complete: 0` in a way that implies
+    there are no completed tasks after lifecycle completion."
+  - The next-task suggestion still considers only actionable active tasks.
+  - The implementation uses the existing task discovery/loading behavior where possible
+    instead of duplicating directory scans.
+  - Tests cover a project with one active task and one completed task.
+  - README command docs or examples are updated if the visible status output changes.
+allowed_paths:
+  - src/commands/status.ts
+  - src/specs/loadTasks.ts
+  - src/utils/paths.ts
+  - tests/
+  - README.md
+forbidden_paths:
+  - bin/
+  - dist/
+  - .assignr/tasks/
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test
+    - pnpm build
+    - tmpdir="$(mktemp -d)" && cd "$tmpdir" && node
+      /Users/danielpatton/Documents/GitHub/promptops/bin/assignr.js init && node
+      /Users/danielpatton/Documents/GitHub/promptops/bin/assignr.js new "Done task" &&
+      node /Users/danielpatton/Documents/GitHub/promptops/bin/assignr.js complete
+      done-task && node /Users/danielpatton/Documents/GitHub/promptops/bin/assignr.js
+      status
+outputs_required:
+  - files_changed
+  - status_output_example
+  - risks
+notes:
+  - If lifecycle task discovery already exposes tier information, prefer rendering that
+    data instead of adding a second filesystem traversal.
+  - Keep the display compact; this is a clarity fix, not a dashboard redesign.

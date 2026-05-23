@@ -1,0 +1,57 @@
+id: run-log-auto-capture
+title: Auto-capture useful run log fields from the working tree
+status: pending
+type: implementation
+domain: core
+priority: critical
+depends_on: []
+goal: >
+  Run logs are still too manual. The current branch auto-detection helps, but generated
+  logs still ask agents to fill in files changed, commands, result, risks, model, and
+  harness by hand. Make `assignr run-log` capture what it can from the repo and accept
+  structured values for the rest so a useful log is produced at the end of a run with
+  minimal editing.
+acceptance_criteria:
+  - "`assignr run-log <task-id>` auto-populates files changed from git status or git
+    diff name-only output when available."
+  - The command accepts optional flags for result, model, harness or agent, commands
+    run, and risks/notes."
+  - Multiple command values can be recorded without forcing users to edit Markdown by
+    hand."
+  - The generated run log distinguishes auto-detected fields from fields that are still
+    unknown."
+  - If git is unavailable or the project is not a git repo, run-log generation still
+    succeeds with clear fallback text."
+  - The MCP `assignr_run_log` tool remains aligned with CLI behavior and can populate
+    the same fields from tool arguments."
+  - Tests cover auto-detected changed files, flag-provided metadata, and no-git fallback.
+  - README examples show a realistic run-log command that produces a mostly complete
+    record.
+allowed_paths:
+  - src/commands/runLog.ts
+  - src/cli.ts
+  - src/mcp.ts
+  - tests/
+  - README.md
+forbidden_paths:
+  - bin/
+  - dist/
+  - .assignr/tasks/
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test
+    - pnpm build
+    - node bin/assignr.js run-log run-log-auto-capture --result partial
+outputs_required:
+  - files_changed
+  - run_log_example
+  - mcp_parity_notes
+  - risks
+notes:
+  - Use git commands via spawnSync and degrade gracefully, following the branch
+    detection pattern already in runLog.ts and mcp.ts.
+  - Avoid inventing an activity recorder in this task; agents can pass commands via
+    flags or MCP arguments.
+  - Consider accepting repeated flags for commands and files if that fits Commander
+    conventions in this codebase.
