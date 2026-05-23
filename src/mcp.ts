@@ -108,8 +108,23 @@ function currentBranch(): string {
   return result.stdout.trim() || "unknown";
 }
 
-function buildRunLog(title: string, id: string, status: string): string {
+interface RunLogContext {
+  agent?: string;
+  model?: string;
+  filesChanged?: string[];
+  commandsRun?: string[];
+  result?: string;
+  notes?: string;
+}
+
+function buildRunLog(title: string, id: string, status: string, ctx: RunLogContext = {}): string {
   const promptPath = `${p.promptsGenerated}/${id}.md`;
+  const filesChanged = ctx.filesChanged?.length
+    ? ctx.filesChanged.map((f) => `- ${f}`).join("\n")
+    : "TODO: list files changed during this run.";
+  const commandsRun = ctx.commandsRun?.length
+    ? ctx.commandsRun.map((c) => `- ${c}`).join("\n")
+    : "TODO: list commands run during this run.";
   return `# Run Log: ${title}
 
 ## Metadata
@@ -117,8 +132,8 @@ function buildRunLog(title: string, id: string, status: string): string {
 - Task ID: ${id}
 - Status: ${status}
 - Started: ${new Date().toISOString()}
-- Agent/Harness: TODO
-- Model: TODO
+- Agent/Harness: ${ctx.agent ?? "TODO"}
+- Model: ${ctx.model ?? "TODO"}
 - Branch: ${currentBranch()}
 
 ## Prompt Used
@@ -127,16 +142,16 @@ function buildRunLog(title: string, id: string, status: string): string {
 
 ## Files Changed
 
-TODO: list files changed during this run.
+${filesChanged}
 
 ## Commands Run
 
-TODO: list commands run during this run.
+${commandsRun}
 
 ## Result
 
 <!-- complete | partial | blocked | failed -->
-TODO
+${ctx.result ?? "TODO"}
 
 ## Risks
 
@@ -148,7 +163,7 @@ TODO
 
 ## Notes
 
-TODO
+${ctx.notes ?? "TODO"}
 `;
 }
 
@@ -310,12 +325,22 @@ server.registerTool(
   "assignr_run_log",
   {
     title: "Create Assignr Run Log",
-    description: "Create a run log stub for one Assignr task.",
+    description:
+      "Create a run log for one Assignr task. Pass agent context fields when available so the log is populated rather than left as TODO stubs.",
     inputSchema: {
       task_id: z.string(),
+      agent: z.string().optional().describe("The agent harness or tool used (e.g. 'Claude Code', 'Cursor')."),
+      model: z.string().optional().describe("The model that performed the work (e.g. 'claude-sonnet-4-5')."),
+      files_changed: z.array(z.string()).optional().describe("List of file paths modified during the run."),
+      commands_run: z.array(z.string()).optional().describe("List of shell commands executed during the run."),
+      result: z
+        .enum(["complete", "partial", "blocked", "failed"])
+        .optional()
+        .describe("Outcome of the run."),
+      notes: z.string().optional().describe("Free-form notes about the run."),
     },
   },
-  ({ task_id }) =>
+  ({ task_id, agent, model, files_changed, commands_run, result, notes }) =>
     toolResult(() => {
       const tasks = loadTasksOrError();
       const found = tasks.find((task) => task.spec.id === task_id);
@@ -325,8 +350,9 @@ server.registerTool(
         mkdirSync(p.runs, { recursive: true });
       }
 
+      const ctx: RunLogContext = { agent, model, filesChanged: files_changed, commandsRun: commands_run, result, notes };
       const outPath = join(p.runs, `${timestamp()}-${found.spec.id}.md`);
-      writeFileSync(outPath, buildRunLog(found.spec.title, found.spec.id, found.spec.status), "utf-8");
+      writeFileSync(outPath, buildRunLog(found.spec.title, found.spec.id, found.spec.status, ctx), "utf-8");
 
       return jsonResult({ path: outPath });
     })
