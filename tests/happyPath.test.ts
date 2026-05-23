@@ -9,12 +9,14 @@ import { tmpdir } from "os";
 import { parse } from "yaml";
 
 import { initCommand } from "../src/commands/init.js";
-import { newCommand } from "../src/commands/new.js";
+import { newCommand, newInteractiveCommand } from "../src/commands/new.js";
 import { listCommand } from "../src/commands/list.js";
 import { validateCommand } from "../src/commands/validate.js";
 import { compileCommand } from "../src/commands/compile.js";
+import { reviewCommand } from "../src/commands/review.js";
 import { setStatusCommand } from "../src/commands/setStatus.js";
 import { completeCommand } from "../src/commands/complete.js";
+import { statusCommand } from "../src/commands/status.js";
 import { loadTasks } from "../src/specs/loadTasks.js";
 import { getPaths } from "../src/utils/paths.js";
 
@@ -107,6 +109,99 @@ describe("assignr new", () => {
 
     const legacyFile = join(p.specsTasks, "license-expiration-reminders.yaml");
     expect(existsSync(legacyFile)).toBe(false);
+  });
+
+  it("creates a task from interactive answers without placeholder TODO text", async () => {
+    const answers = [
+      "Guided onboarding task",
+      "Create a guided first-run task creation flow.",
+      "",
+      "core",
+      "high",
+      "User can create a complete task from prompts.",
+      "",
+      "pnpm test -- new",
+      "",
+      "src/commands/new.ts",
+      "tests/",
+      "",
+      "dist/",
+      "",
+      "files_changed",
+      "risks",
+      "",
+      "Keep prompts easy to test.",
+      "",
+    ];
+    const prompts: string[] = [];
+
+    await newInteractiveCommand(undefined, {
+      type: "implementation",
+      domain: "core",
+      priority: "medium",
+      cwd,
+      activeDir: p.tasksActive,
+      question: async (prompt) => {
+        prompts.push(prompt);
+        const answer = answers.shift();
+        if (answer === undefined) {
+          throw new Error(`Unexpected prompt: ${prompt}`);
+        }
+        return answer;
+      },
+    });
+
+    const taskFile = join(p.tasksActive, "guided-onboarding-task.yaml");
+    const raw = readFileSync(taskFile, "utf-8");
+    const spec = parse(raw) as Record<string, unknown>;
+
+    expect(prompts.join("\n")).toContain("Title:");
+    expect(prompts.join("\n")).toContain("Goal:");
+    expect(prompts.join("\n")).toContain("Acceptance criterion");
+    expect(prompts.join("\n")).toContain("Verification command");
+    expect(prompts.join("\n")).toContain("Allowed path");
+    expect(prompts.join("\n")).toContain("Forbidden path");
+    expect(prompts.join("\n")).toContain("Output required");
+    expect(prompts.join("\n")).toContain("Note");
+    expect(raw).not.toContain("TODO:");
+    expect(spec["title"]).toBe("Guided onboarding task");
+    expect(spec["goal"]).toBe("Create a guided first-run task creation flow.");
+    expect(spec["type"]).toBe("implementation");
+    expect(spec["domain"]).toBe("core");
+    expect(spec["priority"]).toBe("high");
+    expect(spec["acceptance_criteria"]).toEqual(["User can create a complete task from prompts."]);
+    expect(spec["verification"]).toEqual({ commands: ["pnpm test -- new"] });
+    expect(spec["allowed_paths"]).toEqual(["src/commands/new.ts", "tests/"]);
+    expect(spec["forbidden_paths"]).toEqual(["dist/"]);
+    expect(spec["outputs_required"]).toEqual(["files_changed", "risks"]);
+    expect(spec["notes"]).toEqual(["Keep prompts easy to test."]);
+  });
+
+  it("does not write a partial task when interactive prompting fails", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
+      throw new Error(`process.exit(${code})`);
+    }) as never);
+
+    try {
+      await expect(newInteractiveCommand(undefined, {
+        type: "implementation",
+        domain: "core",
+        priority: "medium",
+        cwd,
+        activeDir: p.tasksActive,
+        question: async () => {
+          throw new Error("cancelled");
+        },
+      })).rejects.toThrow("process.exit(1)");
+
+      expect(exitSpy).toHaveBeenCalledWith(1);
+      expect(existsSync(join(p.tasksActive, "guided-onboarding-task.yaml"))).toBe(false);
+      expect(errorSpy.mock.calls.flat().join("\n")).toContain("interactive task creation failed");
+    } finally {
+      errorSpy.mockRestore();
+      exitSpy.mockRestore();
+    }
   });
 });
 
@@ -312,6 +407,47 @@ describe("assignr compile", () => {
   });
 });
 
+describe("assignr review", () => {
+  it("creates a separate review prompt at prompts/generated/review-<id>.md", () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    try {
+      newCommand("License expiration reminders", {
+        type: "implementation",
+        domain: "credentialing",
+        priority: "high",
+        goal: "Add expiration reminder support for provider licenses.",
+        cwd,
+        activeDir: p.tasksActive,
+      });
+
+      reviewCommand(
+        "license-expiration-reminders",
+        p.specsTasks,
+        p.promptsGenerated,
+        cwd
+      );
+
+      const reviewPromptFile = join(
+        p.promptsGenerated,
+        "review-license-expiration-reminders.md"
+      );
+      const implementationPromptPath =
+        ".assignr/prompts/generated/license-expiration-reminders.md";
+
+      expect(existsSync(reviewPromptFile)).toBe(true);
+      expect(logSpy).toHaveBeenCalledWith(
+        "Created review prompt: .assignr/prompts/generated/review-license-expiration-reminders.md"
+      );
+      expect(logSpy).toHaveBeenCalledWith(
+        `Review prompts are separate from compiled implementation prompts, which use ${implementationPromptPath}.`
+      );
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
+});
+
 describe("assignr set-status", () => {
   it("updates the task status in tasks/active/", () => {
     newCommand("License expiration reminders", {
@@ -348,6 +484,48 @@ describe("assignr set-status", () => {
     const taskFile = join(p.tasksActive, "license-expiration-reminders.yaml");
     const spec = parse(readFileSync(taskFile, "utf-8")) as Record<string, unknown>;
     expect(spec["status"]).toBe("needs_review");
+  });
+});
+
+describe("assignr status", () => {
+  it("shows active counts separately from completed lifecycle tasks", () => {
+    newCommand("Done task", {
+      type: "implementation",
+      domain: "core",
+      priority: "medium",
+      goal: "Finish the done task.",
+      cwd,
+      activeDir: p.tasksActive,
+    });
+    completeCommand("done-task", {
+      specsTasksDir: p.specsTasks,
+      completedDir: p.tasksCompleted,
+      cwd,
+    });
+    newCommand("Active task", {
+      type: "implementation",
+      domain: "core",
+      priority: "high",
+      goal: "Keep working on the active task.",
+      cwd,
+      activeDir: p.tasksActive,
+    });
+
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    try {
+      statusCommand(p.specsTasks, cwd);
+
+      const output = logSpy.mock.calls.flat().join("\n");
+      expect(output).toContain("Active tasks:");
+      expect(output).toContain("pending:       1");
+      expect(output).not.toContain("complete:      0");
+      expect(output).toContain("Completed lifecycle tasks: 1");
+      expect(output).toContain("active-task [high]");
+      expect(output).not.toContain("done-task [medium]");
+    } finally {
+      logSpy.mockRestore();
+    }
   });
 });
 

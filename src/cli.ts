@@ -5,7 +5,7 @@ import { loadConfig } from "./config.js";
 import { getPaths } from "./utils/paths.js";
 import { DEFAULT_ROOT, STATUSES, TASK_TYPES, PRIORITIES } from "./constants.js";
 import { initCommand } from "./commands/init.js";
-import { newCommand } from "./commands/new.js";
+import { newCommand, newInteractiveCommand } from "./commands/new.js";
 import { validateCommand } from "./commands/validate.js";
 import { compileCommand } from "./commands/compile.js";
 import { listCommand } from "./commands/list.js";
@@ -17,6 +17,13 @@ import { reviewCommand } from "./commands/review.js";
 import { doctorCommand } from "./commands/doctor.js";
 import { mcpConfigCommand } from "./commands/mcpConfig.js";
 import type { Status, TaskType, Priority } from "./constants.js";
+
+function collect(value: string, previous: string[]): string[] {
+  previous.push(value);
+  return previous;
+}
+
+const RUN_LOG_RESULTS = ["complete", "partial", "blocked", "failed"];
 
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json") as { version: string };
@@ -45,13 +52,19 @@ program
 
 // new
 program
-  .command("new <title>")
+  .command("new [title]")
   .description("Create a new task spec.")
   .option("--type <type>", `Task type (${TASK_TYPES.join(", ")})`, "implementation")
   .option("--domain <domain>", "Domain for this task.", "core")
   .option("--priority <priority>", `Priority (${PRIORITIES.join(", ")})`, "medium")
   .option("--goal <goal>", "Pre-fill the goal field.")
-  .action((title: string, opts: { type: string; domain: string; priority: string; goal?: string }) => {
+  .option("--interactive", "Prompt for task fields.", false)
+  .action(async (title: string | undefined, opts: { type: string; domain: string; priority: string; goal?: string; interactive: boolean }) => {
+    if (!title && !opts.interactive) {
+      console.error("error: missing required argument 'title'");
+      process.exit(1);
+    }
+
     const type = opts.type as TaskType;
     const priority = opts.priority as Priority;
     if (!TASK_TYPES.includes(type)) {
@@ -62,7 +75,11 @@ program
       console.error(`Invalid priority: "${priority}". Allowed: ${PRIORITIES.join(", ")}`);
       process.exit(1);
     }
-    newCommand(title, { type, domain: opts.domain, priority, goal: opts.goal, cwd, activeDir: p.tasksActive });
+    if (opts.interactive) {
+      await newInteractiveCommand(title, { type, domain: opts.domain, priority, goal: opts.goal, cwd, activeDir: p.tasksActive });
+      return;
+    }
+    newCommand(title!, { type, domain: opts.domain, priority, goal: opts.goal, cwd, activeDir: p.tasksActive });
   });
 
 // validate
@@ -131,9 +148,44 @@ program
 // run-log
 program
   .command("run-log <task-id>")
-  .description("Create a run log stub for a task.")
-  .action((taskId: string) => {
-    runLogCommand(taskId, p.specsTasks, p.runs, p.promptsGenerated, cwd);
+  .description("Create a run log for a task.")
+  .option("--result <result>", "Outcome: complete, partial, blocked, or failed.")
+  .option("--model <model>", "Model that performed the work.")
+  .option("--agent <agent>", "Agent harness or tool used.")
+  .option("--harness <harness>", "Agent harness or tool used.")
+  .option("--command <command>", "Command executed during the run. May be repeated.", collect, [])
+  .option("--commands-run <command>", "Command executed during the run. May be repeated.", collect, [])
+  .option("--file <path>", "Changed file path. May be repeated; otherwise git status is used.", collect, [])
+  .option("--files-changed <path>", "Changed file path. May be repeated; otherwise git status is used.", collect, [])
+  .option("--risks <risks>", "Risks or residual concerns.")
+  .option("--notes <notes>", "Free-form notes.")
+  .action((taskId: string, opts: {
+    result?: string;
+    model?: string;
+    agent?: string;
+    harness?: string;
+    command: string[];
+    commandsRun: string[];
+    file: string[];
+    filesChanged: string[];
+    risks?: string;
+    notes?: string;
+  }) => {
+    if (opts.result && !RUN_LOG_RESULTS.includes(opts.result)) {
+      console.error(`Invalid result: "${opts.result}". Allowed: ${RUN_LOG_RESULTS.join(", ")}`);
+      process.exit(1);
+    }
+
+    runLogCommand(taskId, p.specsTasks, p.runs, p.promptsGenerated, cwd, {
+      result: opts.result,
+      model: opts.model,
+      agent: opts.agent,
+      harness: opts.harness,
+      commandsRun: [...opts.command, ...opts.commandsRun],
+      filesChanged: [...opts.file, ...opts.filesChanged],
+      risks: opts.risks,
+      notes: opts.notes,
+    });
   });
 
 // review

@@ -1,6 +1,5 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "fs";
 import { join, relative } from "path";
-import { spawnSync } from "child_process";
 import { parse, stringify } from "yaml";
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -11,6 +10,7 @@ import { STATUSES } from "./constants.js";
 import type { Status } from "./constants.js";
 import { loadTasks } from "./specs/loadTasks.js";
 import { validateTasks } from "./specs/validateTasks.js";
+import { buildRunLog, timestamp } from "./commands/runLog.js";
 import {
   IMPLEMENTATION_TEMPLATE,
   REVIEW_TEMPLATE,
@@ -89,82 +89,6 @@ function loadTasksOrError(): LoadedTask[] {
     throw new Error(`Cannot load tasks: ${message}`);
   }
   return tasks;
-}
-
-function timestamp(): string {
-  return new Date()
-    .toISOString()
-    .replace(/:/g, "-")
-    .replace(/\..+/, "")
-    .replace("T", "-");
-}
-
-function currentBranch(): string {
-  const result = spawnSync("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
-    cwd,
-    encoding: "utf-8",
-  });
-  if (result.status !== 0 || !result.stdout) return "unknown";
-  return result.stdout.trim() || "unknown";
-}
-
-interface RunLogContext {
-  agent?: string;
-  model?: string;
-  filesChanged?: string[];
-  commandsRun?: string[];
-  result?: string;
-  notes?: string;
-}
-
-function buildRunLog(title: string, id: string, status: string, ctx: RunLogContext = {}): string {
-  const promptPath = `${p.promptsGenerated}/${id}.md`;
-  const filesChanged = ctx.filesChanged?.length
-    ? ctx.filesChanged.map((f) => `- ${f}`).join("\n")
-    : "TODO: list files changed during this run.";
-  const commandsRun = ctx.commandsRun?.length
-    ? ctx.commandsRun.map((c) => `- ${c}`).join("\n")
-    : "TODO: list commands run during this run.";
-  return `# Run Log: ${title}
-
-## Metadata
-
-- Task ID: ${id}
-- Status: ${status}
-- Started: ${new Date().toISOString()}
-- Agent/Harness: ${ctx.agent ?? "TODO"}
-- Model: ${ctx.model ?? "TODO"}
-- Branch: ${currentBranch()}
-
-## Prompt Used
-
-- Generated prompt path: ${promptPath}
-
-## Files Changed
-
-${filesChanged}
-
-## Commands Run
-
-${commandsRun}
-
-## Result
-
-<!-- complete | partial | blocked | failed -->
-${ctx.result ?? "TODO"}
-
-## Risks
-
-TODO
-
-## Follow-Up Tasks
-
-TODO
-
-## Notes
-
-${ctx.notes ?? "TODO"}
-`;
 }
 
 const server = new McpServer({
@@ -342,10 +266,11 @@ server.registerTool(
         .enum(["complete", "partial", "blocked", "failed"])
         .optional()
         .describe("Outcome of the run."),
+      risks: z.string().optional().describe("Risks or residual concerns from the run."),
       notes: z.string().optional().describe("Free-form notes about the run."),
     },
   },
-  ({ task_id, agent, model, files_changed, commands_run, result, notes }) =>
+  ({ task_id, agent, model, files_changed, commands_run, result, risks, notes }) =>
     toolResult(() => {
       const tasks = loadTasksOrError();
       const found = tasks.find((task) => task.spec.id === task_id);
@@ -355,9 +280,20 @@ server.registerTool(
         mkdirSync(p.runs, { recursive: true });
       }
 
-      const ctx: RunLogContext = { agent, model, filesChanged: files_changed, commandsRun: commands_run, result, notes };
       const outPath = join(p.runs, `${timestamp()}-${found.spec.id}.md`);
-      writeFileSync(outPath, buildRunLog(found.spec.title, found.spec.id, found.spec.status, ctx), "utf-8");
+      writeFileSync(
+        outPath,
+        buildRunLog(found.spec.title, found.spec.id, found.spec.status, p.promptsGenerated, cwd, {
+          agent,
+          model,
+          filesChanged: files_changed,
+          commandsRun: commands_run,
+          result,
+          risks,
+          notes,
+        }),
+        "utf-8"
+      );
 
       return jsonResult({ path: outPath });
     })

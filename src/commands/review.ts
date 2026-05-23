@@ -8,6 +8,10 @@ import {
 import { spawnSync } from "child_process";
 import { join } from "path";
 import { loadTasks } from "../specs/loadTasks.js";
+import {
+  implementationPromptFilename,
+  reviewPromptFilename,
+} from "../templates/renderTemplate.js";
 import type { TaskSpec } from "../specs/schema.js";
 
 function formatList(items: string[] | undefined): string {
@@ -173,8 +177,14 @@ export function reviewCommand(
   }
 
   const rendered = renderReviewPrompt(found.spec, cwd);
-  const outPath = join(generatedDir, `review-${taskId}.md`);
+  const outPath = join(generatedDir, reviewPromptFilename(taskId));
   writeFileSync(outPath, rendered, "utf-8");
 
   console.log(`Created review prompt: ${outPath.replace(cwd + "/", "")}`);
+  console.log(
+    `Review prompts are separate from compiled implementation prompts, which use ${join(
+      generatedDir,
+      implementationPromptFilename(taskId)
+    ).replace(cwd + "/", "")}.`
+  );
 }

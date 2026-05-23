@@ -28,14 +28,24 @@ assignr new "Build login page" --type implementation --domain core --priority hi
 assignr compile build-login-page
 ```
 
+Use `assignr new --interactive` when you want Assignr to collect the title and common task fields through prompts.
+
 The compiled prompt is written to `.assignr/prompts/generated/build-login-page.md`. Paste it into your agent. Afterward:
 
 ```bash
-assignr run-log build-login-page
+assignr run-log build-login-page \
+  --result partial \
+  --model gpt-5-codex \
+  --agent Codex \
+  --command "pnpm test -- auth" \
+  --command "pnpm build" \
+  --risks "Session expiry edge cases still need review."
 assignr set-status build-login-page needs_review
 assignr review build-login-page
 assignr complete build-login-page
 ```
+
+`assignr review build-login-page` writes a separate review prompt to `.assignr/prompts/generated/review-build-login-page.md`.
 
 ## Task Spec
 
@@ -70,14 +80,14 @@ outputs_required:
 | Command | Purpose |
 |---|---|
 | `assignr init` | Initialize `.assignr/` in a repo. |
-| `assignr new <title>` | Create a task spec. |
+| `assignr new <title>` | Create a task spec. Add `--interactive` to collect the title and task fields through prompts. |
 | `assignr validate` | Validate all task specs. |
-| `assignr compile [task-id]` | Compile a task into a prompt. Use `--all` or `--status <status>` for bulk compile. |
+| `assignr compile [task-id]` | Compile a task into `.assignr/prompts/generated/<task-id>.md`. Use `--all` or `--status <status>` for bulk compile. |
 | `assignr list` | List tasks. Filter with `--status` or `--domain`. |
-| `assignr status` | Show status counts and suggest the next task. |
+| `assignr status` | Show active status counts, completed lifecycle count, and suggest the next task. |
 | `assignr set-status <id> <status>` | Update status: `pending`, `in_progress`, `needs_review`, `complete`, `blocked`, `failed`, `partial`. |
-| `assignr run-log <id>` | Create a run log stub. |
-| `assignr review <id>` | Generate a review prompt. |
+| `assignr run-log <id>` | Create a run log with git-detected files and optional metadata flags. |
+| `assignr review <id>` | Generate a separate review prompt at `.assignr/prompts/generated/review-<task-id>.md`. |
 | `assignr complete <id>` | Mark complete and move to `.assignr/tasks/completed/`. |
 | `assignr doctor` | Check repo configuration. |
 | `assignr mcp-config` | Write `.mcp.json` for the Assignr MCP server. |
@@ -94,7 +104,7 @@ For agents that support MCP tools, run `assignr mcp-config` to write a repo-loca
 | `assignr_get_compiled_prompt` | Read an existing generated prompt. |
 | `assignr_validate` | Validate specs. |
 | `assignr_set_status` | Update task status. |
-| `assignr_run_log` | Create a run log stub. |
+| `assignr_run_log` | Create a run log with the same metadata fields as the CLI. |
 
 ## Agent Skills
 

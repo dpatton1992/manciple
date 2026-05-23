@@ -1,6 +1,6 @@
 id: status-lifecycle-summary
 title: Make assignr status display completed lifecycle counts clearly
-status: pending
+status: needs_review
 type: implementation
 domain: core
 priority: medium

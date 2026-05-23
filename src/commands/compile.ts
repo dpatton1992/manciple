@@ -5,6 +5,7 @@ import { loadTasks } from "../specs/loadTasks.js";
 import {
   renderTemplate,
   renderDomainContext,
+  implementationPromptFilename,
   IMPLEMENTATION_TEMPLATE,
   REVIEW_TEMPLATE,
   TEST_TEMPLATE,
@@ -93,7 +94,7 @@ export function compileCommand(options: CompileOptions): void {
     const template = getTemplate(spec.type);
     const domainContext = loadDomainContext(specsTasksDir, spec.domain, cwd);
     const rendered = renderTemplate(template, spec, domainContext);
-    const outPath = join(generatedDir, `${spec.id}.md`);
+    const outPath = join(generatedDir, implementationPromptFilename(spec.id));
     writeFileSync(outPath, rendered, "utf-8");
     console.log(`  ✓ Compiled: ${outPath.replace(cwd + "/", "")}`);
   }

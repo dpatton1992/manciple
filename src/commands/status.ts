@@ -1,15 +1,14 @@
 import { loadTasks } from "../specs/loadTasks.js";
-import { validateTasks } from "../specs/validateTasks.js";
 import { STATUSES } from "../constants.js";
 import type { Status } from "../constants.js";
-import type { LoadedTask } from "../specs/schema.js";
+import type { LoadedTaskWithTier } from "../specs/loadTasks.js";
 
 function pad(str: string, width: number): string {
   return str.padEnd(width);
 }
 
-function findNextTask(tasks: LoadedTask[]): {
-  task: LoadedTask | null;
+function findNextTask(tasks: LoadedTaskWithTier[]): {
+  task: LoadedTaskWithTier | null;
   reason: string;
 } {
   const completedIds = new Set(
@@ -24,7 +23,7 @@ function findNextTask(tasks: LoadedTask[]): {
   };
 
   const pending = tasks
-    .filter((t) => t.spec.status === "pending")
+    .filter((t) => t.tier === "active" && t.spec.status === "pending")
     .sort(
       (a, b) =>
         (priorities[b.spec.priority ?? "medium"] ?? 2) -
@@ -54,7 +53,7 @@ function findNextTask(tasks: LoadedTask[]): {
 }
 
 export function statusCommand(specsTasksDir: string, cwd: string): void {
-  const { tasks, errors } = loadTasks(specsTasksDir);
+  const { tasks, errors } = loadTasks(specsTasksDir, "all");
 
   if (errors.length > 0) {
     console.warn(
@@ -72,15 +71,21 @@ export function statusCommand(specsTasksDir: string, cwd: string): void {
     partial: 0,
   };
 
-  for (const { spec } of tasks) {
+  const activeTasks = tasks.filter((task) => task.tier === "active");
+  const completedLifecycleCount = tasks.filter((task) => task.tier === "completed").length;
+
+  for (const { spec } of activeTasks) {
     counts[spec.status] = (counts[spec.status] ?? 0) + 1;
   }
 
   console.log("Assignr Status");
   console.log("────────────────");
+  console.log("Active tasks:");
   for (const status of STATUSES) {
+    if (status === "complete" && counts[status] === 0) continue;
     console.log(`  ${pad(status + ":", 14)} ${counts[status]}`);
   }
+  console.log(`\nCompleted lifecycle tasks: ${completedLifecycleCount}`);
 
   const { task: next, reason } = findNextTask(tasks);
   console.log("\nNext suggested task:");

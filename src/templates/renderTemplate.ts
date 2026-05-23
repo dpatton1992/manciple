@@ -208,6 +208,14 @@ export function renderVerificationCommands(commands: string[]): string {
   return commands.map((cmd) => `\`\`\`bash\n${cmd}\n\`\`\``).join("\n\n");
 }
 
+export function implementationPromptFilename(taskId: string): string {
+  return `${taskId}.md`;
+}
+
+export function reviewPromptFilename(taskId: string): string {
+  return `review-${taskId}.md`;
+}
+
 export function renderTemplate(
   template: string,
   spec: TaskSpec,

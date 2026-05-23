@@ -1,6 +1,6 @@
 id: interactive-new-mode
 title: Add interactive mode to assignr new for low-placeholder task creation
-status: pending
+status: needs_review
 type: implementation
 domain: core
 priority: high
