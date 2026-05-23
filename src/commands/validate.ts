@@ -1,7 +1,20 @@
 import { loadTasks } from "../specs/loadTasks.js";
 import { validateTasks } from "../specs/validateTasks.js";
+import type { ValidationCounts } from "../specs/validateTasks.js";
 import { getPaths } from "../utils/paths.js";
 import { dirname, relative } from "path";
+
+function formatCount(count: number, singular: string): string {
+  return `${count} ${singular}${count === 1 ? "" : "s"}`;
+}
+
+function withLoadErrorCounts(counts: ValidationCounts, loadErrorCount: number): ValidationCounts {
+  return {
+    tasksChecked: counts.tasksChecked + loadErrorCount,
+    domainsChecked: counts.domainsChecked,
+    contractsChecked: counts.contractsChecked + loadErrorCount,
+  };
+}
 
 export function validateCommand(specsTasksDir: string, cwd: string): void {
   const { tasks, errors: loadErrors } = loadTasks(specsTasksDir);
@@ -21,7 +34,8 @@ export function validateCommand(specsTasksDir: string, cwd: string): void {
     console.warn(`  ⚠ No tasks found. Run "assignr new" to create your first task.`);
   }
 
-  const { valid, invalid, warnings } = validateTasks(tasks, { specsDomainsDir });
+  const { valid, invalid, warnings, counts } = validateTasks(tasks, { specsDomainsDir });
+  const checkedCounts = withLoadErrorCounts(counts, loadErrors.length);
 
   for (const { filePath, errors } of invalid) {
     totalErrors++;
@@ -40,6 +54,11 @@ export function validateCommand(specsTasksDir: string, cwd: string): void {
 
   console.log(`\nAssignr Validate`);
   console.log(`─────────────────`);
+  console.log(
+    `  Checked: ${formatCount(checkedCounts.tasksChecked, "task")}, ` +
+      `${formatCount(checkedCounts.domainsChecked, "domain")}, ` +
+      `${formatCount(checkedCounts.contractsChecked, "contract")}`
+  );
   if (totalValid > 0) console.log(`  ✓ ${totalValid} valid task${totalValid === 1 ? "" : "s"}`);
   if (totalWarnings > 0) console.log(`  ⚠ ${totalWarnings} warning${totalWarnings === 1 ? "" : "s"}`);
   if (totalErrors > 0) console.log(`  ✕ ${totalErrors} invalid task${totalErrors === 1 ? "" : "s"}`);

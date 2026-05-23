@@ -210,7 +210,7 @@ server.registerTool(
   () =>
     toolResult(() => {
       const { tasks, errors: loadErrors } = loadTasks(p.specsTasks);
-      const { valid, invalid } = validateTasks(tasks, { specsDomainsDir: p.specsDomains });
+      const { valid, invalid, counts } = validateTasks(tasks, { specsDomainsDir: p.specsDomains });
       const errors = [
         ...loadErrors.map((error) => ({
           file: relative(cwd, error.filePath),
@@ -227,6 +227,11 @@ server.registerTool(
       return jsonResult({
         valid_count: valid.length,
         error_count: errors.length,
+        counts: {
+          tasks_checked: counts.tasksChecked + loadErrors.length,
+          domains_checked: counts.domainsChecked,
+          contracts_checked: counts.contractsChecked + loadErrors.length,
+        },
         errors,
       });
     })

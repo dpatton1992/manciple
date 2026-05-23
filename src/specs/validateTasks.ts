@@ -13,6 +13,13 @@ export interface ValidationResult {
   valid: LoadedTask[];
   invalid: Array<{ filePath: string; errors: ValidationIssue[] }>;
   warnings: ValidationIssue[];
+  counts: ValidationCounts;
+}
+
+export interface ValidationCounts {
+  tasksChecked: number;
+  domainsChecked: number;
+  contractsChecked: number;
 }
 
 export interface ValidateTasksOptions {
@@ -33,6 +40,11 @@ export function validateTasks(
 ): ValidationResult {
   const warnings: ValidationIssue[] = [];
   const errorsByFile = new Map<string, ValidationIssue[]>();
+  const counts: ValidationCounts = {
+    tasksChecked: tasks.length,
+    domainsChecked: 0,
+    contractsChecked: 0,
+  };
   let hasMissingDependencyError = false;
 
   // Check for duplicate IDs
@@ -56,6 +68,7 @@ export function validateTasks(
     const { spec, filePath } = loaded;
 
     // Check for duplicate IDs
+    counts.contractsChecked++;
     const duplicates = idMap.get(spec.id) ?? [];
     if (duplicates.length > 1 && duplicates[0] !== filePath) {
       addError(filePath, {
@@ -68,6 +81,7 @@ export function validateTasks(
 
     // Check dependency references
     for (const dep of spec.depends_on ?? []) {
+      counts.contractsChecked++;
       if (!allIds.has(dep)) {
         hasMissingDependencyError = true;
         addError(filePath, {
@@ -81,6 +95,7 @@ export function validateTasks(
 
     // Warn about missing optional fields
     for (const field of OPTIONAL_FIELDS) {
+      counts.contractsChecked++;
       const value = spec[field];
       if (!value || (Array.isArray(value) && value.length === 0)) {
         warnings.push({
@@ -93,6 +108,7 @@ export function validateTasks(
     }
 
     // Warn about TODO placeholder values
+    counts.contractsChecked++;
     if (spec.goal?.startsWith("TODO:")) {
       warnings.push({
         filePath,
@@ -101,6 +117,7 @@ export function validateTasks(
         severity: "warning",
       });
     }
+    counts.contractsChecked++;
     if (spec.acceptance_criteria?.some((c) => c.startsWith("TODO:"))) {
       warnings.push({
         filePath,
@@ -109,6 +126,7 @@ export function validateTasks(
         severity: "warning",
       });
     }
+    counts.contractsChecked++;
     if (spec.verification?.commands?.some((c) => c.startsWith("TODO:"))) {
       warnings.push({
         filePath,
@@ -120,15 +138,19 @@ export function validateTasks(
   }
 
   if (options.specsDomainsDir) {
-    for (const { filePath, issue } of validateDomainReferences(
+    const domainValidation = validateDomainReferences(
       tasks,
       options.specsDomainsDir
-    )) {
+    );
+    counts.domainsChecked = domainValidation.domainsChecked;
+    counts.contractsChecked += domainValidation.contractsChecked;
+    for (const { filePath, issue } of domainValidation.issues) {
       addError(filePath, issue);
     }
   }
 
   if (!hasMissingDependencyError) {
+    if (tasks.length > 0) counts.contractsChecked++;
     const cycles = findDependencyCycles(tasks, taskById);
     for (const cycle of cycles) {
       const task = taskById.get(cycle[0]);
@@ -148,16 +170,22 @@ export function validateTasks(
   const invalidFiles = new Set(invalid.map(({ filePath }) => filePath));
   const valid = tasks.filter(({ filePath }) => !invalidFiles.has(filePath));
 
-  return { valid, invalid, warnings };
+  return { valid, invalid, warnings, counts };
 }
 
 function validateDomainReferences(
   tasks: LoadedTask[],
   specsDomainsDir: string
-): Array<{ filePath: string; issue: ValidationIssue }> {
+): {
+  issues: Array<{ filePath: string; issue: ValidationIssue }>;
+  domainsChecked: number;
+  contractsChecked: number;
+} {
   const issues: Array<{ filePath: string; issue: ValidationIssue }> = [];
+  const domains = new Set<string>();
 
   for (const { spec, filePath } of tasks) {
+    domains.add(spec.domain);
     const domainPath = join(specsDomainsDir, `${spec.domain}.yaml`);
     if (existsSync(domainPath)) continue;
 
@@ -172,7 +200,11 @@ function validateDomainReferences(
     });
   }
 
-  return issues;
+  return {
+    issues,
+    domainsChecked: domains.size,
+    contractsChecked: tasks.length,
+  };
 }
 
 function findDependencyCycles(

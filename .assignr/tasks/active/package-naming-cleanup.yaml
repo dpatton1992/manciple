@@ -1,18 +1,14 @@
 id: package-naming-cleanup
 title: Remove leftover PromptOps package and repo naming references
-status: pending
+status: needs_review
 type: implementation
 domain: core
 priority: high
 depends_on: []
-goal: >
-  The package has been renamed to Assignr, but some user-facing copy, generated
-  templates, metadata, or docs may still refer to PromptOps. Remove stale PromptOps
-  references so the published package, CLI help, README, and generated project files
-  consistently present the project as Assignr.
+goal: |
+  The package has been renamed to Assignr, but some user-facing copy, generated templates, metadata, or docs may still refer to PromptOps. Remove stale PromptOps references so the published package, CLI help, README, and generated project files consistently present the project as Assignr.
 acceptance_criteria:
-  - No user-facing package, CLI, README, template, or config text contains "PromptOps"
-    or "promptops" unless it is a historical note explicitly approved in the README.
+  - No user-facing package, CLI, README, template, or config text contains "PromptOps" or "promptops" unless it is a historical note explicitly approved in the README.
   - Package metadata points at the Assignr package and repository names.
   - Generated init files and command help use Assignr naming consistently.
   - Tests that assert generated text or package metadata are updated.
@@ -39,7 +35,6 @@ outputs_required:
   - remaining_references
   - risks
 notes:
-  - If the ripgrep verification exits 1 because no matches remain, treat that as success
-    and mention it in the run log.
+  - If the ripgrep verification exits 1 because no matches remain, treat that as success and mention it in the run log.
   - Do not rename the local git checkout directory as part of this task.
   - Do not edit generated dist output by hand; build output is produced by pnpm build.

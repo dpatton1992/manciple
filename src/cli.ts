@@ -11,6 +11,7 @@ import { compileCommand } from "./commands/compile.js";
 import { listCommand } from "./commands/list.js";
 import { statusCommand } from "./commands/status.js";
 import { setStatusCommand } from "./commands/setStatus.js";
+import { completeCommand } from "./commands/complete.js";
 import { runLogCommand } from "./commands/runLog.js";
 import { reviewCommand } from "./commands/review.js";
 import { doctorCommand } from "./commands/doctor.js";
@@ -113,6 +114,18 @@ program
   .description(`Update task status. Allowed: ${STATUSES.join(", ")}`)
   .action((taskId: string, status: string) => {
     setStatusCommand(taskId, status as Status, p.specsTasks, cwd);
+  });
+
+// complete
+program
+  .command("complete <task-id>")
+  .description("Mark an active task complete and move it to tasks/completed.")
+  .action((taskId: string) => {
+    completeCommand(taskId, {
+      specsTasksDir: p.specsTasks,
+      completedDir: p.tasksCompleted,
+      cwd,
+    });
   });
 
 // run-log

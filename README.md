@@ -105,6 +105,7 @@ Older projects may still have tasks under `.assignr/specs/tasks/`. Move active t
 | `assignr list [--status <status>] [--domain <domain>]` | List task specs in a compact table. |
 | `assignr status` | Show task status counts and suggest the next unblocked task. |
 | `assignr set-status <task-id> <status>` | Update task status. Allowed statuses: `pending`, `in_progress`, `needs_review`, `complete`, `blocked`, `failed`, `partial`. |
+| `assignr complete <task-id>` | Mark an active task complete and move it to `.assignr/tasks/completed/`. |
 | `assignr run-log <task-id>` | Create a run log stub for a task. |
 | `assignr review <task-id>` | Generate a review prompt for a task. |
 | `assignr doctor` | Check whether the repo is configured correctly. |
@@ -116,7 +117,7 @@ Common follow-up flow:
 assignr run-log add-license-expiration-reminders
 assignr set-status add-license-expiration-reminders needs_review
 assignr review add-license-expiration-reminders
-assignr set-status add-license-expiration-reminders complete
+assignr complete add-license-expiration-reminders
 ```
 
 ## MCP Server

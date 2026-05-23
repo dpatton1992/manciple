@@ -31,10 +31,13 @@ function makeTask(overrides: Partial<LoadedTask["spec"]> = {}): LoadedTask {
 describe("validateTasks", () => {
   it("returns valid tasks with no issues", () => {
     const tasks = [makeTask(), makeTask({ id: "other-task", title: "Other" })];
-    const { valid, invalid, warnings } = validateTasks(tasks);
+    const { valid, invalid, warnings, counts } = validateTasks(tasks);
     expect(valid).toHaveLength(2);
     expect(invalid).toHaveLength(0);
     expect(warnings).toHaveLength(0);
+    expect(counts.tasksChecked).toBe(2);
+    expect(counts.domainsChecked).toBe(0);
+    expect(counts.contractsChecked).toBeGreaterThan(0);
   });
 
   it("reports duplicate task ids", () => {
@@ -88,10 +91,11 @@ describe("validateTasks", () => {
     writeFileSync(join(domainsDir, "core.yaml"), "id: core\n");
 
     try {
-      const { valid, invalid } = validateTasks([makeTask()], { specsDomainsDir: domainsDir });
+      const { valid, invalid, counts } = validateTasks([makeTask()], { specsDomainsDir: domainsDir });
 
       expect(invalid).toHaveLength(0);
       expect(valid).toHaveLength(1);
+      expect(counts.domainsChecked).toBe(1);
     } finally {
       rmSync(domainsDir, { recursive: true, force: true });
     }

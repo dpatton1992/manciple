@@ -3,7 +3,7 @@
  *   init → new → list → validate → compile → set-status
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { existsSync, mkdtempSync, rmSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { parse } from "yaml";
@@ -14,6 +14,7 @@ import { listCommand } from "../src/commands/list.js";
 import { validateCommand } from "../src/commands/validate.js";
 import { compileCommand } from "../src/commands/compile.js";
 import { setStatusCommand } from "../src/commands/setStatus.js";
+import { completeCommand } from "../src/commands/complete.js";
 import { loadTasks } from "../src/specs/loadTasks.js";
 import { getPaths } from "../src/utils/paths.js";
 
@@ -165,10 +166,48 @@ describe("assignr validate", () => {
 
       const errorOutput = errorSpy.mock.calls.flat().join("\n");
       const warningOutput = warnSpy.mock.calls.flat().join("\n");
+      const logOutput = logSpy.mock.calls.flat().join("\n");
 
       expect(errorOutput).not.toContain('references missing domain "core"');
       expect(warningOutput).toContain("TODO placeholder");
+      expect(logOutput).toContain("Checked: 1 task, 1 domain,");
+      expect(logOutput).toContain("contracts");
       expect(exitSpy).not.toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+      errorSpy.mockRestore();
+      logSpy.mockRestore();
+      exitSpy.mockRestore();
+    }
+  });
+
+  it("prints checked counts before exiting for an invalid project", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
+      throw new Error(`process.exit(${code})`);
+    }) as never);
+
+    try {
+      newCommand("Missing domain task", {
+        type: "implementation",
+        domain: "missing-domain",
+        priority: "high",
+        goal: "Use a domain that does not exist.",
+        cwd,
+        activeDir: p.tasksActive,
+      });
+
+      expect(() => validateCommand(p.specsTasks, cwd)).toThrow("process.exit(1)");
+
+      const errorOutput = errorSpy.mock.calls.flat().join("\n");
+      const logOutput = logSpy.mock.calls.flat().join("\n");
+
+      expect(errorOutput).toContain('references missing domain "missing-domain"');
+      expect(logOutput).toContain("Checked: 1 task, 1 domain,");
+      expect(logOutput).toContain("contracts");
+      expect(exitSpy).toHaveBeenCalledWith(1);
     } finally {
       warnSpy.mockRestore();
       errorSpy.mockRestore();
@@ -309,5 +348,92 @@ describe("assignr set-status", () => {
     const taskFile = join(p.tasksActive, "license-expiration-reminders.yaml");
     const spec = parse(readFileSync(taskFile, "utf-8")) as Record<string, unknown>;
     expect(spec["status"]).toBe("needs_review");
+  });
+});
+
+describe("assignr complete", () => {
+  it("marks an active task complete and moves it to tasks/completed/", () => {
+    newCommand("License expiration reminders", {
+      type: "implementation",
+      domain: "credentialing",
+      priority: "high",
+      goal: "Add expiration reminder support for provider licenses.",
+      cwd,
+      activeDir: p.tasksActive,
+    });
+    rmSync(p.tasksCompleted, { recursive: true, force: true });
+
+    completeCommand("license-expiration-reminders", {
+      specsTasksDir: p.specsTasks,
+      completedDir: p.tasksCompleted,
+      cwd,
+    });
+
+    const activeFile = join(p.tasksActive, "license-expiration-reminders.yaml");
+    const completedFile = join(p.tasksCompleted, "license-expiration-reminders.yaml");
+    expect(existsSync(activeFile)).toBe(false);
+    expect(existsSync(completedFile)).toBe(true);
+
+    const spec = parse(readFileSync(completedFile, "utf-8")) as Record<string, unknown>;
+    expect(spec["status"]).toBe("complete");
+  });
+
+  it("exits non-zero when the task is missing from active tasks", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
+      throw new Error(`process.exit(${code})`);
+    }) as never);
+
+    try {
+      expect(() =>
+        completeCommand("missing-task", {
+          specsTasksDir: p.specsTasks,
+          completedDir: p.tasksCompleted,
+          cwd,
+        })
+      ).toThrow("process.exit(1)");
+
+      expect(errorSpy.mock.calls.flat().join("\n")).toContain("Active task not found: missing-task");
+    } finally {
+      errorSpy.mockRestore();
+      exitSpy.mockRestore();
+    }
+  });
+
+  it("exits non-zero without overwriting an existing completed task", () => {
+    newCommand("License expiration reminders", {
+      type: "implementation",
+      domain: "credentialing",
+      priority: "high",
+      goal: "Add expiration reminder support for provider licenses.",
+      cwd,
+      activeDir: p.tasksActive,
+    });
+
+    mkdirSync(p.tasksCompleted, { recursive: true });
+    const completedFile = join(p.tasksCompleted, "license-expiration-reminders.yaml");
+    writeFileSync(completedFile, "already completed\n", "utf-8");
+
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
+      throw new Error(`process.exit(${code})`);
+    }) as never);
+
+    try {
+      expect(() =>
+        completeCommand("license-expiration-reminders", {
+          specsTasksDir: p.specsTasks,
+          completedDir: p.tasksCompleted,
+          cwd,
+        })
+      ).toThrow("process.exit(1)");
+
+      expect(readFileSync(completedFile, "utf-8")).toBe("already completed\n");
+      expect(existsSync(join(p.tasksActive, "license-expiration-reminders.yaml"))).toBe(true);
+      expect(errorSpy.mock.calls.flat().join("\n")).toContain("Refusing to overwrite it.");
+    } finally {
+      errorSpy.mockRestore();
+      exitSpy.mockRestore();
+    }
   });
 });
