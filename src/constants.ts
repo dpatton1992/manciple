@@ -8,6 +8,7 @@ export const STATUSES = [
   "blocked",
   "failed",
   "partial",
+  "archived",
 ] as const;
 
 export const TASK_TYPES = [

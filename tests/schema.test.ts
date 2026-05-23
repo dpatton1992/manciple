@@ -31,7 +31,7 @@ describe("TaskSpecSchema", () => {
   });
 
   it("rejects unknown status", () => {
-    const result = TaskSpecSchema.safeParse({ ...baseSpec, status: "archived" });
+    const result = TaskSpecSchema.safeParse({ ...baseSpec, status: "cancelled" });
     expect(result.success).toBe(false);
   });
 
@@ -70,6 +70,7 @@ describe("TaskSpecSchema", () => {
       "blocked",
       "failed",
       "partial",
+      "archived",
     ] as const;
     for (const status of statuses) {
       const result = TaskSpecSchema.safeParse({ ...baseSpec, status });

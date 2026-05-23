@@ -69,6 +69,7 @@ export function statusCommand(specsTasksDir: string, cwd: string): void {
     blocked: 0,
     failed: 0,
     partial: 0,
+    archived: 0,
   };
 
   const activeTasks = tasks.filter((task) => task.tier === "active");

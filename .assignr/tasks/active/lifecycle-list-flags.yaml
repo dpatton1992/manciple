@@ -1,29 +1,21 @@
 id: lifecycle-list-flags
 title: Add --completed, --archived, and --all flags to assignr list
-status: pending
+status: needs_review
 type: implementation
 domain: core
 priority: high
 depends_on:
   - lifecycle-task-discovery
   - list-command-basic
-goal: >
-  `assignr list` (implemented in list-command-basic) shows active tasks by default. Once
-  the lifecycle directories exist, users need a way to inspect completed and archived
-  tasks for audit and history. This task adds three mutually exclusive flags:
-  `--completed`, `--archived`, and `--all`. The command should also display the tier
-  column ("active"/"completed"/"archived") when --all is used so the user knows where
-  each task lives.
+goal: |
+  `assignr list` (implemented in list-command-basic) shows active tasks by default. Once the lifecycle directories exist, users need a way to inspect completed and archived tasks for audit and history. This task adds three mutually exclusive flags: `--completed`, `--archived`, and `--all`. The command should also display the tier column ("active"/"completed"/"archived") when --all is used so the user knows where each task lives.
 acceptance_criteria:
   - "`assignr list` (no flags) shows only tasks from tasks/active"
   - "`assignr list --completed` shows only tasks from tasks/completed"
   - "`assignr list --archived` shows only tasks from tasks/archived"
-  - "`assignr list --all` shows tasks from all three directories; each row includes a
-    Tier column showing which directory the task came from"
-  - "Passing more than one of --completed, --archived, --all exits with a clear error:
-    'Use only one of --completed, --archived, or --all'"
-  - The --status and --domain filters from list-command-filter compose correctly with
-    the new lifecycle flags
+  - "`assignr list --all` shows tasks from all three directories; each row includes a Tier column showing which directory the task came from"
+  - "Passing more than one of --completed, --archived, --all exits with a clear error: 'Use only one of --completed, --archived, or --all'"
+  - The --status and --domain filters from list-command-filter compose correctly with the new lifecycle flags
   - All existing tests continue to pass
 allowed_paths:
   - src/commands/list.ts
@@ -46,11 +38,7 @@ outputs_required:
   - files_changed
   - risks
 notes:
-  - The tier field on each LoadedTask (added in lifecycle-task-discovery) is what drives
-    the Tier column; read it from the loaded result
-  - Use Commander's .option() for each flag; mark them in help text as mutually
-    exclusive by noting it in the description string
-  - The Tier column should only appear when --all is passed; it adds noise when listing
-    a single tier
-  - If list-command-filter is not yet implemented, skip the filter composition note; it
-    can be validated separately
+  - The tier field on each LoadedTask (added in lifecycle-task-discovery) is what drives the Tier column; read it from the loaded result
+  - Use Commander's .option() for each flag; mark them in help text as mutually exclusive by noting it in the description string
+  - The Tier column should only appear when --all is passed; it adds noise when listing a single tier
+  - If list-command-filter is not yet implemented, skip the filter composition note; it can be validated separately

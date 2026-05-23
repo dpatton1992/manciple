@@ -12,6 +12,7 @@ import { listCommand } from "./commands/list.js";
 import { statusCommand } from "./commands/status.js";
 import { setStatusCommand } from "./commands/setStatus.js";
 import { completeCommand } from "./commands/complete.js";
+import { archiveCommand } from "./commands/archive.js";
 import { runLogCommand } from "./commands/runLog.js";
 import { reviewCommand } from "./commands/review.js";
 import { doctorCommand } from "./commands/doctor.js";
@@ -113,8 +114,17 @@ program
   .description("List task specs in a compact table.")
   .option("--status <status>", "Show only tasks with this exact status (case-sensitive).")
   .option("--domain <domain>", "Show only tasks in this exact domain (case-sensitive).")
-  .action((opts: { status?: string; domain?: string }) => {
-    listCommand(p.specsTasks, cwd, { status: opts.status, domain: opts.domain });
+  .option("--completed", "Show completed tasks. Mutually exclusive with --archived and --all.")
+  .option("--archived", "Show archived tasks. Mutually exclusive with --completed and --all.")
+  .option("--all", "Show active, completed, and archived tasks. Mutually exclusive with --completed and --archived.")
+  .action((opts: { status?: string; domain?: string; completed?: boolean; archived?: boolean; all?: boolean }) => {
+    listCommand(p.specsTasks, cwd, {
+      status: opts.status,
+      domain: opts.domain,
+      completed: opts.completed,
+      archived: opts.archived,
+      all: opts.all,
+    });
   });
 
 // status
@@ -141,6 +151,18 @@ program
     completeCommand(taskId, {
       specsTasksDir: p.specsTasks,
       completedDir: p.tasksCompleted,
+      cwd,
+    });
+  });
+
+// archive
+program
+  .command("archive <task-id>")
+  .description("Archive an active task and move it to tasks/archived.")
+  .action((taskId: string) => {
+    archiveCommand(taskId, {
+      specsTasksDir: p.specsTasks,
+      archivedDir: p.tasksArchived,
       cwd,
     });
   });

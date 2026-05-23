@@ -3,9 +3,9 @@ import { join } from "path";
 import { parse, stringify } from "yaml";
 import { loadTasks } from "../specs/loadTasks.js";
 
-export interface CompleteCommandOptions {
+export interface ArchiveCommandOptions {
   specsTasksDir: string;
-  completedDir: string;
+  archivedDir: string;
   cwd: string;
 }
 
@@ -23,35 +23,29 @@ function moveTaskFile(source: string, destination: string): void {
   }
 }
 
-export function completeCommand(taskId: string, options: CompleteCommandOptions): void {
-  const { specsTasksDir, completedDir, cwd } = options;
+export function archiveCommand(taskId: string, options: ArchiveCommandOptions): void {
+  const { specsTasksDir, archivedDir, cwd } = options;
   const { tasks } = loadTasks(specsTasksDir, "active");
   const found = tasks.find((t) => t.spec.id === taskId);
 
   if (!found) {
-    console.error(
-      `Task ${taskId} not found in active tasks.\n` +
-        `Active task not found: ${taskId}`
-    );
+    console.error(`Task ${taskId} not found in active tasks.`);
     process.exit(1);
   }
 
-  const destination = join(completedDir, `${taskId}.yaml`);
+  const destination = join(archivedDir, `${taskId}.yaml`);
   if (existsSync(destination)) {
-    console.error(
-      `Task ${taskId} already exists in completed. Use assignr reopen first.\n` +
-        `Refusing to overwrite it.`
-    );
+    console.error(`Task ${taskId} already exists in archived.`);
     process.exit(1);
   }
 
   const raw = readFileSync(found.filePath, "utf-8");
   const parsed = parse(raw) as Record<string, unknown>;
-  parsed["status"] = "complete";
+  parsed["status"] = "archived";
 
-  mkdirSync(completedDir, { recursive: true });
+  mkdirSync(archivedDir, { recursive: true });
   writeFileSync(found.filePath, stringify(parsed, { lineWidth: 0 }), "utf-8");
   moveTaskFile(found.filePath, destination);
 
-  console.log(`Completed: ${taskId} → ${destination.replace(cwd + "/", "")}`);
+  console.log(`Archived: ${taskId} → ${destination.replace(cwd + "/", "")}`);
 }

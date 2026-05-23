@@ -1,14 +1,15 @@
-import { existsSync } from "fs";
-import { relative } from "path";
 import { STATUSES } from "../constants.js";
 import { loadTasks } from "../specs/loadTasks.js";
-import type { LoadedTask } from "../specs/schema.js";
+import type { LoadedTaskWithTier, LoadTaskTier } from "../specs/loadTasks.js";
 
 const MAX_TITLE_WIDTH = 50;
 
 export interface ListCommandOptions {
   status?: string;
   domain?: string;
+  completed?: boolean;
+  archived?: boolean;
+  all?: boolean;
 }
 
 function truncateTitle(title: string): string {
@@ -23,18 +24,36 @@ function pad(value: string | number, width: number): string {
   return String(value).padEnd(width);
 }
 
-function formatRows(tasks: LoadedTask[]): string[] {
-  const rows = tasks.map(({ spec }) => ({
+function formatRows(tasks: LoadedTaskWithTier[], showTier: boolean): string[] {
+  const rows = tasks.map(({ spec, tier }) => ({
     id: spec.id,
     title: truncateTitle(spec.title),
     status: spec.status,
+    tier,
     deps: spec.depends_on.length,
   }));
 
   const idWidth = Math.max("ID".length, ...rows.map((row) => row.id.length));
   const titleWidth = MAX_TITLE_WIDTH;
   const statusWidth = Math.max("STATUS".length, ...rows.map((row) => row.status.length));
+  const tierWidth = Math.max("TIER".length, ...rows.map((row) => row.tier.length));
   const depsWidth = Math.max("DEPS".length, ...rows.map((row) => String(row.deps).length));
+
+  if (showTier) {
+    return [
+      `${pad("ID", idWidth)}  ${pad("TITLE", titleWidth)}  ${pad("STATUS", statusWidth)}  ${pad(
+        "TIER",
+        tierWidth
+      )}  ${pad("DEPS", depsWidth)}`,
+      ...rows.map(
+        (row) =>
+          `${pad(row.id, idWidth)}  ${pad(row.title, titleWidth)}  ${pad(row.status, statusWidth)}  ${pad(
+            row.tier,
+            tierWidth
+          )}  ${pad(row.deps, depsWidth)}`
+      ),
+    ];
+  }
 
   return [
     `${pad("ID", idWidth)}  ${pad("TITLE", titleWidth)}  ${pad("STATUS", statusWidth)}  ${pad("DEPS", depsWidth)}`,
@@ -48,7 +67,7 @@ function formatRows(tasks: LoadedTask[]): string[] {
   ];
 }
 
-function applyFilters(tasks: LoadedTask[], options: ListCommandOptions): LoadedTask[] {
+function applyFilters(tasks: LoadedTaskWithTier[], options: ListCommandOptions): LoadedTaskWithTier[] {
   let filteredTasks = tasks;
 
   if (options.status) {
@@ -66,13 +85,32 @@ function applyFilters(tasks: LoadedTask[], options: ListCommandOptions): LoadedT
   return filteredTasks;
 }
 
-export function listCommand(specsTasksDir: string, cwd: string, options: ListCommandOptions = {}): void {
-  if (!existsSync(specsTasksDir)) {
-    console.error(`Tasks directory does not exist: ${relative(cwd, specsTasksDir)}`);
+function resolveTier(options: ListCommandOptions): LoadTaskTier {
+  const selectedTiers = [options.completed, options.archived, options.all].filter(Boolean).length;
+
+  if (selectedTiers > 1) {
+    console.error("Use only one of --completed, --archived, or --all");
     process.exit(1);
   }
 
-  const { tasks, errors } = loadTasks(specsTasksDir);
+  if (options.completed) {
+    return "completed";
+  }
+
+  if (options.archived) {
+    return "archived";
+  }
+
+  if (options.all) {
+    return "all";
+  }
+
+  return "active";
+}
+
+export function listCommand(specsTasksDir: string, _cwd: string, options: ListCommandOptions = {}): void {
+  const tier = resolveTier(options);
+  const { tasks, errors } = loadTasks(specsTasksDir, tier);
 
   if (errors.length > 0) {
     console.warn(
@@ -93,7 +131,7 @@ export function listCommand(specsTasksDir: string, cwd: string, options: ListCom
     return;
   }
 
-  for (const row of formatRows(filteredTasks)) {
+  for (const row of formatRows(filteredTasks, tier === "all")) {
     console.log(row);
   }
 }
