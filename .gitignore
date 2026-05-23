@@ -3,3 +3,7 @@ dist/
 *.js.map
 *.d.ts.map
 .DS_Store
+
+# promptops
+.promptops/prompts/generated/
+.promptops/runs/

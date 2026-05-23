@@ -1,0 +1,29 @@
+id: dynamic-version
+title: Read CLI version from package.json at runtime
+status: complete
+type: implementation
+domain: core
+priority: high
+depends_on: []
+goal: |
+  The CLI currently hardcodes .version("0.1.0") in src/cli.ts. This should be replaced with a dynamic read from package.json so the output of `promptops --version` always matches the published version without any manual sync step when the package is bumped.
+acceptance_criteria:
+  - src/cli.ts reads version from package.json (e.g. via createRequire or a top-level import with assert type json, whichever tsc supports cleanly)
+  - Running `node bin/promptops.js --version` outputs the correct semver
+  - No version string is hardcoded in src/cli.ts
+allowed_paths:
+  - src/cli.ts
+forbidden_paths:
+  - src/commands/**
+  - tests/**
+verification:
+  commands:
+    - pnpm build
+    - pnpm typecheck
+    - node bin/promptops.js --version
+outputs_required:
+  - files_changed
+  - risks
+notes:
+  - "package.json is ESM (type: module), so JSON imports need care"
+  - "Acceptable fallback: read with fs.readFileSync + JSON.parse if import assertions cause tsc issues"

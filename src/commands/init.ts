@@ -1,4 +1,5 @@
-import { mkdirSync, writeFileSync, existsSync } from "fs";
+import { mkdirSync, writeFileSync, existsSync, readFileSync, appendFileSync } from "fs";
+import { join } from "path";
 import { getPaths } from "../utils/paths.js";
 import {
   IMPLEMENTATION_TEMPLATE,
@@ -32,6 +33,29 @@ promptops set-status my-task-title needs_review
 promptops review my-task-title
 \`\`\`
 `;
+
+function updateGitignore(cwd: string, root: string): void {
+  const gitignorePath = join(cwd, ".gitignore");
+  const entriesToAdd = [
+    `${root}/prompts/generated/`,
+    `${root}/runs/`,
+  ];
+  const header = "# promptops";
+
+  let existing = "";
+  if (existsSync(gitignorePath)) {
+    existing = readFileSync(gitignorePath, "utf-8");
+  }
+
+  const missing = entriesToAdd.filter((e) => !existing.includes(e));
+  if (missing.length === 0) return;
+
+  const block = `\n${header}\n${missing.join("\n")}\n`;
+  appendFileSync(gitignorePath, block, "utf-8");
+
+  const action = existing === "" ? "Created" : "Updated";
+  console.log(`  ✓ .gitignore ${action.toLowerCase()} (added ${missing.length} promptops entr${missing.length === 1 ? "y" : "ies"})`);
+}
 
 export async function initCommand(options: {
   force: boolean;
@@ -94,6 +118,8 @@ export async function initCommand(options: {
       console.log(`  - ${f.replace(cwd + "/", "")}`);
     }
   }
+
+  updateGitignore(cwd, root);
 
   console.log(`\nPromptOps initialized at ${root}/`);
 }

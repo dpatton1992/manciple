@@ -1,5 +1,6 @@
 import { writeFileSync, mkdirSync, existsSync } from "fs";
 import { join } from "path";
+import { spawnSync } from "child_process";
 import { loadTasks } from "../specs/loadTasks.js";
 
 function timestamp(): string {
@@ -10,7 +11,16 @@ function timestamp(): string {
     .replace("T", "-");
 }
 
-function buildRunLog(title: string, id: string, status: string, generatedDir: string): string {
+function currentBranch(cwd: string): string {
+  const result = spawnSync("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
+    cwd,
+    encoding: "utf-8",
+  });
+  if (result.status !== 0 || !result.stdout) return "unknown";
+  return result.stdout.trim() || "unknown";
+}
+
+function buildRunLog(title: string, id: string, status: string, generatedDir: string, branch: string): string {
   const promptPath = `${generatedDir}/${id}.md`;
   return `# Run Log: ${title}
 
@@ -21,7 +31,7 @@ function buildRunLog(title: string, id: string, status: string, generatedDir: st
 - Started: ${new Date().toISOString()}
 - Agent/Harness: TODO
 - Model: TODO
-- Branch: TODO
+- Branch: ${branch}
 
 ## Prompt Used
 
@@ -84,7 +94,8 @@ export function runLogCommand(
 
   const ts = timestamp();
   const outPath = join(runsDir, `${ts}-${taskId}.md`);
-  const content = buildRunLog(spec.title, spec.id, spec.status, generatedDir);
+  const branch = currentBranch(cwd);
+  const content = buildRunLog(spec.title, spec.id, spec.status, generatedDir, branch);
 
   writeFileSync(outPath, content, "utf-8");
   console.log(`Created run log: ${outPath.replace(cwd + "/", "")}`);

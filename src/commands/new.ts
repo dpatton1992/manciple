@@ -8,18 +8,30 @@ export interface NewTaskOptions {
   type: TaskType;
   domain: string;
   priority: Priority;
+  goal?: string;
   cwd: string;
   specsTasksDir: string;
 }
 
 export function newCommand(title: string, options: NewTaskOptions): void {
-  const { type, domain, priority, cwd, specsTasksDir } = options;
+  const { type, domain, priority, goal, cwd, specsTasksDir } = options;
   const id = slugify(title);
 
   if (!id) {
     console.error("Error: could not generate a valid id from the provided title.");
     process.exit(1);
   }
+
+  const goalValue = goal !== undefined
+    ? (() => {
+        const trimmed = goal.trim();
+        if (!trimmed) {
+          console.error("Error: --goal value must not be empty.");
+          process.exit(1);
+        }
+        return trimmed;
+      })()
+    : "TODO: describe the goal of this task.";
 
   const filePath = join(specsTasksDir, `${id}.yaml`);
 
@@ -42,7 +54,7 @@ export function newCommand(title: string, options: NewTaskOptions): void {
     depends_on: [] as string[],
     allowed_paths: ["TODO: add allowed paths"],
     forbidden_paths: ["TODO: add forbidden paths"],
-    goal: "TODO: describe the goal of this task.",
+    goal: goalValue,
     acceptance_criteria: ["TODO: add acceptance criteria"],
     verification: {
       commands: ["TODO: add verification commands"],

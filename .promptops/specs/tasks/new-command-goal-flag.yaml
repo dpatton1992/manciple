@@ -1,0 +1,42 @@
+id: new-command-goal-flag
+title: Add --goal flag to the new command
+status: complete
+type: implementation
+domain: core
+priority: medium
+depends_on: []
+
+goal: >
+  `promptops new` currently stubs every field with TODO placeholders including
+  the goal. The goal is the most important field and the most likely to be known
+  at task-creation time. Adding an optional --goal flag lets users supply it
+  inline so the generated YAML is immediately valid without a manual edit.
+
+acceptance_criteria:
+  - Running new with --goal pre-fills the goal field in the generated YAML
+  - The --goal flag is optional; behaviour without it is unchanged (TODO placeholder)
+  - The --goal value is trimmed and an empty string after trimming is rejected with a clear error
+  - Running validate passes on a spec created with --goal
+
+allowed_paths:
+  - src/commands/new.ts
+  - src/cli.ts
+
+forbidden_paths:
+  - src/specs/**
+  - tests/**
+
+verification:
+  commands:
+    - pnpm build
+    - pnpm typecheck
+    - node bin/promptops.js new "Test task" --goal "A test goal" --type implementation --domain core
+    - node bin/promptops.js validate
+
+outputs_required:
+  - files_changed
+  - risks
+
+notes:
+  - Do not add other pre-fill flags in this task; keep scope tight
+  - Acceptance criteria and verification TODOs remain as-is for now

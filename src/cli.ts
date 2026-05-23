@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { Command } from "commander";
+import { createRequire } from "module";
 import { loadConfig } from "./config.js";
 import { getPaths } from "./utils/paths.js";
 import { DEFAULT_ROOT, STATUSES, TASK_TYPES, PRIORITIES } from "./constants.js";
@@ -14,6 +15,9 @@ import { reviewCommand } from "./commands/review.js";
 import { doctorCommand } from "./commands/doctor.js";
 import type { Status, TaskType, Priority } from "./constants.js";
 
+const require = createRequire(import.meta.url);
+const { version } = require("../package.json") as { version: string };
+
 const cwd = process.cwd();
 const config = loadConfig(cwd);
 const root = config.root;
@@ -24,7 +28,7 @@ const program = new Command();
 program
   .name("promptops")
   .description("A repo-native PromptOps framework for existing coding agents.")
-  .version("0.1.0");
+  .version(version);
 
 // init
 program
@@ -43,7 +47,8 @@ program
   .option("--type <type>", `Task type (${TASK_TYPES.join(", ")})`, "implementation")
   .option("--domain <domain>", "Domain for this task.", "general")
   .option("--priority <priority>", `Priority (${PRIORITIES.join(", ")})`, "medium")
-  .action((title: string, opts: { type: string; domain: string; priority: string }) => {
+  .option("--goal <goal>", "Pre-fill the goal field.")
+  .action((title: string, opts: { type: string; domain: string; priority: string; goal?: string }) => {
     const type = opts.type as TaskType;
     const priority = opts.priority as Priority;
     if (!TASK_TYPES.includes(type)) {
@@ -54,7 +59,7 @@ program
       console.error(`Invalid priority: "${priority}". Allowed: ${PRIORITIES.join(", ")}`);
       process.exit(1);
     }
-    newCommand(title, { type, domain: opts.domain, priority, cwd, specsTasksDir: p.specsTasks });
+    newCommand(title, { type, domain: opts.domain, priority, goal: opts.goal, cwd, specsTasksDir: p.specsTasks });
   });
 
 // validate

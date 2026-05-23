@@ -1,0 +1,27 @@
+id: core
+title: PromptOps Core
+description: >
+  The promptops CLI itself. Covers src/, bin/, tests/, and build/publish
+  configuration. All commands live under src/commands/. Shared utilities are
+  in src/utils/ and src/specs/. The compiled output goes to dist/.
+
+key_files:
+  - src/cli.ts              # Commander entry point, all command wiring
+  - src/constants.ts        # Enums: STATUSES, TASK_TYPES, PRIORITIES
+  - src/config.ts           # Reads .promptops/config.yaml
+  - src/commands/           # One file per CLI command
+  - src/specs/schema.ts     # Zod schema for TaskSpec
+  - src/utils/paths.ts      # All path resolution
+  - bin/promptops.js        # Published entry shim (dist vs. tsx fallback)
+  - package.json            # Package metadata, scripts
+
+conventions:
+  - All source is ESM TypeScript compiled to dist/ via tsc
+  - Tests live in tests/ and use vitest
+  - Commands print to stdout; errors to stderr + process.exit(1)
+  - No external runtime beyond the four declared dependencies
+
+verification_baseline:
+  - pnpm typecheck
+  - pnpm test
+  - pnpm build
