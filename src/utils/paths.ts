@@ -7,6 +7,9 @@ export interface AssignrPaths {
   specsTasks: string;
   specsDomains: string;
   specsContracts: string;
+  tasksActive: string;
+  tasksCompleted: string;
+  tasksArchived: string;
   prompts: string;
   promptsTemplates: string;
   promptsGenerated: string;
@@ -25,6 +28,9 @@ export function getPaths(cwd: string, root: string): AssignrPaths {
     specsTasks: join(r, "specs", "tasks"),
     specsDomains: join(r, "specs", "domains"),
     specsContracts: join(r, "specs", "contracts"),
+    tasksActive: join(r, "tasks", "active"),
+    tasksCompleted: join(r, "tasks", "completed"),
+    tasksArchived: join(r, "tasks", "archived"),
     prompts: join(r, "prompts"),
     promptsTemplates: join(r, "prompts", "templates"),
     promptsGenerated: join(r, "prompts", "generated"),

@@ -1,0 +1,114 @@
+import { describe, it, expect } from "vitest";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
+import { loadTasks } from "../src/specs/loadTasks.js";
+import { getPaths } from "../src/utils/paths.js";
+import type { TaskTier } from "../src/specs/loadTasks.js";
+
+function makeTaskYaml(id: string, status = "pending"): string {
+  return [
+    `id: ${id}`,
+    `title: ${id} title`,
+    `status: ${status}`,
+    "type: implementation",
+    "domain: core",
+    "priority: medium",
+    "depends_on: []",
+    "allowed_paths:",
+    "  - src/**",
+    "forbidden_paths: []",
+    `goal: Complete ${id}.`,
+    "acceptance_criteria:",
+    "  - It works.",
+    "verification:",
+    "  commands:",
+    "    - pnpm test",
+    "outputs_required:",
+    "  - files_changed",
+    "notes: []",
+    "",
+  ].join("\n");
+}
+
+function writeTask(paths: ReturnType<typeof getPaths>, tier: TaskTier, id: string): void {
+  const dirByTier = {
+    active: paths.tasksActive,
+    completed: paths.tasksCompleted,
+    archived: paths.tasksArchived,
+  };
+  const dir = dirByTier[tier];
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, `${id}.yaml`), makeTaskYaml(id));
+}
+
+describe("getPaths", () => {
+  it("exposes lifecycle task tier directories and keeps specsTasks", () => {
+    const paths = getPaths("/repo", ".assignr");
+
+    expect(paths.specsTasks).toBe(join("/repo", ".assignr", "specs", "tasks"));
+    expect(paths.tasksActive).toBe(join("/repo", ".assignr", "tasks", "active"));
+    expect(paths.tasksCompleted).toBe(join("/repo", ".assignr", "tasks", "completed"));
+    expect(paths.tasksArchived).toBe(join("/repo", ".assignr", "tasks", "archived"));
+  });
+});
+
+describe("loadTasks", () => {
+  it("defaults to active tasks only and includes the tier", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "assignr-load-tasks-"));
+    const paths = getPaths(cwd, ".assignr");
+
+    try {
+      writeTask(paths, "active", "active-task");
+      writeTask(paths, "completed", "completed-task");
+
+      const { tasks, errors } = loadTasks(paths.specsTasks);
+
+      expect(errors).toEqual([]);
+      expect(tasks.map((task) => task.spec.id)).toEqual(["active-task"]);
+      expect(tasks[0].tier).toBe("active");
+      expect(tasks[0].filePath).toBe(join(paths.tasksActive, "active-task.yaml"));
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("loads a requested task tier", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "assignr-load-tasks-"));
+    const paths = getPaths(cwd, ".assignr");
+
+    try {
+      writeTask(paths, "active", "active-task");
+      writeTask(paths, "completed", "completed-task");
+
+      const { tasks, errors } = loadTasks(paths.specsTasks, "completed");
+
+      expect(errors).toEqual([]);
+      expect(tasks.map((task) => task.spec.id)).toEqual(["completed-task"]);
+      expect(tasks[0].tier).toBe("completed");
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("loads all task tiers and skips missing directories", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "assignr-load-tasks-"));
+    const paths = getPaths(cwd, ".assignr");
+
+    try {
+      writeTask(paths, "active", "active-task");
+      writeTask(paths, "archived", "archived-task");
+
+      const { tasks, errors } = loadTasks(paths.specsTasks, "all");
+
+      expect(errors).toEqual([]);
+      expect(tasks.map((task) => task.spec.id)).toEqual([
+        "active-task",
+        "archived-task",
+      ]);
+      expect(tasks.map((task) => task.tier)).toEqual(["active", "archived"]);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+});

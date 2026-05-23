@@ -454,6 +454,50 @@ cwd = "/path/to/repo"
 
 After editing `~/.codex/config.toml`, start a fresh Codex session. Existing sessions cannot gain newly configured MCP tools after startup.
 
+If your Claude Code install does not load repo-local `.mcp.json`, add the same server to `~/.claude.json`:
+
+```json
+{
+  "mcpServers": {
+    "assignr": {
+      "command": "node",
+      "args": ["/path/to/package/bin/assignr-mcp.js"],
+      "cwd": "/path/to/repo"
+    }
+  }
+}
+```
+
+After editing `~/.claude.json`, start a fresh Claude Code session. Existing sessions cannot gain newly configured MCP tools after startup.
+
+## Skills
+
+Assignr ships skill files for Codex and Claude Code that give agents a structured operating procedure for working through tasks via the MCP server.
+
+### Codex
+
+Skills live under `.codex/skills/`:
+
+| Skill | Path | Purpose |
+|---|---|---|
+| `assignr-mcp-task-runner` | `.codex/skills/assignr-mcp-task-runner/SKILL.md` | Single-agent task runner — pick up, implement, verify, and close one Assignr task |
+| `assignr-4-agents` | `.codex/skills/assignr-4-agents/SKILL.md` | Coordinator — spawn four parallel workers each running `assignr-mcp-task-runner` |
+
+Load a skill in Codex by referencing the SKILL.md path in your session or by adding it to your Codex skill configuration.
+
+### Claude Code
+
+Skills live under `.claude/skills/`:
+
+| Skill | Path | Purpose |
+|---|---|---|
+| `assignr-mcp-task-runner` | `.claude/skills/assignr-mcp-task-runner/SKILL.md` | Single-agent task runner — pick up, implement, verify, and close one Assignr task |
+| `assignr-4-agents` | `.claude/skills/assignr-4-agents/SKILL.md` | Coordinator — spawn four parallel workers via the `Task` tool, each running `assignr-mcp-task-runner` |
+
+Load a skill in Claude Code by adding a reference to the SKILL.md path in your `CLAUDE.md` or by pasting its path into the session context.
+
+---
+
 The server exposes these tools:
 
 | Tool | Purpose |

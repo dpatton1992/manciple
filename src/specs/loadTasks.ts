@@ -1,25 +1,46 @@
 import { readdirSync, readFileSync, existsSync } from "fs";
-import { join } from "path";
+import { basename, dirname, join } from "path";
 import { parse } from "yaml";
 import { TaskSpecSchema } from "./schema.js";
 import type { LoadedTask } from "./schema.js";
 
+export type TaskTier = "active" | "completed" | "archived";
+export type LoadTaskTier = TaskTier | "all";
+export type LoadedTaskWithTier = LoadedTask & { tier: TaskTier };
+
 export interface LoadResult {
-  tasks: LoadedTask[];
+  tasks: LoadedTaskWithTier[];
   errors: Array<{ filePath: string; error: string }>;
 }
 
-export function loadTasks(specsTasksDir: string): LoadResult {
-  if (!existsSync(specsTasksDir)) {
+const TASK_TIERS: TaskTier[] = ["active", "completed", "archived"];
+
+function getTasksRoot(tasksDir: string): string {
+  const last = basename(tasksDir);
+  const parent = dirname(tasksDir);
+
+  if (TASK_TIERS.includes(last as TaskTier) && basename(parent) === "tasks") {
+    return parent;
+  }
+
+  if (last === "tasks" && basename(parent) === "specs") {
+    return join(dirname(parent), "tasks");
+  }
+
+  return tasksDir;
+}
+
+function loadTasksFromDir(tasksDir: string, tier: TaskTier): LoadResult {
+  if (!existsSync(tasksDir)) {
     return { tasks: [], errors: [] };
   }
 
-  const files = readdirSync(specsTasksDir).filter((f) => f.endsWith(".yaml"));
-  const tasks: LoadedTask[] = [];
+  const files = readdirSync(tasksDir).filter((f) => f.endsWith(".yaml"));
+  const tasks: LoadedTaskWithTier[] = [];
   const errors: Array<{ filePath: string; error: string }> = [];
 
   for (const file of files) {
-    const filePath = join(specsTasksDir, file);
+    const filePath = join(tasksDir, file);
     const raw = readFileSync(filePath, "utf-8");
 
     let parsed: unknown;
@@ -42,7 +63,22 @@ export function loadTasks(specsTasksDir: string): LoadResult {
       continue;
     }
 
-    tasks.push({ spec: result.data, filePath });
+    tasks.push({ spec: result.data, filePath, tier });
+  }
+
+  return { tasks, errors };
+}
+
+export function loadTasks(tasksDir: string, tier: LoadTaskTier = "active"): LoadResult {
+  const tasksRoot = getTasksRoot(tasksDir);
+  const tiers = tier === "all" ? TASK_TIERS : [tier];
+  const tasks: LoadedTaskWithTier[] = [];
+  const errors: Array<{ filePath: string; error: string }> = [];
+
+  for (const taskTier of tiers) {
+    const result = loadTasksFromDir(join(tasksRoot, taskTier), taskTier);
+    tasks.push(...result.tasks);
+    errors.push(...result.errors);
   }
 
   return { tasks, errors };
