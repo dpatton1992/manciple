@@ -23,8 +23,8 @@ const OPTIONAL_FIELDS = [
 
 export function validateTasks(tasks: LoadedTask[]): ValidationResult {
   const warnings: ValidationIssue[] = [];
-  const valid: LoadedTask[] = [];
-  const invalid: Array<{ filePath: string; errors: ValidationIssue[] }> = [];
+  const errorsByFile = new Map<string, ValidationIssue[]>();
+  let hasMissingDependencyError = false;
 
   // Check for duplicate IDs
   const idMap = new Map<string, string[]>();
@@ -35,15 +35,21 @@ export function validateTasks(tasks: LoadedTask[]): ValidationResult {
 
   // Build set of all task IDs for dependency checking
   const allIds = new Set(tasks.map((t) => t.spec.id));
+  const taskById = new Map(tasks.map((t) => [t.spec.id, t]));
+
+  function addError(filePath: string, issue: ValidationIssue): void {
+    const errors = errorsByFile.get(filePath) ?? [];
+    errors.push(issue);
+    errorsByFile.set(filePath, errors);
+  }
 
   for (const loaded of tasks) {
     const { spec, filePath } = loaded;
-    const errors: ValidationIssue[] = [];
 
     // Check for duplicate IDs
     const duplicates = idMap.get(spec.id) ?? [];
     if (duplicates.length > 1 && duplicates[0] !== filePath) {
-      errors.push({
+      addError(filePath, {
         filePath,
         field: "id",
         message: `Duplicate task id "${spec.id}" also found in ${duplicates[0]}`,
@@ -54,7 +60,8 @@ export function validateTasks(tasks: LoadedTask[]): ValidationResult {
     // Check dependency references
     for (const dep of spec.depends_on ?? []) {
       if (!allIds.has(dep)) {
-        errors.push({
+        hasMissingDependencyError = true;
+        addError(filePath, {
           filePath,
           field: "depends_on",
           message: `Task "${spec.id}" depends on missing task "${dep}"`,
@@ -75,16 +82,78 @@ export function validateTasks(tasks: LoadedTask[]): ValidationResult {
         });
       }
     }
+  }
 
-    if (errors.length > 0) {
-      invalid.push({ filePath, errors });
-    } else {
-      valid.push(loaded);
+  if (!hasMissingDependencyError) {
+    const cycles = findDependencyCycles(tasks, taskById);
+    for (const cycle of cycles) {
+      const task = taskById.get(cycle[0]);
+      if (!task) continue;
+      addError(task.filePath, {
+        filePath: task.filePath,
+        field: "depends_on",
+        message: `Circular dependency detected: ${cycle.join(" → ")}`,
+        severity: "error",
+      });
     }
   }
 
-  // TODO: Detect circular dependencies (v1)
-  // For now, missing-dependency check is implemented above.
+  const invalid = tasks
+    .map(({ filePath }) => ({ filePath, errors: errorsByFile.get(filePath) ?? [] }))
+    .filter(({ errors }) => errors.length > 0);
+  const invalidFiles = new Set(invalid.map(({ filePath }) => filePath));
+  const valid = tasks.filter(({ filePath }) => !invalidFiles.has(filePath));
 
   return { valid, invalid, warnings };
+}
+
+function findDependencyCycles(
+  tasks: LoadedTask[],
+  taskById: Map<string, LoadedTask>
+): string[][] {
+  const visited = new Set<string>();
+  const inStack = new Set<string>();
+  const stack: string[] = [];
+  const cycles: string[][] = [];
+  const seenCycles = new Set<string>();
+
+  function visit(id: string): void {
+    if (inStack.has(id)) {
+      const cycle = [...stack.slice(stack.indexOf(id)), id];
+      const key = canonicalCycleKey(cycle);
+      if (!seenCycles.has(key)) {
+        seenCycles.add(key);
+        cycles.push(cycle);
+      }
+      return;
+    }
+
+    if (visited.has(id)) return;
+
+    visited.add(id);
+    inStack.add(id);
+    stack.push(id);
+
+    for (const dep of taskById.get(id)?.spec.depends_on ?? []) {
+      visit(dep);
+    }
+
+    stack.pop();
+    inStack.delete(id);
+  }
+
+  for (const { spec } of tasks) {
+    visit(spec.id);
+  }
+
+  return cycles;
+}
+
+function canonicalCycleKey(cycle: string[]): string {
+  const nodes = cycle.slice(0, -1);
+  const rotations = nodes.map((_, index) => [
+    ...nodes.slice(index),
+    ...nodes.slice(0, index),
+  ]);
+  return rotations.map((rotation) => rotation.join("\0")).sort()[0] ?? "";
 }

@@ -5,6 +5,46 @@ function formatList(items: string[] | undefined, bullet = "-"): string {
   return items.map((i) => `${bullet} ${i}`).join("\n");
 }
 
+function formatValue(value: unknown): string {
+  if (Array.isArray(value)) {
+    return formatList(value.map((item) => String(item)));
+  }
+
+  if (value && typeof value === "object") {
+    return Object.entries(value)
+      .map(([key, nestedValue]) => `- ${key}: ${String(nestedValue)}`)
+      .join("\n");
+  }
+
+  return String(value ?? "");
+}
+
+function formatDomainKey(key: string): string {
+  return key
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+export function renderDomainContext(domain: Record<string, unknown>): string {
+  const preferredKeys = [
+    "id",
+    "title",
+    "description",
+    "key_files",
+    "conventions",
+    "verification_baseline",
+  ];
+  const keys = [
+    ...preferredKeys.filter((key) => key in domain),
+    ...Object.keys(domain).filter((key) => !preferredKeys.includes(key)),
+  ];
+
+  return keys
+    .map((key) => `### ${formatDomainKey(key)}\n\n${formatValue(domain[key])}`)
+    .join("\n\n");
+}
+
 export const IMPLEMENTATION_TEMPLATE = `# Agent Task: {{title}}
 
 ## Role
@@ -168,8 +208,12 @@ export function renderVerificationCommands(commands: string[]): string {
   return commands.map((cmd) => `\`\`\`bash\n${cmd}\n\`\`\``).join("\n\n");
 }
 
-export function renderTemplate(template: string, spec: TaskSpec): string {
-  return template
+export function renderTemplate(
+  template: string,
+  spec: TaskSpec,
+  domainContext?: string
+): string {
+  const rendered = template
     .replace(/{{title}}/g, spec.title)
     .replace(/{{id}}/g, spec.id)
     .replace(/{{type}}/g, spec.type)
@@ -202,4 +246,7 @@ export function renderTemplate(template: string, spec: TaskSpec): string {
       /{{notes}}/g,
       formatList(spec.notes?.length ? spec.notes : undefined)
     );
+
+  if (!domainContext) return rendered;
+  return `## Domain Context\n\n${domainContext}\n\n${rendered}`;
 }

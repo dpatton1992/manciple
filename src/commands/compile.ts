@@ -1,8 +1,10 @@
-import { writeFileSync, mkdirSync, existsSync } from "fs";
+import { writeFileSync, mkdirSync, existsSync, readFileSync } from "fs";
 import { join } from "path";
+import { parse } from "yaml";
 import { loadTasks } from "../specs/loadTasks.js";
 import {
   renderTemplate,
+  renderDomainContext,
   IMPLEMENTATION_TEMPLATE,
   REVIEW_TEMPLATE,
   TEST_TEMPLATE,
@@ -19,6 +21,25 @@ function getTemplate(type: TaskSpec["type"]): string {
     default:
       return IMPLEMENTATION_TEMPLATE;
   }
+}
+
+function loadDomainContext(specsTasksDir: string, domain: string, cwd: string): string | undefined {
+  const domainPath = join(specsTasksDir, "..", "domains", `${domain}.yaml`);
+
+  if (!existsSync(domainPath)) {
+    console.error(
+      `Warning: domain context not found for "${domain}" at ${domainPath.replace(cwd + "/", "")}`
+    );
+    return undefined;
+  }
+
+  const raw = readFileSync(domainPath, "utf-8");
+  const parsed = parse(raw);
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return undefined;
+  }
+
+  return renderDomainContext(parsed as Record<string, unknown>);
 }
 
 export interface CompileOptions {
@@ -70,7 +91,8 @@ export function compileCommand(options: CompileOptions): void {
 
   for (const { spec } of targets) {
     const template = getTemplate(spec.type);
-    const rendered = renderTemplate(template, spec);
+    const domainContext = loadDomainContext(specsTasksDir, spec.domain, cwd);
+    const rendered = renderTemplate(template, spec, domainContext);
     const outPath = join(generatedDir, `${spec.id}.md`);
     writeFileSync(outPath, rendered, "utf-8");
     console.log(`  ✓ Compiled: ${outPath.replace(cwd + "/", "")}`);
