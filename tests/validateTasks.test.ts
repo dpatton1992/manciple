@@ -1,4 +1,7 @@
 import { describe, it, expect } from "vitest";
+import { mkdtempSync, rmSync, writeFileSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
 import { validateTasks } from "../src/specs/validateTasks.js";
 import type { LoadedTask } from "../src/specs/schema.js";
 
@@ -62,6 +65,36 @@ describe("validateTasks", () => {
     const { valid, invalid } = validateTasks(tasks);
     expect(invalid).toHaveLength(0);
     expect(valid).toHaveLength(2);
+  });
+
+  it("reports missing domain references when a domains directory is provided", () => {
+    const domainsDir = mkdtempSync(join(tmpdir(), "assignr-domains-"));
+    const tasks = [makeTask({ id: "child", domain: "missing-domain" })];
+
+    try {
+      const { invalid } = validateTasks(tasks, { specsDomainsDir: domainsDir });
+
+      expect(invalid).toHaveLength(1);
+      expect(invalid[0].errors[0].field).toBe("domain");
+      expect(invalid[0].errors[0].message).toContain("child");
+      expect(invalid[0].errors[0].message).toContain("missing-domain");
+    } finally {
+      rmSync(domainsDir, { recursive: true, force: true });
+    }
+  });
+
+  it("passes when domain references resolve", () => {
+    const domainsDir = mkdtempSync(join(tmpdir(), "assignr-domains-"));
+    writeFileSync(join(domainsDir, "core.yaml"), "id: core\n");
+
+    try {
+      const { valid, invalid } = validateTasks([makeTask()], { specsDomainsDir: domainsDir });
+
+      expect(invalid).toHaveLength(0);
+      expect(valid).toHaveLength(1);
+    } finally {
+      rmSync(domainsDir, { recursive: true, force: true });
+    }
   });
 
   it("warns about empty optional fields (not depends_on)", () => {

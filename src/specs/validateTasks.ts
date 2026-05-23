@@ -1,3 +1,5 @@
+import { existsSync } from "fs";
+import { join } from "path";
 import type { LoadedTask } from "./schema.js";
 
 export interface ValidationIssue {
@@ -13,6 +15,10 @@ export interface ValidationResult {
   warnings: ValidationIssue[];
 }
 
+export interface ValidateTasksOptions {
+  specsDomainsDir?: string;
+}
+
 // depends_on is intentionally excluded — an empty dependency list is valid.
 const OPTIONAL_FIELDS = [
   "allowed_paths",
@@ -21,7 +27,10 @@ const OPTIONAL_FIELDS = [
   "notes",
 ] as const;
 
-export function validateTasks(tasks: LoadedTask[]): ValidationResult {
+export function validateTasks(
+  tasks: LoadedTask[],
+  options: ValidateTasksOptions = {}
+): ValidationResult {
   const warnings: ValidationIssue[] = [];
   const errorsByFile = new Map<string, ValidationIssue[]>();
   let hasMissingDependencyError = false;
@@ -84,6 +93,15 @@ export function validateTasks(tasks: LoadedTask[]): ValidationResult {
     }
   }
 
+  if (options.specsDomainsDir) {
+    for (const { filePath, issue } of validateDomainReferences(
+      tasks,
+      options.specsDomainsDir
+    )) {
+      addError(filePath, issue);
+    }
+  }
+
   if (!hasMissingDependencyError) {
     const cycles = findDependencyCycles(tasks, taskById);
     for (const cycle of cycles) {
@@ -105,6 +123,30 @@ export function validateTasks(tasks: LoadedTask[]): ValidationResult {
   const valid = tasks.filter(({ filePath }) => !invalidFiles.has(filePath));
 
   return { valid, invalid, warnings };
+}
+
+function validateDomainReferences(
+  tasks: LoadedTask[],
+  specsDomainsDir: string
+): Array<{ filePath: string; issue: ValidationIssue }> {
+  const issues: Array<{ filePath: string; issue: ValidationIssue }> = [];
+
+  for (const { spec, filePath } of tasks) {
+    const domainPath = join(specsDomainsDir, `${spec.domain}.yaml`);
+    if (existsSync(domainPath)) continue;
+
+    issues.push({
+      filePath,
+      issue: {
+        filePath,
+        field: "domain",
+        message: `Task "${spec.id}" references missing domain "${spec.domain}"`,
+        severity: "error",
+      },
+    });
+  }
+
+  return issues;
 }
 
 function findDependencyCycles(

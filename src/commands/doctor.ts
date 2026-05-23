@@ -44,7 +44,7 @@ export function doctorCommand(cwd: string, root: string): void {
   } else if (tasks.length === 0) {
     results.push(check("task specs exist", true, "0 tasks found (none created yet)"));
   } else {
-    const { invalid } = validateTasks(tasks);
+    const { invalid } = validateTasks(tasks, { specsDomainsDir: p.specsDomains });
     results.push(
       check(
         "task specs valid",

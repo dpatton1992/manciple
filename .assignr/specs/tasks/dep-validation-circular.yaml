@@ -1,6 +1,6 @@
 id: dep-validation-circular
 title: Detect circular dependency chains during validate
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: high

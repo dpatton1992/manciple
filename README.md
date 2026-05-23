@@ -46,12 +46,16 @@ assignr --help
 
 The agent touches files it should not, drifts out of scope, and you have no record of what it did.
 
-**With Assignr**, you compile a structured prompt from a task spec:
+**With Assignr**, the work moves through a visible loop: spec -> compile -> run -> log -> review.
+
+### 1. Task spec YAML
+
+This task spec YAML lives at `.assignr/specs/tasks/license-expiration-reminders.yaml` and gives the agent a realistic feature request with explicit scope, acceptance criteria, and verification.
 
 ```yaml
-# .assignr/specs/tasks/license-expiration-reminders.yaml
 id: license-expiration-reminders
 title: License expiration reminders
+status: pending
 type: implementation
 domain: credentialing
 priority: high
@@ -78,9 +82,133 @@ outputs_required:
   - risks
 ```
 
-Running `assignr compile license-expiration-reminders` produces a ready-to-paste agent prompt at `.assignr/prompts/generated/license-expiration-reminders.md` with the goal, constraints, acceptance criteria, and required outputs pre-filled.
+### 2. Compiled prompt output
 
-After the agent runs, `assignr run-log` creates an audit stub, `assignr set-status` tracks progress, and `assignr review` generates a review prompt scoped to what the task was actually supposed to do.
+This compiled prompt lives at `.assignr/prompts/generated/license-expiration-reminders.md` after `assignr compile license-expiration-reminders` and is the file you paste into Claude Code, Codex, Cursor, Aider, Goose, or another agent harness.
+
+```markdown
+## Domain Context
+
+### Id
+
+credentialing
+
+### Description
+
+Provider credentialing workflows, including license records, expirations,
+dashboard warnings, and provider-facing credential status.
+
+### Key Files
+
+- src/features/licenses/
+- src/components/dashboard/
+- tests/licenses/
+
+# Agent Task: License expiration reminders
+
+## Goal
+
+Add expiration reminder support for provider licenses so users can set
+an expiration date and see expiring licenses in the dashboard.
+
+## Scope
+
+### Allowed Paths
+
+- src/features/licenses/**
+- src/components/dashboard/**
+
+### Forbidden Paths
+
+- src/auth/**
+- src/billing/**
+
+...
+```
+
+### 3. Run log stub
+
+This run log lives under `.assignr/runs/license-expiration-reminders/` after `assignr run-log license-expiration-reminders` and is the audit stub the developer fills in when the agent run finishes.
+
+```markdown
+# Run Log: License expiration reminders
+
+## Metadata
+
+- Task ID: license-expiration-reminders
+- Status: in_progress
+- Started: 2026-05-23T14:18:03.000Z
+- Agent/Harness: TODO
+- Model: TODO
+- Branch: feature/license-reminders
+
+## Prompt Used
+
+- Generated prompt path: .assignr/prompts/generated/license-expiration-reminders.md
+
+## Files Changed
+
+TODO: list files changed during this run.
+
+## Commands Run
+
+TODO: list commands run during this run.
+
+## Result
+
+<!-- complete | partial | blocked | failed -->
+TODO
+
+## Risks
+
+TODO
+
+## Follow-Up Tasks
+
+TODO
+```
+
+### 4. Review prompt output
+
+This review prompt lives at `.assignr/prompts/generated/review-license-expiration-reminders.md` after `assignr review license-expiration-reminders` and asks a reviewer to compare the run log, diff, and task contract before approval.
+
+```markdown
+# Review Task: License expiration reminders
+
+You are reviewing an agent-produced change.
+
+Evaluate whether the implementation satisfies the task without creating unnecessary risk.
+
+## Task Metadata
+
+- ID: license-expiration-reminders
+- Domain: credentialing
+- Status: needs_review
+
+## Task Goal
+
+Add expiration reminder support for provider licenses so users can set
+an expiration date and see expiring licenses in the dashboard.
+
+## Run Log
+
+# Run Log: License expiration reminders
+...
+
+## Check
+
+- acceptance criteria
+- changed files
+- forbidden path violations
+- tests run
+- missing edge cases
+
+## Return
+
+### Verdict
+
+approved | needs_changes | blocked
+```
 
 ## Usage
 

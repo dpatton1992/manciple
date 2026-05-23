@@ -93,8 +93,10 @@ program
 program
   .command("list")
   .description("List task specs in a compact table.")
-  .action(() => {
-    listCommand(p.specsTasks, cwd);
+  .option("--status <status>", "Show only tasks with this exact status (case-sensitive).")
+  .option("--domain <domain>", "Show only tasks in this exact domain (case-sensitive).")
+  .action((opts: { status?: string; domain?: string }) => {
+    listCommand(p.specsTasks, cwd, { status: opts.status, domain: opts.domain });
   });
 
 // status

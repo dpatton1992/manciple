@@ -1,9 +1,15 @@
 import { existsSync } from "fs";
 import { relative } from "path";
+import { STATUSES } from "../constants.js";
 import { loadTasks } from "../specs/loadTasks.js";
 import type { LoadedTask } from "../specs/schema.js";
 
 const MAX_TITLE_WIDTH = 50;
+
+export interface ListCommandOptions {
+  status?: string;
+  domain?: string;
+}
 
 function truncateTitle(title: string): string {
   if (title.length <= MAX_TITLE_WIDTH) {
@@ -42,7 +48,25 @@ function formatRows(tasks: LoadedTask[]): string[] {
   ];
 }
 
-export function listCommand(specsTasksDir: string, cwd: string): void {
+function applyFilters(tasks: LoadedTask[], options: ListCommandOptions): LoadedTask[] {
+  let filteredTasks = tasks;
+
+  if (options.status) {
+    if (!STATUSES.includes(options.status as (typeof STATUSES)[number])) {
+      console.warn(`Invalid status filter: "${options.status}". Allowed: ${STATUSES.join(", ")}`);
+    }
+
+    filteredTasks = filteredTasks.filter((task) => task.spec.status === options.status);
+  }
+
+  if (options.domain) {
+    filteredTasks = filteredTasks.filter((task) => task.spec.domain === options.domain);
+  }
+
+  return filteredTasks;
+}
+
+export function listCommand(specsTasksDir: string, cwd: string, options: ListCommandOptions = {}): void {
   if (!existsSync(specsTasksDir)) {
     console.error(`Tasks directory does not exist: ${relative(cwd, specsTasksDir)}`);
     process.exit(1);
@@ -56,12 +80,20 @@ export function listCommand(specsTasksDir: string, cwd: string): void {
     );
   }
 
-  if (tasks.length === 0) {
+  const hasFilters = Boolean(options.status || options.domain);
+  const filteredTasks = applyFilters(tasks, options);
+
+  if (filteredTasks.length === 0) {
+    if (hasFilters) {
+      console.log("No tasks match the given filters.");
+      return;
+    }
+
     console.log("No tasks found.");
     return;
   }
 
-  for (const row of formatRows(tasks)) {
+  for (const row of formatRows(filteredTasks)) {
     console.log(row);
   }
 }

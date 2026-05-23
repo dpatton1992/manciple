@@ -1,6 +1,6 @@
 id: docs-example-task
 title: Add concrete worked example to README showing full workflow
-status: pending
+status: needs_review
 type: docs
 domain: core
 priority: low
@@ -8,53 +8,31 @@ depends_on:
   - list-command-basic
   - domain-context-injection
   - review-prompt-enrich
-
-goal: >
-  The README "What it looks like" section shows a before/after for a task
-  spec but does not show the compiled prompt output, a real run log, or a
-  real review prompt. A developer evaluating Assignr needs to see the full
-  loop—spec → compile → run → log → review—before they decide to adopt it.
-  This task adds a self-contained worked example to the README using a
-  realistic (but fictional) task that a developer would actually write.
-
+goal: |
+  The README "What it looks like" section shows a before/after for a task spec but does not show the compiled prompt output, a real run log, or a real review prompt. A developer evaluating Assignr needs to see the full loop—spec → compile → run → log → review—before they decide to adopt it. This task adds a self-contained worked example to the README using a realistic (but fictional) task that a developer would actually write.
 acceptance_criteria:
-  - >-
-    The README contains a complete worked example with four labelled sections:
-    the task spec YAML, the compiled prompt output, a run log stub showing
-    what the developer fills in post-run, and the review prompt output
+  - "The README contains a complete worked example with four labelled sections: the task spec YAML, the compiled prompt output, a run log stub showing what the developer fills in post-run, and the review prompt output"
   - The example task is realistic (not "hello world"); it should resemble the kind of task a developer would create for a real feature
   - Each section is introduced with one sentence explaining what it is and where the file lives
   - The example fits within the existing README structure; the new section replaces or extends the existing "What it looks like" section rather than appending a second one
   - No new files outside README.md are required for the docs change
-
 allowed_paths:
   - README.md
-
 forbidden_paths:
   - src/
   - bin/
   - tests/
   - .assignr/
-
 verification:
   commands:
-    - "grep -c '## What it looks like' README.md"
-    - "grep -c 'compiled prompt' README.md"
-    - "grep -c 'run log' README.md"
-    - "grep -c 'review prompt' README.md"
-
+    - grep -c '## What it looks like' README.md
+    - grep -c 'compiled prompt' README.md
+    - grep -c 'run log' README.md
+    - grep -c 'review prompt' README.md
 outputs_required:
   - files_changed
-
 notes:
-  - A good example task might be something like "add rate limiting to the
-    API handler" or "extract auth middleware to a shared module"—something
-    concrete enough that the acceptance criteria and verification commands
-    are non-trivial but the code itself does not need to exist
-  - The compiled prompt block should show how domain context appears at the
-    top (once domain-context-injection is implemented); include a realistic
-    domain context header even if placeholder
-  - Keep code blocks short; truncate with "..." where needed to avoid making
-    the README unwieldy
-  - This task depends on list, domain injection, and review being done so
-    the documentation matches the actual output the commands produce
+  - A good example task might be something like "add rate limiting to the API handler" or "extract auth middleware to a shared module"—something concrete enough that the acceptance criteria and verification commands are non-trivial but the code itself does not need to exist
+  - The compiled prompt block should show how domain context appears at the top (once domain-context-injection is implemented); include a realistic domain context header even if placeholder
+  - Keep code blocks short; truncate with "..." where needed to avoid making the README unwieldy
+  - This task depends on list, domain injection, and review being done so the documentation matches the actual output the commands produce

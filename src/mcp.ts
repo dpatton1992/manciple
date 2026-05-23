@@ -195,7 +195,7 @@ server.registerTool(
   () =>
     toolResult(() => {
       const { tasks, errors: loadErrors } = loadTasks(p.specsTasks);
-      const { valid, invalid } = validateTasks(tasks);
+      const { valid, invalid } = validateTasks(tasks, { specsDomainsDir: p.specsDomains });
       const errors = [
         ...loadErrors.map((error) => ({
           file: relative(cwd, error.filePath),

@@ -1,9 +1,12 @@
 import { loadTasks } from "../specs/loadTasks.js";
 import { validateTasks } from "../specs/validateTasks.js";
-import { relative } from "path";
+import { getPaths } from "../utils/paths.js";
+import { dirname, relative } from "path";
 
 export function validateCommand(specsTasksDir: string, cwd: string): void {
   const { tasks, errors: loadErrors } = loadTasks(specsTasksDir);
+  const assignrRoot = relative(cwd, dirname(dirname(specsTasksDir)));
+  const specsDomainsDir = getPaths(cwd, assignrRoot).specsDomains;
 
   let totalErrors = loadErrors.length;
   let totalWarnings = 0;
@@ -14,7 +17,7 @@ export function validateCommand(specsTasksDir: string, cwd: string): void {
     console.error(`    ${error}`);
   }
 
-  const { valid, invalid, warnings } = validateTasks(tasks);
+  const { valid, invalid, warnings } = validateTasks(tasks, { specsDomainsDir });
 
   for (const { filePath, errors } of invalid) {
     totalErrors++;
