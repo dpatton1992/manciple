@@ -14,6 +14,7 @@ import { setStatusCommand } from "./commands/setStatus.js";
 import { runLogCommand } from "./commands/runLog.js";
 import { reviewCommand } from "./commands/review.js";
 import { doctorCommand } from "./commands/doctor.js";
+import { mcpConfigCommand } from "./commands/mcpConfig.js";
 import type { Status, TaskType, Priority } from "./constants.js";
 
 const require = createRequire(import.meta.url);
@@ -134,6 +135,15 @@ program
   .description("Check whether this repo is configured correctly for Assignr.")
   .action(() => {
     doctorCommand(cwd, root);
+  });
+
+// mcp-config
+program
+  .command("mcp-config")
+  .description("Create or update .mcp.json for the Assignr MCP server.")
+  .option("--force", "Overwrite an existing assignr MCP server entry.", false)
+  .action((opts: { force: boolean }) => {
+    mcpConfigCommand({ cwd, force: opts.force });
   });
 
 program.parse(process.argv);

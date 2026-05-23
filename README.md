@@ -274,6 +274,15 @@ Check whether the repo is configured correctly.
 assignr doctor
 ```
 
+### `assignr mcp-config`
+
+Create or update `.mcp.json` for the Assignr MCP server.
+
+```bash
+assignr mcp-config
+assignr mcp-config --force   # Overwrite an existing "assignr" MCP server entry
+```
+
 ## MCP Server
 
 Assignr also ships a stdio MCP server so agents can manage tasks with tool calls instead of shelling out to the CLI.
@@ -284,18 +293,27 @@ Build the package first:
 pnpm build
 ```
 
-Then register the server from the repo where Assignr should read and write `.assignr/` state:
+Then create the MCP config from the repo where Assignr should read and write `.assignr/` state:
+
+```bash
+assignr mcp-config
+```
+
+This writes a repo-local `.mcp.json` like:
 
 ```json
 {
   "mcpServers": {
     "assignr": {
       "command": "node",
-      "args": ["/path/to/repo/bin/assignr-mcp.js"]
+      "args": ["/path/to/package/bin/assignr-mcp.js"],
+      "cwd": "/path/to/repo"
     }
   }
 }
 ```
+
+Restart your agent client after creating or changing `.mcp.json`; MCP tools are usually discovered at session startup.
 
 The server exposes these tools:
 
