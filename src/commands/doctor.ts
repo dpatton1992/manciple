@@ -54,7 +54,7 @@ export function doctorCommand(cwd: string, root: string): void {
     );
   }
 
-  console.log("PromptOps Doctor");
+  console.log("Assignr Doctor");
   console.log("────────────────");
 
   let allOk = true;
@@ -67,9 +67,9 @@ export function doctorCommand(cwd: string, root: string): void {
 
   console.log();
   if (allOk) {
-    console.log("All checks passed. PromptOps is configured correctly.");
+    console.log("All checks passed. Assignr is configured correctly.");
   } else {
-    console.log('Some checks failed. Run "promptops init" to fix missing structure.');
+    console.log('Some checks failed. Run "assignr init" to fix missing structure.');
     process.exit(1);
   }
 }

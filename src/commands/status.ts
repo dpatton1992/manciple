@@ -58,7 +58,7 @@ export function statusCommand(specsTasksDir: string, cwd: string): void {
 
   if (errors.length > 0) {
     console.warn(
-      `  ⚠ ${errors.length} task file(s) could not be loaded (run "promptops validate" for details).`
+      `  ⚠ ${errors.length} task file(s) could not be loaded (run "assignr validate" for details).`
     );
   }
 
@@ -76,7 +76,7 @@ export function statusCommand(specsTasksDir: string, cwd: string): void {
     counts[spec.status] = (counts[spec.status] ?? 0) + 1;
   }
 
-  console.log("PromptOps Status");
+  console.log("Assignr Status");
   console.log("────────────────");
   for (const status of STATUSES) {
     console.log(`  ${pad(status + ":", 14)} ${counts[status]}`);

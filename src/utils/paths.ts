@@ -1,6 +1,6 @@
 import { join } from "path";
 
-export interface PromptOpsPaths {
+export interface AssignrPaths {
   root: string;
   config: string;
   specs: string;
@@ -16,7 +16,7 @@ export interface PromptOpsPaths {
   commands: string;
 }
 
-export function getPaths(cwd: string, root: string): PromptOpsPaths {
+export function getPaths(cwd: string, root: string): AssignrPaths {
   const r = join(cwd, root);
   return {
     root: r,

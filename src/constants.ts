@@ -1,4 +1,4 @@
-export const DEFAULT_ROOT = ".promptops";
+export const DEFAULT_ROOT = ".assignr";
 
 export const STATUSES = [
   "pending",

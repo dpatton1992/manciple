@@ -7,30 +7,30 @@ import {
   TEST_TEMPLATE,
 } from "../templates/renderTemplate.js";
 
-const CONFIG_YAML = `# PromptOps configuration
-root: .promptops
+const CONFIG_YAML = `# Assignr configuration
+root: .assignr
 `;
 
 const STATE_JSON = JSON.stringify({ version: 1, tasks: [] }, null, 2);
 
-const COMMANDS_README = `# PromptOps Commands
+const COMMANDS_README = `# Assignr Commands
 
 This directory holds command reference files and local workflow notes.
 
 ## Usage
 
-Run \`promptops --help\` to see all available commands.
+Run \`assignr --help\` to see all available commands.
 
 ## Workflow
 
 \`\`\`bash
-promptops new "My task title" --type implementation --domain core --priority high
-promptops validate
-promptops compile my-task-title
+assignr new "My task title" --type implementation --domain core --priority high
+assignr validate
+assignr compile my-task-title
 # Run the generated prompt in your preferred coding agent
-promptops run-log my-task-title
-promptops set-status my-task-title needs_review
-promptops review my-task-title
+assignr run-log my-task-title
+assignr set-status my-task-title needs_review
+assignr review my-task-title
 \`\`\`
 `;
 
@@ -40,7 +40,7 @@ function updateGitignore(cwd: string, root: string): void {
     `${root}/prompts/generated/`,
     `${root}/runs/`,
   ];
-  const header = "# promptops";
+  const header = "# assignr";
 
   let existing = "";
   if (existsSync(gitignorePath)) {
@@ -54,7 +54,7 @@ function updateGitignore(cwd: string, root: string): void {
   appendFileSync(gitignorePath, block, "utf-8");
 
   const action = existing === "" ? "Created" : "Updated";
-  console.log(`  ✓ .gitignore ${action.toLowerCase()} (added ${missing.length} promptops entr${missing.length === 1 ? "y" : "ies"})`);
+  console.log(`  ✓ .gitignore ${action.toLowerCase()} (added ${missing.length} assignr entr${missing.length === 1 ? "y" : "ies"})`);
 }
 
 export async function initCommand(options: {
@@ -121,5 +121,5 @@ export async function initCommand(options: {
 
   updateGitignore(cwd, root);
 
-  console.log(`\nPromptOps initialized at ${root}/`);
+  console.log(`\nAssignr initialized at ${root}/`);
 }

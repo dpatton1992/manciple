@@ -22,7 +22,7 @@ export function setStatusCommand(
   if (!existsSync(filePath)) {
     console.error(
       `Task not found: ${filePath.replace(cwd + "/", "")}\n` +
-        `Run "promptops status" to see available tasks.`
+        `Run "assignr status" to see available tasks.`
     );
     process.exit(1);
   }

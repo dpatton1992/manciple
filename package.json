@@ -1,7 +1,7 @@
 {
-  "name": "@dpatton1992/promptops",
+  "name": "@dpatton1992/assignr",
   "version": "0.1.0",
-  "description": "A repo-native PromptOps framework for existing coding agents.",
+  "description": "A repo-native workflow layer for existing coding agents.",
   "license": "MIT",
   "type": "module",
   "engines": {
@@ -13,7 +13,7 @@
     "README.md"
   ],
   "keywords": [
-    "promptops",
+    "assignr",
     "ai",
     "agents",
     "coding-agents",
@@ -24,7 +24,7 @@
     "cli"
   ],
   "bin": {
-    "promptops": "./bin/promptops.js"
+    "assignr": "./bin/assignr.js"
   },
   "scripts": {
     "build": "tsc",

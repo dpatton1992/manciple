@@ -1,13 +1,13 @@
-# PromptOps
+# Assignr
 
-PromptOps is a repo-native workflow layer for existing coding agents.
+Assignr is a repo-native workflow layer for existing coding agents.
 
 It does not run models.
 It does not replace Claude Code, Codex, Cursor, Aider, Goose, or other agent harnesses.
 
 Instead, it helps you package work for them.
 
-PromptOps turns structured task specs into scoped, reviewable, agent-ready prompts, then tracks execution state, run logs, risks, and follow-up tasks inside your repo.
+Assignr turns structured task specs into scoped, reviewable, agent-ready prompts, then tracks execution state, run logs, risks, and follow-up tasks inside your repo.
 
 ## Why
 
@@ -20,45 +20,45 @@ Without a structured workflow:
 - Follow-up work is not tracked
 - You cannot repeat or audit what ran
 
-PromptOps fixes the workflow, not the model.
+Assignr fixes the workflow, not the model.
 
 ## Install
 
 ```bash
-npm install -g promptops
+npm install -g assignr
 ```
 
 Or with pnpm:
 
 ```bash
-pnpm add -g promptops
+pnpm add -g assignr
 ```
 
 After installing, verify with:
 
 ```bash
-promptops --help
+assignr --help
 ```
 
 ## Usage
 
 ```bash
-promptops init
-promptops new "License expiration reminders" --type implementation --domain credentialing --priority high
-promptops validate
-promptops compile license-expiration-reminders
+assignr init
+assignr new "License expiration reminders" --type implementation --domain credentialing --priority high
+assignr validate
+assignr compile license-expiration-reminders
 # Run the generated prompt in Claude Code, Codex, Cursor, Aider, etc.
-promptops run-log license-expiration-reminders
-promptops set-status license-expiration-reminders needs_review
-promptops review license-expiration-reminders
+assignr run-log license-expiration-reminders
+assignr set-status license-expiration-reminders needs_review
+assignr review license-expiration-reminders
 ```
 
 ## Folder Structure
 
-After `promptops init`:
+After `assignr init`:
 
 ```
-.promptops/
+.assignr/
   config.yaml               # Root config
 
   specs/
@@ -87,7 +87,7 @@ After `promptops init`:
 
 ## Task Specs
 
-Task specs are YAML files in `.promptops/specs/tasks/`. Each file describes one unit of agent work.
+Task specs are YAML files in `.assignr/specs/tasks/`. Each file describes one unit of agent work.
 
 ### Required Fields
 
@@ -154,127 +154,127 @@ notes:
 
 ## Commands
 
-### `promptops init`
+### `assignr init`
 
-Initialize the `.promptops/` folder structure.
+Initialize the `.assignr/` folder structure.
 
 ```bash
-promptops init
-promptops init --force        # Overwrite existing files
-promptops init --root agent   # Use a custom root directory
+assignr init
+assignr init --force        # Overwrite existing files
+assignr init --root agent   # Use a custom root directory
 ```
 
-### `promptops new <title>`
+### `assignr new <title>`
 
 Create a new task spec.
 
 ```bash
-promptops new "License expiration reminders"
-promptops new "License expiration reminders" --type implementation --domain credentialing --priority high
+assignr new "License expiration reminders"
+assignr new "License expiration reminders" --type implementation --domain credentialing --priority high
 ```
 
-### `promptops validate`
+### `assignr validate`
 
 Validate all task specs.
 
 ```bash
-promptops validate
+assignr validate
 ```
 
-### `promptops compile [task-id]`
+### `assignr compile [task-id]`
 
 Compile task specs into markdown prompts ready for an agent.
 
 ```bash
-promptops compile
-promptops compile license-expiration-reminders
-promptops compile --status pending
-promptops compile --all
+assignr compile
+assignr compile license-expiration-reminders
+assignr compile --status pending
+assignr compile --all
 ```
 
-### `promptops status`
+### `assignr status`
 
 Show a summary of task statuses and suggest the next unblocked task.
 
 ```bash
-promptops status
+assignr status
 ```
 
-### `promptops set-status <task-id> <status>`
+### `assignr set-status <task-id> <status>`
 
 Update the status of a task.
 
 ```bash
-promptops set-status license-expiration-reminders needs_review
+assignr set-status license-expiration-reminders needs_review
 ```
 
-### `promptops run-log <task-id>`
+### `assignr run-log <task-id>`
 
 Create a run log stub for a completed or in-progress task.
 
 ```bash
-promptops run-log license-expiration-reminders
+assignr run-log license-expiration-reminders
 ```
 
-### `promptops review <task-id>`
+### `assignr review <task-id>`
 
 Generate a review prompt for a task.
 
 ```bash
-promptops review license-expiration-reminders
+assignr review license-expiration-reminders
 ```
 
-### `promptops doctor`
+### `assignr doctor`
 
 Check whether the repo is configured correctly.
 
 ```bash
-promptops doctor
+assignr doctor
 ```
 
 ## Example Workflow
 
 ```bash
 # 1. Initialize
-promptops init
+assignr init
 
 # 2. Create a task
-promptops new "License expiration reminders" \
+assignr new "License expiration reminders" \
   --type implementation \
   --domain credentialing \
   --priority high
 
 # 3. Fill in the spec
-# Edit .promptops/specs/tasks/license-expiration-reminders.yaml
+# Edit .assignr/specs/tasks/license-expiration-reminders.yaml
 
 # 4. Validate
-promptops validate
+assignr validate
 
 # 5. Compile into a prompt
-promptops compile license-expiration-reminders
-# → .promptops/prompts/generated/license-expiration-reminders.md
+assignr compile license-expiration-reminders
+# → .assignr/prompts/generated/license-expiration-reminders.md
 
 # 6. Run the prompt in your preferred agent
 # (Claude Code, Codex, Cursor, Aider, Goose, etc.)
 
 # 7. Log the run
-promptops run-log license-expiration-reminders
-# → .promptops/runs/<timestamp>-license-expiration-reminders.md
+assignr run-log license-expiration-reminders
+# → .assignr/runs/<timestamp>-license-expiration-reminders.md
 
 # 8. Mark for review
-promptops set-status license-expiration-reminders needs_review
+assignr set-status license-expiration-reminders needs_review
 
 # 9. Generate a review prompt
-promptops review license-expiration-reminders
-# → .promptops/prompts/generated/review-license-expiration-reminders.md
+assignr review license-expiration-reminders
+# → .assignr/prompts/generated/review-license-expiration-reminders.md
 
 # 10. After review passes
-promptops set-status license-expiration-reminders complete
+assignr set-status license-expiration-reminders complete
 ```
 
 ## Non-Goals (V0)
 
-PromptOps v0 does not:
+Assignr v0 does not:
 
 - Call any AI model
 - Run agents

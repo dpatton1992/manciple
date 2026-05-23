@@ -74,6 +74,6 @@ export function newCommand(title: string, options: NewTaskOptions): void {
   console.log(`Created: ${filePath.replace(cwd + "/", "")}`);
   console.log(`\nNext steps:`);
   console.log(`  1. Edit the spec: ${filePath.replace(cwd + "/", "")}`);
-  console.log(`  2. Run: promptops validate`);
-  console.log(`  3. Run: promptops compile ${id}`);
+  console.log(`  2. Run: assignr validate`);
+  console.log(`  3. Run: assignr compile ${id}`);
 }

@@ -31,7 +31,7 @@ export function validateCommand(specsTasksDir: string, cwd: string): void {
 
   const totalValid = valid.length;
 
-  console.log(`\nPromptOps Validate`);
+  console.log(`\nAssignr Validate`);
   console.log(`─────────────────`);
   if (totalValid > 0) console.log(`  ✓ ${totalValid} valid task${totalValid === 1 ? "" : "s"}`);
   if (totalWarnings > 0) console.log(`  ⚠ ${totalWarnings} warning${totalWarnings === 1 ? "" : "s"}`);

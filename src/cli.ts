@@ -26,16 +26,16 @@ const p = getPaths(cwd, root);
 const program = new Command();
 
 program
-  .name("promptops")
-  .description("A repo-native PromptOps framework for existing coding agents.")
+  .name("assignr")
+  .description("A repo-native workflow layer for existing coding agents.")
   .version(version);
 
 // init
 program
   .command("init")
-  .description("Initialize PromptOps folder structure in this repo.")
+  .description("Initialize Assignr folder structure in this repo.")
   .option("--force", "Overwrite existing files.", false)
-  .option("--root <dir>", "Root directory for PromptOps.", DEFAULT_ROOT)
+  .option("--root <dir>", "Root directory for Assignr.", DEFAULT_ROOT)
   .action(async (opts: { force: boolean; root: string }) => {
     await initCommand({ force: opts.force, cwd, root: opts.root });
   });
@@ -122,7 +122,7 @@ program
 // doctor
 program
   .command("doctor")
-  .description("Check whether this repo is configured correctly for PromptOps.")
+  .description("Check whether this repo is configured correctly for Assignr.")
   .action(() => {
     doctorCommand(cwd, root);
   });
