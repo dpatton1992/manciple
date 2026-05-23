@@ -315,6 +315,17 @@ This writes a repo-local `.mcp.json` like:
 
 Restart your agent client after creating or changing `.mcp.json`; MCP tools are usually discovered at session startup.
 
+If your Codex install does not load repo-local `.mcp.json`, add the same server to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.assignr]
+command = "node"
+args = ["/path/to/package/bin/assignr-mcp.js"]
+cwd = "/path/to/repo"
+```
+
+After editing `~/.codex/config.toml`, start a fresh Codex session. Existing sessions cannot gain newly configured MCP tools after startup.
+
 The server exposes these tools:
 
 | Tool | Purpose |
