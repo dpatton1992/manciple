@@ -1,6 +1,6 @@
 id: doctor-project-health
 title: Add or harden assignr doctor project health checks
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: high

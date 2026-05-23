@@ -1,6 +1,6 @@
 id: ci-smoke-pack-install
 title: Add CI smoke test for packed global install workflow
-status: needs_review
+status: complete
 type: test
 domain: core
 priority: high

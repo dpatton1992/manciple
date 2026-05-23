@@ -1,6 +1,6 @@
 id: run-log-auto-capture
 title: Auto-capture useful run log fields from the working tree
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: critical

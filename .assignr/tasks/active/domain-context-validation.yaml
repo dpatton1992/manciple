@@ -4,8 +4,7 @@ status: needs_review
 type: implementation
 domain: core
 priority: medium
-depends_on:
-  - dep-validation-missing-refs
+depends_on: []
 goal: >
   Task specs reference a domain by name (e.g. `domain: core`) but `assignr validate`
   does not check whether a corresponding domain file exists at

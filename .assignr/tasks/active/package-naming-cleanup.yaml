@@ -1,6 +1,6 @@
 id: package-naming-cleanup
 title: Remove leftover PromptOps package and repo naming references
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: high
