@@ -6,59 +6,51 @@ domain: core
 priority: high
 depends_on:
   - lifecycle-task-discovery
-
 goal: >
-  Once the new path constants exist, `assignr init` must create the three
-  lifecycle directories (`tasks/active`, `tasks/completed`, `tasks/archived`)
-  and `assignr new` must write new task stubs to `tasks/active` instead of
-  `specs/tasks`. Both commands should also update the gitignore block that
-  `init` manages, since the generated and runs directories are unchanged but
-  the active task directory should not be gitignored.
-
+  Once the new path constants exist, `assignr init` must create the three lifecycle
+  directories (`tasks/active`, `tasks/completed`, `tasks/archived`) and `assignr new`
+  must write new task stubs to `tasks/active` instead of `specs/tasks`. Both commands
+  should also update the gitignore block that `init` manages, since the generated and
+  runs directories are unchanged but the active task directory should not be gitignored.
 acceptance_criteria:
-  - "After `assignr init`, the following directories exist:
-    .assignr/tasks/active, .assignr/tasks/completed, .assignr/tasks/archived"
-  - "After `assignr init`, .assignr/specs/tasks is still created for backward
-    compatibility (existing repos may reference it in scripts)"
-  - "`assignr new <title>` writes the stub YAML to .assignr/tasks/active/<id>.yaml,
-    not to .assignr/specs/tasks/<id>.yaml"
-  - "If .assignr/tasks/active does not exist when `assignr new` is run outside
-    of an initialized repo, the directory is created automatically
-    (existing mkdirSync recursive behavior)"
-  - "Running `assignr init --force` on a repo that already has
-    .assignr/tasks/active does not delete existing task files"
-  - "All existing tests continue to pass"
-
+  - "After `assignr init`, the following directories exist: .assignr/tasks/active,
+    .assignr/tasks/completed, .assignr/tasks/archived"
+  - After `assignr init`, .assignr/specs/tasks is still created for backward
+    compatibility (existing repos may reference it in scripts)
+  - "`assignr new <title>` writes the stub YAML to .assignr/tasks/active/<id>.yaml, not
+    to .assignr/specs/tasks/<id>.yaml"
+  - If .assignr/tasks/active does not exist when `assignr new` is run outside of an
+    initialized repo, the directory is created automatically (existing mkdirSync
+    recursive behavior)
+  - Running `assignr init --force` on a repo that already has .assignr/tasks/active does
+    not delete existing task files
+  - All existing tests continue to pass
 allowed_paths:
   - src/commands/init.ts
   - src/commands/new.ts
   - src/cli.ts
   - src/utils/paths.ts
-
 forbidden_paths:
   - src/specs/loadTasks.ts
   - src/specs/validateTasks.ts
   - src/specs/schema.ts
   - bin/
-
 verification:
   commands:
     - pnpm build
     - pnpm test
-    - "node bin/assignr.js init --force"
-    - "node bin/assignr.js new 'Test lifecycle task' --type implementation --domain core"
-    - "ls .assignr/tasks/active/"
-
+    - node bin/assignr.js init --force
+    - node bin/assignr.js new 'Test lifecycle task' --type implementation --domain core
+    - ls .assignr/tasks/active/
 outputs_required:
   - files_changed
   - risks
-
 notes:
-  - In cli.ts, pass p.tasksActive as specsTasksDir to the new command
-    instead of p.specsTasks
-  - The cli.ts also passes specsTasksDir to validate, compile, set-status,
-    review, and run-log; update those in their own tasks, not here
-  - The init command's dirs array currently lists p.specsTasks; add the
-    three new lifecycle dirs without removing p.specsTasks
-  - The gitignore block managed by init covers generated/ and runs/; those
-    paths are unchanged so no gitignore update is needed here
+  - In cli.ts, pass p.tasksActive as specsTasksDir to the new command instead of
+    p.specsTasks
+  - The cli.ts also passes specsTasksDir to validate, compile, set-status, review, and
+    run-log; update those in their own tasks, not here
+  - The init command's dirs array currently lists p.specsTasks; add the three new
+    lifecycle dirs without removing p.specsTasks
+  - The gitignore block managed by init covers generated/ and runs/; those paths are
+    unchanged so no gitignore update is needed here

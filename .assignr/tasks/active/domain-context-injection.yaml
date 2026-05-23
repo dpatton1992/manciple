@@ -5,11 +5,21 @@ type: implementation
 domain: core
 priority: medium
 depends_on: []
-goal: |
-  Domain files under `.assignr/specs/domains` contain background knowledge for a problem area (e.g. key files, conventions, verification baseline). Currently they are never read during compilation. This task makes `assignr compile` read the domain file referenced by a task spec's `domain` field and prepend its content as a "Domain Context" section at the top of the compiled prompt. If no matching domain file exists the command should continue and emit a warning rather than fail hard, so tasks without a domain file are not broken.
+goal: >
+  Domain files under `.assignr/specs/domains` contain background knowledge for a problem
+  area (e.g. key files, conventions, verification baseline). Currently they are never
+  read during compilation. This task makes `assignr compile` read the domain file
+  referenced by a task spec's `domain` field and prepend its content as a "Domain
+  Context" section at the top of the compiled prompt. If no matching domain file exists
+  the command should continue and emit a warning rather than fail hard, so tasks without
+  a domain file are not broken.
 acceptance_criteria:
-  - Compiling a task spec whose domain matches a file at `.assignr/specs/domains/<domain>.yaml` produces a compiled prompt that begins with a "## Domain Context" section containing the domain file content formatted as readable key/value pairs
-  - Compiling a task spec whose domain does not match any file emits a one-line stderr warning and continues; the compiled prompt is still written
+  - Compiling a task spec whose domain matches a file at
+    `.assignr/specs/domains/<domain>.yaml` produces a compiled prompt that begins with a
+    "## Domain Context" section containing the domain file content formatted as readable
+    key/value pairs
+  - Compiling a task spec whose domain does not match any file emits a one-line stderr
+    warning and continues; the compiled prompt is still written
   - The domain section appears before the task goal in the compiled output
   - No new dependencies are introduced (fs-extra already available)
 allowed_paths:
@@ -30,7 +40,12 @@ outputs_required:
   - files_changed
   - risks
 notes:
-  - The domain field on a task spec is already a plain string (e.g. "core"); construct the path as `<root>/specs/domains/<domain>.yaml`
-  - Read the domain YAML with the same yaml library already used elsewhere; format it simply (no need for a deep render pass)
-  - If the domain file has a `description` field, include it. If it has `key_files` or `conventions`, include those sections too. Keep it human-readable, not a raw YAML dump
-  - Do not add a new `domains` array field to TaskSpecSchema in this task; the existing `domain` string field is sufficient
+  - The domain field on a task spec is already a plain string (e.g. "core"); construct
+    the path as `<root>/specs/domains/<domain>.yaml`
+  - Read the domain YAML with the same yaml library already used elsewhere; format it
+    simply (no need for a deep render pass)
+  - If the domain file has a `description` field, include it. If it has `key_files` or
+    `conventions`, include those sections too. Keep it human-readable, not a raw YAML
+    dump
+  - Do not add a new `domains` array field to TaskSpecSchema in this task; the existing
+    `domain` string field is sufficient

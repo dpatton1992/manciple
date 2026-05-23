@@ -6,60 +6,53 @@ domain: core
 priority: medium
 depends_on:
   - lifecycle-task-discovery
-
 goal: >
-  Some tasks are abandoned, superseded, or no longer relevant without ever
-  being completed. `assignr archive <task-id>` should move such tasks from
-  `tasks/active` to `tasks/archived` and update their `status` to
-  `"archived"`. Because "archived" is not currently a valid status in
-  STATUSES, this task also adds it to the constants and Zod schema.
-
+  Some tasks are abandoned, superseded, or no longer relevant without ever being
+  completed. `assignr archive <task-id>` should move such tasks from `tasks/active` to
+  `tasks/archived` and update their `status` to `"archived"`. Because "archived" is not
+  currently a valid status in STATUSES, this task also adds it to the constants and Zod
+  schema.
 acceptance_criteria:
-  - "`"archived"` is added to the STATUSES array in src/constants.ts"
-  - "The TaskSpecSchema in src/specs/schema.ts continues to use the STATUSES
-    constant so the new value is automatically included"
-  - "`assignr archive <task-id>` finds the task in tasks/active, updates
-    its status to 'archived', and moves the file to tasks/archived/<id>.yaml"
-  - "If the task is not found in tasks/active, the command exits non-zero
-    with: 'Task <id> not found in active tasks.'"
-  - "If a file with the same name already exists in tasks/archived, the
-    command exits non-zero with:
-    'Task <id> already exists in archived.'"
-  - "On success, the command prints:
-    'Archived: <id> → .assignr/tasks/archived/<id>.yaml'"
-  - "The tasks/archived directory is created if it does not exist"
-  - "All existing tests continue to pass"
-
+  - '`"archived"` is added to the STATUSES array in src/constants.ts'
+  - The TaskSpecSchema in src/specs/schema.ts continues to use the STATUSES constant so
+    the new value is automatically included
+  - "`assignr archive <task-id>` finds the task in tasks/active, updates its status to
+    'archived', and moves the file to tasks/archived/<id>.yaml"
+  - "If the task is not found in tasks/active, the command exits non-zero with: 'Task
+    <id> not found in active tasks.'"
+  - "If a file with the same name already exists in tasks/archived, the command exits
+    non-zero with: 'Task <id> already exists in archived.'"
+  - "On success, the command prints: 'Archived: <id> →
+    .assignr/tasks/archived/<id>.yaml'"
+  - The tasks/archived directory is created if it does not exist
+  - All existing tests continue to pass
 allowed_paths:
   - src/constants.ts
   - src/commands/archive.ts
   - src/cli.ts
-
 forbidden_paths:
   - src/specs/schema.ts
   - src/specs/validateTasks.ts
   - src/commands/validate.ts
   - src/commands/compile.ts
   - bin/
-
 verification:
   commands:
     - pnpm build
     - pnpm test
-    - "node bin/assignr.js new 'Lifecycle archive test' --type implementation --domain core"
-    - "node bin/assignr.js archive lifecycle-archive-test"
-    - "ls .assignr/tasks/archived/"
-
+    - node bin/assignr.js new 'Lifecycle archive test' --type implementation --domain
+      core
+    - node bin/assignr.js archive lifecycle-archive-test
+    - ls .assignr/tasks/archived/
 outputs_required:
   - files_changed
   - risks
-
 notes:
   - Create src/commands/archive.ts following the same structure as
     src/commands/complete.ts (from lifecycle-complete-command)
-  - Adding "archived" to STATUSES is a schema-compatible change since
-    the Zod enum is derived from the constant array; no migration needed
+  - Adding "archived" to STATUSES is a schema-compatible change since the Zod enum is
+    derived from the constant array; no migration needed
   - Use the same renameSync-with-EXDEV-fallback pattern as complete.ts
-  - Do not add a --from-completed option in this task; archiving from
-    active is sufficient for v1
+  - Do not add a --from-completed option in this task; archiving from active is
+    sufficient for v1
   - Register as "archive <task-id>" in cli.ts

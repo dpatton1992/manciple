@@ -45,10 +45,12 @@
 	"scripts": {
 		"build": "tsc",
 		"dev": "tsx src/cli.ts",
+		"format:assignr-yaml": "tsx scripts/formatAssignrYaml.ts",
+		"check:assignr-yaml": "tsx scripts/formatAssignrYaml.ts --check",
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"typecheck": "tsc --noEmit",
-		"prepublishOnly": "pnpm run build && pnpm run test"
+		"prepublishOnly": "pnpm run check:assignr-yaml && pnpm run build && pnpm run test"
 	},
 	"dependencies": {
 		"@modelcontextprotocol/sdk": "^1.29.0",

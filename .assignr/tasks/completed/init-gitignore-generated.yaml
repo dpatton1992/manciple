@@ -5,42 +5,35 @@ type: implementation
 domain: core
 priority: medium
 depends_on: []
-
 goal: >
-  Generated prompts in .promptops/prompts/generated/ are ephemeral agent
-  inputs and should typically not be committed. The init command should
-  append a .gitignore entry for this path (and the runs/ directory) when
-  initialising a repo, creating the .gitignore if it does not exist.
-  Running init a second time must not duplicate the entry.
-
+  Generated prompts in .promptops/prompts/generated/ are ephemeral agent inputs and
+  should typically not be committed. The init command should append a .gitignore entry
+  for this path (and the runs/ directory) when initialising a repo, creating the
+  .gitignore if it does not exist. Running init a second time must not duplicate the
+  entry.
 acceptance_criteria:
-  - After `promptops init` a .gitignore entry for .promptops/prompts/generated/
-    exists in the project root .gitignore
+  - After `promptops init` a .gitignore entry for .promptops/prompts/generated/ exists
+    in the project root .gitignore
   - After `promptops init` a .gitignore entry for .promptops/runs/ exists
   - Running `promptops init` again does not add duplicate entries
   - The console output notes when .gitignore is created or updated
   - The console output is silent on the .gitignore step when no change is needed
-
 allowed_paths:
   - src/commands/init.ts
-
 forbidden_paths:
   - src/commands/**
   - tests/**
-
 verification:
   commands:
     - pnpm build
     - pnpm typecheck
     - pnpm test
-
 outputs_required:
   - files_changed
   - tests_run
   - risks
-
 notes:
-  - Keep the .gitignore logic isolated in init.ts; do not create a shared helper
-    unless another command also needs it
-  - Append entries at the end of the file with a leading newline and a comment
-    "# promptops" so users can identify the source
+  - Keep the .gitignore logic isolated in init.ts; do not create a shared helper unless
+    another command also needs it
+  - Append entries at the end of the file with a leading newline and a comment "#
+    promptops" so users can identify the source

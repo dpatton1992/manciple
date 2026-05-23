@@ -1,53 +1,54 @@
 id: ci-smoke-pack-install
 title: Add CI smoke test for packed global install workflow
-status: pending
+status: needs_review
 type: test
 domain: core
 priority: high
 depends_on: []
-
 goal: >
-  Add a CI smoke test that verifies the package works after npm packaging and
-  global installation. The smoke test should exercise the real published
-  command path instead of only TypeScript sources.
-
+  Add a CI smoke test that verifies the package works after npm packaging and global
+  installation. The smoke test should exercise the real published command path instead
+  of only TypeScript sources.
 acceptance_criteria:
-  - 'CI runs a smoke job or smoke step that executes `npm pack`.'
-  - 'CI installs the generated tarball globally with `npm install -g ./dpatt-assignr-*.tgz`.'
-  - 'The smoke workflow initializes a fresh temporary project with `assignr init`.'
-  - 'The smoke workflow creates a task with `assignr new "Test task"`.'
-  - 'The smoke workflow runs `assignr validate`, `assignr status`, and `assignr compile test-task`.'
-  - 'The smoke workflow avoids polluting the repository checkout with generated smoke files.'
-  - 'The smoke job is documented or named clearly enough to diagnose pack/install failures.'
-  - 'All existing tests continue to pass.'
-
+  - CI runs a smoke job or smoke step that executes `npm pack`.
+  - CI installs the generated tarball globally with `npm install -g
+    ./dpatt-assignr-*.tgz`.
+  - The smoke workflow initializes a fresh temporary project with `assignr init`.
+  - The smoke workflow creates a task with `assignr new "Test task"`.
+  - The smoke workflow runs `assignr validate`, `assignr status`, and `assignr compile
+    test-task`.
+  - The smoke workflow avoids polluting the repository checkout with generated smoke
+    files.
+  - The smoke job is documented or named clearly enough to diagnose pack/install
+    failures.
+  - All existing tests continue to pass.
 allowed_paths:
   - .github/workflows/
   - package.json
   - tests/
   - README.md
-
 forbidden_paths:
   - src/
   - bin/
   - dist/
   - .assignr/tasks/
-
 verification:
   commands:
     - pnpm typecheck
     - pnpm test
     - pnpm build
     - npm pack
-    - 'npm install -g ./dpatt-assignr-*.tgz'
-    - 'tmpdir="$(mktemp -d)" && cd "$tmpdir" && assignr init && assignr new "Test task" && assignr validate && assignr status && assignr compile test-task'
-
+    - npm install -g ./dpatt-assignr-*.tgz
+    - tmpdir="$(mktemp -d)" && cd "$tmpdir" && assignr init && assignr new "Test task"
+      && assignr validate && assignr status && assignr compile test-task
 outputs_required:
   - files_changed
   - smoke_command_output
   - risks
-
 notes:
-  - 'The tarball glob intentionally matches npm scoped package tarball naming for `@dpatt/assignr`.'
-  - 'If CI uses pnpm setup already, keep package-manager setup consistent with the existing workflow.'
-  - 'If there is no existing `.github/workflows` directory, create the smallest useful workflow.'
+  - The tarball glob intentionally matches npm scoped package tarball naming for
+    `@dpatt/assignr`.
+  - If CI uses pnpm setup already, keep package-manager setup consistent with the
+    existing workflow.
+  - If there is no existing `.github/workflows` directory, create the smallest useful
+    workflow.
