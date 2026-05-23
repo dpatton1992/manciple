@@ -19,6 +19,7 @@
   },
   "files": [
     "bin/",
+    "bin/assignr-mcp.js",
     "dist/",
     "README.md"
   ],
@@ -37,7 +38,8 @@
     "access": "public"
   },
   "bin": {
-    "assignr": "./bin/assignr.js"
+    "assignr": "./bin/assignr.js",
+    "assignr-mcp": "./bin/assignr-mcp.js"
   },
   "scripts": {
     "build": "tsc",
@@ -48,6 +50,7 @@
     "prepublishOnly": "pnpm run build && pnpm run test"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "commander": "^12.1.0",
     "fs-extra": "^11.2.0",
     "yaml": "^2.7.0",

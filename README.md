@@ -274,6 +274,43 @@ Check whether the repo is configured correctly.
 assignr doctor
 ```
 
+## MCP Server
+
+Assignr also ships a stdio MCP server so agents can manage tasks with tool calls instead of shelling out to the CLI.
+
+Build the package first:
+
+```bash
+pnpm build
+```
+
+Then register the server from the repo where Assignr should read and write `.assignr/` state:
+
+```json
+{
+  "mcpServers": {
+    "assignr": {
+      "command": "node",
+      "args": ["/path/to/repo/bin/assignr-mcp.js"]
+    }
+  }
+}
+```
+
+The server exposes these tools:
+
+| Tool | Purpose |
+|---|---|
+| `assignr_list` | List tasks, optionally filtered by status or domain |
+| `assignr_validate` | Run schema and semantic validation |
+| `assignr_get_task` | Return one parsed task spec |
+| `assignr_compile` | Compile one task into a generated prompt |
+| `assignr_set_status` | Update a task status in its YAML file |
+| `assignr_run_log` | Create a run log stub |
+| `assignr_get_compiled_prompt` | Read a compiled prompt |
+
+CLI and MCP behavior should stay aligned. When adding a feature that changes task operations, prefer one shared Assignr spec and shared implementation logic for both surfaces, then keep CLI-specific and MCP-specific specs only for transport details such as terminal formatting, stdio protocol behavior, and MCP JSON error responses.
+
 ## Example Workflow
 
 ```bash
