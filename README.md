@@ -1,159 +1,111 @@
 # Assignr
 
-Assignr is a repo-native workflow layer for existing coding agents. It turns work into scoped YAML tasks, compiles those tasks into agent-ready prompts, and keeps task status and run logs in your repository.
+Task management for coding agents. Define work as scoped YAML specs, compile them into agent-ready prompts, track status and run logs in your repo.
+
+- No hosted service. Everything lives in `.assignr/` alongside your code.
+- Works with any agent: Claude Code, Codex, Cursor, Aider, Goose, or a plain chat window.
+- Gives agents a consistent scope: goals, acceptance criteria, allowed paths, and verification commands.
+
+## Why
+
+Ad-hoc prompts don't scale. Problems with the typical "paste a description into an agent" workflow:
+
+- No record of what was asked, what ran, or what changed.
+- Agents drift out of scope without explicit boundaries.
+- No way to track work across sessions or hand off between agents.
+- Review and verification are informal and easy to skip.
+
+Assignr fixes this by treating agent work like structured tasks: defined upfront, compiled to a prompt, logged after execution, and closed when done.
+
+## Quick Start
+
+Requires Node.js 18+.
 
 ```bash
 npm install -g @dpatt/assignr
-
-mkdir assignr-demo && cd assignr-demo
 assignr init
-assignr new "Add license expiration reminders" \
-  --type implementation \
-  --domain core \
-  --priority high \
-  --goal "Warn users before provider licenses expire."
-assignr validate
-assignr status
-assignr compile add-license-expiration-reminders
+assignr new "Build login page" --type implementation --domain core --priority high
+assignr compile build-login-page
 ```
 
-The compiled prompt is written to `.assignr/prompts/generated/add-license-expiration-reminders.md`. Paste it into Claude Code, Codex, Cursor, Aider, Goose, or another coding agent, then record what happened with `assignr run-log add-license-expiration-reminders`.
-
-## Install
+The compiled prompt is written to `.assignr/prompts/generated/build-login-page.md`. Paste it into your agent. Afterward:
 
 ```bash
-npm install -g @dpatt/assignr
-assignr --help
+assignr run-log build-login-page
+assignr set-status build-login-page needs_review
+assignr review build-login-page
+assignr complete build-login-page
 ```
 
-With pnpm:
+## Task Spec
 
-```bash
-pnpm add -g @dpatt/assignr
-```
-
-Assignr requires Node.js 18 or newer.
-
-## How It Works
-
-Assignr does not call models, run agents, host a dashboard, or merge code. It gives agent work a durable shape:
-
-1. Create or edit a task spec in `.assignr/tasks/active/`.
-2. Validate task specs.
-3. Compile a task into a markdown prompt.
-4. Run that prompt in your agent harness.
-5. Add a run log and move the task through review.
-
-After `assignr init`, a repo has this structure:
-
-```text
-.assignr/
-  config.yaml
-  tasks/
-    active/
-    completed/
-    archived/
-  specs/
-    domains/
-      core.yaml
-    contracts/
-  prompts/
-    templates/
-    generated/
-  runs/
-  state/
-  commands/
-  README.md
-```
-
-Task specs are YAML files. The important fields are:
+Tasks are YAML files in `.assignr/tasks/active/`:
 
 ```yaml
-id: add-license-expiration-reminders
-title: Add license expiration reminders
+id: build-login-page
+title: Build login page
 status: pending
 type: implementation
 domain: core
 priority: high
-goal: Warn users before provider licenses expire.
+goal: Implement email/password login with session handling.
 acceptance_criteria:
-  - Users can see licenses expiring within 30 days.
-  - Expired licenses are visually distinct from active licenses.
+  - User can log in with valid credentials.
+  - Invalid credentials return a clear error.
 allowed_paths:
-  - src/features/licenses/**
+  - src/features/auth/**
 forbidden_paths:
-  - src/auth/**
+  - src/admin/**
 verification:
   commands:
-    - pnpm test -- licenses
+    - pnpm test -- auth
 outputs_required:
   - files_changed
   - tests_run
   - risks
 ```
 
-Older projects may still have tasks under `.assignr/specs/tasks/`. Move active tasks to `.assignr/tasks/active/` so `assignr list`, `assignr validate`, and `assignr compile` can find them.
-
 ## Commands
 
 | Command | Purpose |
 |---|---|
-| `assignr init [--force] [--root <dir>]` | Initialize Assignr files in a repo. |
-| `assignr new <title>` | Create a task spec. Supports `--type`, `--domain`, `--priority`, and `--goal`. |
+| `assignr init` | Initialize `.assignr/` in a repo. |
+| `assignr new <title>` | Create a task spec. |
 | `assignr validate` | Validate all task specs. |
-| `assignr compile [task-id]` | Compile one task, pending tasks, or all tasks into markdown prompts. Supports `--status <status>` and `--all`. |
-| `assignr list [--status <status>] [--domain <domain>]` | List task specs in a compact table. |
-| `assignr status` | Show task status counts and suggest the next unblocked task. |
-| `assignr set-status <task-id> <status>` | Update task status. Allowed statuses: `pending`, `in_progress`, `needs_review`, `complete`, `blocked`, `failed`, `partial`. |
-| `assignr complete <task-id>` | Mark an active task complete and move it to `.assignr/tasks/completed/`. |
-| `assignr run-log <task-id>` | Create a run log stub for a task. |
-| `assignr review <task-id>` | Generate a review prompt for a task. |
-| `assignr doctor` | Check whether the repo is configured correctly. |
-| `assignr mcp-config [--force]` | Create or update the repo-local `.mcp.json` entry for the Assignr MCP server. |
-
-Common follow-up flow:
-
-```bash
-assignr run-log add-license-expiration-reminders
-assignr set-status add-license-expiration-reminders needs_review
-assignr review add-license-expiration-reminders
-assignr complete add-license-expiration-reminders
-```
+| `assignr compile [task-id]` | Compile a task into a prompt. Use `--all` or `--status <status>` for bulk compile. |
+| `assignr list` | List tasks. Filter with `--status` or `--domain`. |
+| `assignr status` | Show status counts and suggest the next task. |
+| `assignr set-status <id> <status>` | Update status: `pending`, `in_progress`, `needs_review`, `complete`, `blocked`, `failed`, `partial`. |
+| `assignr run-log <id>` | Create a run log stub. |
+| `assignr review <id>` | Generate a review prompt. |
+| `assignr complete <id>` | Mark complete and move to `.assignr/tasks/completed/`. |
+| `assignr doctor` | Check repo configuration. |
+| `assignr mcp-config` | Write `.mcp.json` for the Assignr MCP server. |
 
 ## MCP Server
 
-Assignr ships a stdio MCP server for agents that can use tools instead of shell commands. From the repo where Assignr should manage `.assignr/` state, run:
-
-```bash
-assignr mcp-config
-```
-
-This writes a repo-local `.mcp.json` entry pointing at `bin/assignr-mcp.js`. Restart your agent client after creating or changing MCP config; most clients discover MCP tools only at session startup.
-
-The server exposes:
+For agents that support MCP tools, run `assignr mcp-config` to write a repo-local `.mcp.json`. Restart your agent client to pick up the tools.
 
 | Tool | Purpose |
 |---|---|
-| `assignr_list` | List tasks, optionally filtered by status or domain. |
-| `assignr_get_task` | Read one parsed task spec. |
-| `assignr_compile` | Compile one task into a generated prompt. |
+| `assignr_list` | List tasks. |
+| `assignr_get_task` | Read a task spec. |
+| `assignr_compile` | Compile a task to a prompt. |
 | `assignr_get_compiled_prompt` | Read an existing generated prompt. |
-| `assignr_validate` | Run schema and semantic validation. |
+| `assignr_validate` | Validate specs. |
 | `assignr_set_status` | Update task status. |
 | `assignr_run_log` | Create a run log stub. |
 
 ## Agent Skills
 
-Skill files for Codex and Claude Code are published with the package and live in the source repository under `.codex/skills/` and `.claude/skills/`. They are not generated by `assignr init`; copy the relevant skill into your own repo when you want agents to follow the Assignr task-runner workflow.
+Pre-built skill files for Claude Code and Codex live in `.claude/skills/` and `.codex/skills/` in this repo. Copy the relevant skill into your own repo to have agents follow the Assignr workflow automatically.
 
-| Skill | Purpose |
-|---|---|
-| `assignr-mcp-task-runner` | Single-agent workflow for picking up, implementing, verifying, logging, and closing one Assignr task. |
-| `assignr-4-agents` | Coordinator workflow for running four Assignr task workers in parallel. |
+- `assignr-mcp-task-runner` — single agent: pick up, implement, verify, log, and close one task.
+- `assignr-4-agents` — coordinator: run four task workers in parallel.
 
 ## Package
 
-- npm package: `@dpatt/assignr`
-- CLI binary: `assignr`
-- MCP binary: `assignr-mcp`
+- npm: `@dpatt/assignr`
+- CLI: `assignr`
+- MCP: `assignr-mcp`
 - License: MIT
