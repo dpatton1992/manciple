@@ -8,6 +8,7 @@ import { initCommand } from "./commands/init.js";
 import { newCommand } from "./commands/new.js";
 import { validateCommand } from "./commands/validate.js";
 import { compileCommand } from "./commands/compile.js";
+import { listCommand } from "./commands/list.js";
 import { statusCommand } from "./commands/status.js";
 import { setStatusCommand } from "./commands/setStatus.js";
 import { runLogCommand } from "./commands/runLog.js";
@@ -85,6 +86,14 @@ program
       status: opts.status as Status | undefined,
       all: opts.all,
     });
+  });
+
+// list
+program
+  .command("list")
+  .description("List task specs in a compact table.")
+  .action(() => {
+    listCommand(p.specsTasks, cwd);
   });
 
 // status
