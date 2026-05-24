@@ -112,8 +112,6 @@ function loadActiveValidationTasks(): {
   tasks: LoadedTaskWithTier[];
   errors: Array<{ filePath: string; error: string }>;
   activeFilePaths: Set<string>;
-  activeTaskCount: number;
-  activeDomainCount: number;
 } {
   const activeResult = loadTasks(p.specsTasks, "active");
   const allResult = loadTasks(p.specsTasks, "all");
@@ -127,8 +125,6 @@ function loadActiveValidationTasks(): {
     tasks: [...activeResult.tasks, ...contextTasks],
     errors: activeResult.errors,
     activeFilePaths,
-    activeTaskCount: activeResult.tasks.length,
-    activeDomainCount: new Set(activeResult.tasks.map((task) => task.spec.domain)).size,
   };
 }
 
@@ -165,10 +161,11 @@ server.registerTool(
         tasks,
         errors: loadErrors,
         activeFilePaths,
-        activeTaskCount,
-        activeDomainCount,
       } = loadActiveValidationTasks();
-      const result = validateTasks(tasks, { specsDomainsDir: p.specsDomains });
+      const result = validateTasks(tasks, {
+        specsDomainsDir: p.specsDomains,
+        countFilePaths: activeFilePaths,
+      });
       const valid = result.valid.filter((task) => activeFilePaths.has(task.filePath));
       const invalid = result.invalid.filter((entry) => activeFilePaths.has(entry.filePath));
       const errors = [
@@ -188,8 +185,8 @@ server.registerTool(
         valid_count: valid.length,
         error_count: errors.length,
         counts: {
-          tasks_checked: activeTaskCount + loadErrors.length,
-          domains_checked: activeDomainCount,
+          tasks_checked: result.counts.tasksChecked + loadErrors.length,
+          domains_checked: result.counts.domainsChecked,
           contracts_checked: result.counts.contractsChecked + loadErrors.length,
         },
         errors,

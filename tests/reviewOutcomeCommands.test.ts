@@ -168,7 +168,36 @@ describe("review outcome commands", () => {
     expect(message).toContain("Task not found: missing-task");
   });
 
-  it("exits clearly when the task is not in needs_review", () => {
+  it("exits clearly when approving a task not in needs_review", () => {
+    newCommand("Approve too soon", {
+      type: "implementation",
+      domain: "core",
+      priority: "high",
+      cwd,
+      activeDir: p.tasksActive,
+    });
+
+    const message = expectExit(() => approveCommand("approve-too-soon", {
+      specsTasksDir: p.specsTasks,
+      completedDir: p.tasksCompleted,
+      runsDir: p.runs,
+      cwd,
+    }));
+
+    expect(message).toContain("expected needs_review, found pending");
+  });
+
+  it("exits clearly when requesting changes for a missing task", () => {
+    const message = expectExit(() => requestChangesCommand("missing-task", "Needs work.", {
+      specsTasksDir: p.specsTasks,
+      runsDir: p.runs,
+      cwd,
+    }));
+
+    expect(message).toContain("Task not found: missing-task");
+  });
+
+  it("exits clearly when requesting changes for a task not in needs_review", () => {
     newCommand("Not ready", {
       type: "implementation",
       domain: "core",
@@ -206,6 +235,16 @@ describe("review outcome commands", () => {
     }));
 
     expect(message).toContain("required option '--reason <text>' must not be empty");
+  });
+
+  it("exits clearly when blocking review for a missing task", () => {
+    const message = expectExit(() => blockReviewCommand("missing-task", "Waiting on evidence.", {
+      specsTasksDir: p.specsTasks,
+      runsDir: p.runs,
+      cwd,
+    }));
+
+    expect(message).toContain("Task not found: missing-task");
   });
 
   it("exits clearly when blocking review for a task not in needs_review", () => {

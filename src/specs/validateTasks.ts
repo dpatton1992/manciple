@@ -24,6 +24,7 @@ export interface ValidationCounts {
 
 export interface ValidateTasksOptions {
   specsDomainsDir?: string;
+  countFilePaths?: ReadonlySet<string>;
 }
 
 // depends_on is intentionally excluded — an empty dependency list is valid.
@@ -40,8 +41,11 @@ export function validateTasks(
 ): ValidationResult {
   const warnings: ValidationIssue[] = [];
   const errorsByFile = new Map<string, ValidationIssue[]>();
+  const shouldCount = (filePath: string): boolean =>
+    options.countFilePaths ? options.countFilePaths.has(filePath) : true;
+  const countedTaskCount = tasks.filter((task) => shouldCount(task.filePath)).length;
   const counts: ValidationCounts = {
-    tasksChecked: tasks.length,
+    tasksChecked: countedTaskCount,
     domainsChecked: 0,
     contractsChecked: 0,
   };
@@ -66,9 +70,10 @@ export function validateTasks(
 
   for (const loaded of tasks) {
     const { spec, filePath } = loaded;
+    const countTask = shouldCount(filePath);
 
     // Check for duplicate IDs
-    counts.contractsChecked++;
+    if (countTask) counts.contractsChecked++;
     const duplicates = idMap.get(spec.id) ?? [];
     if (duplicates.length > 1 && duplicates[0] !== filePath) {
       addError(filePath, {
@@ -81,7 +86,7 @@ export function validateTasks(
 
     // Check dependency references
     for (const dep of spec.depends_on ?? []) {
-      counts.contractsChecked++;
+      if (countTask) counts.contractsChecked++;
       if (!allIds.has(dep)) {
         hasMissingDependencyError = true;
         addError(filePath, {
@@ -95,7 +100,7 @@ export function validateTasks(
 
     // Warn about missing optional fields
     for (const field of OPTIONAL_FIELDS) {
-      counts.contractsChecked++;
+      if (countTask) counts.contractsChecked++;
       const value = spec[field];
       if (!value || (Array.isArray(value) && value.length === 0)) {
         warnings.push({
@@ -108,7 +113,7 @@ export function validateTasks(
     }
 
     // Warn about TODO placeholder values
-    counts.contractsChecked++;
+    if (countTask) counts.contractsChecked++;
     if (spec.goal?.startsWith("TODO:")) {
       warnings.push({
         filePath,
@@ -117,7 +122,7 @@ export function validateTasks(
         severity: "warning",
       });
     }
-    counts.contractsChecked++;
+    if (countTask) counts.contractsChecked++;
     if (spec.acceptance_criteria?.some((c) => c.startsWith("TODO:"))) {
       warnings.push({
         filePath,
@@ -126,7 +131,7 @@ export function validateTasks(
         severity: "warning",
       });
     }
-    counts.contractsChecked++;
+    if (countTask) counts.contractsChecked++;
     if (spec.verification?.commands?.some((c) => c.startsWith("TODO:"))) {
       warnings.push({
         filePath,
@@ -140,7 +145,8 @@ export function validateTasks(
   if (options.specsDomainsDir) {
     const domainValidation = validateDomainReferences(
       tasks,
-      options.specsDomainsDir
+      options.specsDomainsDir,
+      shouldCount
     );
     counts.domainsChecked = domainValidation.domainsChecked;
     counts.contractsChecked += domainValidation.contractsChecked;
@@ -150,7 +156,7 @@ export function validateTasks(
   }
 
   if (!hasMissingDependencyError) {
-    if (tasks.length > 0) counts.contractsChecked++;
+    if (countedTaskCount > 0) counts.contractsChecked++;
     const cycles = findDependencyCycles(tasks, taskById);
     for (const cycle of cycles) {
       const task = taskById.get(cycle[0]);
@@ -175,7 +181,8 @@ export function validateTasks(
 
 function validateDomainReferences(
   tasks: LoadedTask[],
-  specsDomainsDir: string
+  specsDomainsDir: string,
+  shouldCount: (filePath: string) => boolean
 ): {
   issues: Array<{ filePath: string; issue: ValidationIssue }>;
   domainsChecked: number;
@@ -183,9 +190,13 @@ function validateDomainReferences(
 } {
   const issues: Array<{ filePath: string; issue: ValidationIssue }> = [];
   const domains = new Set<string>();
+  let contractsChecked = 0;
 
   for (const { spec, filePath } of tasks) {
-    domains.add(spec.domain);
+    if (shouldCount(filePath)) {
+      domains.add(spec.domain);
+      contractsChecked++;
+    }
     const domainPath = join(specsDomainsDir, `${spec.domain}.yaml`);
     if (existsSync(domainPath)) continue;
 
@@ -203,7 +214,7 @@ function validateDomainReferences(
   return {
     issues,
     domainsChecked: domains.size,
-    contractsChecked: tasks.length,
+    contractsChecked,
   };
 }
 

@@ -315,6 +315,52 @@ describe("assignr validate", () => {
     }
   });
 
+  it("keeps active-only summary counts scoped to active lifecycle tasks", () => {
+    newCommand("Done validation task", {
+      type: "implementation",
+      domain: "core",
+      priority: "medium",
+      goal: "Finish the validation task.",
+      cwd,
+      activeDir: p.tasksActive,
+    });
+    completeCommand("done-validation-task", {
+      specsTasksDir: p.specsTasks,
+      completedDir: p.tasksCompleted,
+      cwd,
+    });
+    newCommand("Active validation task", {
+      type: "implementation",
+      domain: "core",
+      priority: "high",
+      goal: "Keep validating the active task.",
+      cwd,
+      activeDir: p.tasksActive,
+    });
+
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
+    try {
+      validateCommand(p.specsTasks, cwd);
+      const activeOutput = logSpy.mock.calls.flat().join("\n");
+      const activeContracts = activeOutput.match(/Checked: 1 task, 1 domain, (\d+) contracts/);
+
+      logSpy.mockClear();
+
+      validateCommand(p.specsTasks, cwd, { all: true });
+      const allOutput = logSpy.mock.calls.flat().join("\n");
+      const allContracts = allOutput.match(/Checked: 2 tasks, 1 domain, (\d+) contracts/);
+
+      expect(activeContracts).not.toBeNull();
+      expect(allContracts).not.toBeNull();
+      expect(Number(activeContracts?.[1])).toBeLessThan(Number(allContracts?.[1]));
+    } finally {
+      logSpy.mockRestore();
+      warnSpy.mockRestore();
+    }
+  });
+
   it("validateCommand succeeds and discovers the new task", () => {
     newCommand("License expiration reminders", {
       type: "implementation",

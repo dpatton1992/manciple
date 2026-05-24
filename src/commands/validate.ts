@@ -86,7 +86,10 @@ export function validateCommand(
     console.warn(`  ⚠ No tasks found. Run "assignr new" to create your first task.`);
   }
 
-  const result = validateTasks(tasks, { specsDomainsDir });
+  const result = validateTasks(tasks, {
+    specsDomainsDir,
+    ...(options.all ? {} : { countFilePaths: activeFilePaths }),
+  });
   const valid = options.all
     ? result.valid
     : result.valid.filter((task) => activeFilePaths.has(task.filePath));
@@ -96,15 +99,7 @@ export function validateCommand(
   const warnings = options.all
     ? result.warnings
     : result.warnings.filter((warning) => activeFilePaths.has(warning.filePath));
-  const activeDomainCount = new Set(activeResult?.tasks.map((task) => task.spec.domain)).size;
-  const counts = options.all
-    ? result.counts
-    : {
-        ...result.counts,
-        tasksChecked: activeResult?.tasks.length ?? 0,
-        domainsChecked: activeDomainCount,
-      };
-  const checkedCounts = withLoadErrorCounts(counts, loadErrors.length);
+  const checkedCounts = withLoadErrorCounts(result.counts, loadErrors.length);
 
   for (const { filePath, errors } of invalid) {
     totalErrors++;

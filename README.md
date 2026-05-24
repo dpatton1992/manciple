@@ -115,7 +115,36 @@ outputs_required:
 
 ## Task Lifecycle
 
-New tasks start as active work. When implementation and review are finished, move a task out of active context:
+New tasks start as active work. After an implementation agent finishes, it should create a run log and move the task to `needs_review`. In Assignr, `needs_review` means the implementation is done enough to review, but the reviewer has not accepted it yet.
+
+```bash
+assignr run-log build-login-page \
+  --result complete \
+  --model gpt-5-codex \
+  --agent Codex \
+  --command "pnpm test -- auth" \
+  --file "src/features/auth/LoginPage.tsx" \
+  --risks "No known risks."
+assignr set-status build-login-page needs_review
+assignr review-check build-login-page
+assignr review build-login-page
+```
+
+`assignr review-check` checks whether active `needs_review` tasks have the evidence reviewers expect. `assignr review` writes a review prompt that includes the task context, run log evidence, current git diff, checklist items, and a decision section.
+
+Review happens at two levels. Implementation review asks whether the agent satisfied the task's scope, acceptance criteria, verification commands, artifacts, and risk reporting. Integration review asks whether the change fits the repo as a whole, which matters most in multi-agent runs where several individually correct tasks may still need a final combined check.
+
+Record the reviewer decision with one outcome command:
+
+```bash
+assignr approve build-login-page
+assignr request-changes build-login-page --reason "Add coverage for expired sessions."
+assignr block-review build-login-page --reason "Missing run log evidence."
+```
+
+`assignr approve` records the outcome, marks the task complete, and moves it to completed history. `assignr request-changes` records the reason and returns the task to `in_progress`. `assignr block-review` records the blocking reason and marks the task `blocked`.
+
+For manual lifecycle cleanup, `complete` also moves a task out of active context:
 
 ```bash
 assignr complete build-login-page
@@ -151,6 +180,10 @@ For repos created before lifecycle directories, run `assignr migrate-tasks` to m
 | `assignr set-status <id> <status>` | Update status: `pending`, `in_progress`, `needs_review`, `complete`, `blocked`, `failed`, `partial`. |
 | `assignr run-log <id>` | Create a run log with git-detected files and optional metadata flags. |
 | `assignr review <id>` | Generate a separate review prompt at `.assignr/prompts/generated/review-<task-id>.md`. |
+| `assignr review-check [id]` | Check review readiness evidence for active `needs_review` tasks. |
+| `assignr approve <id>` | Record approval for a `needs_review` task, mark it complete, and move it to completed history. |
+| `assignr request-changes <id> --reason <text>` | Record requested changes and return a `needs_review` task to `in_progress`. |
+| `assignr block-review <id> --reason <text>` | Record a blocking review reason and mark a `needs_review` task `blocked`. |
 | `assignr complete <id>` | Mark complete and move to `.assignr/tasks/completed/`. |
 | `assignr archive <id>` | Move abandoned or deferred work to `.assignr/tasks/archived/`. |
 | `assignr reopen <id>` | Move a completed or archived task back to `.assignr/tasks/active/`. |
