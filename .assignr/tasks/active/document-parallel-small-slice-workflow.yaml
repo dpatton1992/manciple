@@ -1,0 +1,45 @@
+id: document-parallel-small-slice-workflow
+title: Document parallel small slice workflow
+status: pending
+type: docs
+domain: core
+priority: medium
+depends_on:
+  - warn-on-path-ownership-before-compile
+  - add-worktree-first-task-checkout
+  - add-coordinator-review-queue
+  - score-merge-readiness-from-receipts
+  - docs-example-task
+  - document-evidence-based-review-workflow
+  - lifecycle-docs
+  - readme-demo-trim
+  - readme-thirty-second-value-demo
+allowed_paths:
+  - README.md
+  - .assignr/specs/domains/core.yaml
+forbidden_paths:
+  - src/
+  - tests/
+  - .assignr/tasks/
+goal: The README documents dependency graphs, path locks, worktree-first execution, coordinator review, receipts, merge readiness, and small-slice merging.
+acceptance_criteria:
+  - README explains blocks, conflicts_with, can_run_independently, path ownership, locks, and unsafe parallel-work areas with a compact example.
+  - README documents the default .assignr/worktrees/<task-id> worktree workflow for agents.
+  - README describes the coordinator owner loop for deciding parallel work, waiting work, merged work, and rework.
+  - "README lists required receipt fields: files changed, tests run, decisions made, risks, and follow-ups."
+  - README explains merge-readiness scoring as a review aid rather than a replacement for human review.
+  - README encourages merging useful slices quickly and avoiding many long-lived branches.
+verification:
+  commands:
+    - pnpm test
+    - pnpm typecheck
+outputs_required:
+  - files_changed
+  - tests_run
+  - decisions_made
+  - risks
+  - follow_ups
+notes:
+  - This docs slice intentionally waits behind existing README-heavy review work.
+  - Keep the example short and operational, not a second product spec.
+  - Use the docs to reinforce small-slice bias and coordinator ownership.

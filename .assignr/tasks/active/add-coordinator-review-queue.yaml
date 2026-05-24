@@ -1,0 +1,47 @@
+id: add-coordinator-review-queue
+title: Add coordinator review queue
+status: pending
+type: implementation
+domain: core
+priority: high
+depends_on:
+  - add-task-dependency-graph-contract
+  - warn-on-path-ownership-before-compile
+  - add-worktree-first-task-checkout
+  - list-command-filter
+  - lifecycle-reopen-command
+allowed_paths:
+  - src/commands/coordinator.ts
+  - src/coordination/
+  - src/cli.ts
+  - tests/coordinator.test.ts
+forbidden_paths:
+  - src/specs/schema.ts
+  - src/specs/validateTasks.ts
+  - src/commands/compile.ts
+  - src/commands/runLog.ts
+  - src/review/
+  - src/templates/renderTemplate.ts
+  - README.md
+  - .assignr/tasks/
+goal: A coordinator command summarizes what can run in parallel, what must wait, what merged, and what needs rework.
+acceptance_criteria:
+  - A coordinator-facing command groups active tasks into runnable, waiting, needs_review, complete-ready, blocked, and rework-needed sections.
+  - The command uses depends_on, blocks, conflicts_with, independence, and path ownership metadata when determining parallel eligibility.
+  - Tasks with path conflicts or explicit conflicts are not shown as parallel-safe with each other.
+  - Coordinator output includes concise reasons for wait or conflict decisions.
+  - Tests cover independent tasks, blockers, conflicts, path locks, and needs_review tasks requiring rework.
+verification:
+  commands:
+    - pnpm test -- coordinator
+    - pnpm typecheck
+outputs_required:
+  - files_changed
+  - tests_run
+  - decisions_made
+  - risks
+  - follow_ups
+notes:
+  - This is the owner-session view; keep it read-only and deterministic.
+  - Prefer plain tabular or grouped CLI output over a large new persistence model.
+  - Bias output toward a few mergeable slices rather than encouraging many concurrent branches.

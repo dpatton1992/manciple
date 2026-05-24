@@ -1,0 +1,42 @@
+id: add-review-evidence-validation
+title: Add review evidence validation
+status: complete
+type: implementation
+domain: core
+priority: medium
+depends_on:
+  - define-needs-review-readiness-contract
+goal: |
+  Give reviewers and maintainers a quick way to find `needs_review` tasks that are not actually review-ready. The check should surface missing run logs, changed files, verification evidence, and risk notes without blocking normal task validation.
+acceptance_criteria:
+  - A CLI command or flag exists to check review readiness for active `needs_review` tasks.
+  - The check prints one row per `needs_review` task with ready/missing status.
+  - Missing evidence messages come from the shared readiness helper.
+  - The command exits 0 when all checked tasks are ready and exits non-zero when any task is missing required review evidence.
+  - A task id argument can narrow the check to one task.
+  - The check does not replace `assignr validate`; schema validation remains focused on task spec correctness.
+  - Tests cover all-ready, missing-evidence, and single-task filtering cases.
+allowed_paths:
+  - src/commands/reviewCheck.ts
+  - src/commands/doctor.ts
+  - src/review/
+  - src/cli.ts
+  - tests/
+forbidden_paths:
+  - src/specs/schema.ts
+  - src/specs/validateTasks.ts
+  - bin/
+  - dist/
+  - README.md
+  - .assignr/tasks/
+verification:
+  commands:
+    - pnpm build
+    - pnpm test
+    - node bin/assignr.js review-check
+outputs_required:
+  - files_changed
+  - risks
+notes:
+  - Prefer a dedicated `assignr review-check [task-id]` command if it keeps `validate` from becoming overloaded.
+  - If `doctor` already has a natural place for this, it may call the same helper, but the review check should remain directly runnable.

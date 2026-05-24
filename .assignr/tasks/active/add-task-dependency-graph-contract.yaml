@@ -1,0 +1,40 @@
+id: add-task-dependency-graph-contract
+title: Add task dependency graph contract
+status: pending
+type: implementation
+domain: core
+priority: high
+depends_on:
+  - domain-context-validation
+allowed_paths:
+  - src/specs/schema.ts
+  - src/specs/validateTasks.ts
+  - tests/validateTasks.test.ts
+forbidden_paths:
+  - src/commands/compile.ts
+  - src/commands/reviewCheck.ts
+  - src/commands/runLog.ts
+  - src/templates/renderTemplate.ts
+  - README.md
+  - .assignr/tasks/
+goal: Task specs can explicitly model blockers, conflicts, independence, and path ownership metadata without breaking existing tasks.
+acceptance_criteria:
+  - Task specs support explicit graph fields for blocks, conflicts_with, and can_run_independently while preserving existing depends_on behavior.
+  - Task specs support path ownership metadata for touched paths, locked paths, and unsafe parallel-work areas.
+  - Validation rejects missing graph references and self-conflicts with clear field-specific errors.
+  - Validation allows a task to declare that it can run independently without requiring depends_on.
+  - Tests cover valid graph declarations, missing graph references, self-conflicts, and path ownership metadata.
+verification:
+  commands:
+    - pnpm test -- validateTasks
+    - pnpm typecheck
+outputs_required:
+  - files_changed
+  - tests_run
+  - decisions_made
+  - risks
+  - follow_ups
+notes:
+  - This is the prerequisite contract for later coordination features.
+  - Keep the schema additive so existing task YAML remains valid.
+  - Use structured fields instead of encoding graph semantics in notes.

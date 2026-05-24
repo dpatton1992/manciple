@@ -1,0 +1,44 @@
+id: add-worktree-first-task-checkout
+title: Add worktree first task checkout
+status: pending
+type: implementation
+domain: core
+priority: high
+depends_on:
+  - list-command-filter
+  - lifecycle-reopen-command
+  - status-lifecycle-summary
+allowed_paths:
+  - src/commands/worktree.ts
+  - src/cli.ts
+  - src/utils/paths.ts
+  - tests/worktree.test.ts
+forbidden_paths:
+  - src/specs/schema.ts
+  - src/specs/validateTasks.ts
+  - src/commands/compile.ts
+  - src/commands/reviewCheck.ts
+  - src/templates/renderTemplate.ts
+  - README.md
+  - .assignr/tasks/
+goal: Agents can create an isolated git worktree and branch for a task using the default .assignr/worktrees/task-slug location.
+acceptance_criteria:
+  - A command creates or reports a per-task git worktree at .assignr/worktrees/<task-id> by default.
+  - The command creates a task-specific branch name deterministically and reports the branch and path.
+  - The command refuses to overwrite a non-empty unrelated worktree directory without an explicit force option.
+  - The command handles missing git repositories with a clear error.
+  - Tests cover successful worktree creation command construction, existing worktree handling, and non-git failure behavior.
+verification:
+  commands:
+    - pnpm test -- worktree
+    - pnpm typecheck
+outputs_required:
+  - files_changed
+  - tests_run
+  - decisions_made
+  - risks
+  - follow_ups
+notes:
+  - Default path must be .assignr/worktrees/<task-id>.
+  - Keep this as a small command slice; do not build the full coordinator loop here.
+  - Because existing active tasks touch src/cli.ts and src/utils/paths.ts, this waits behind those reviews before starting.
