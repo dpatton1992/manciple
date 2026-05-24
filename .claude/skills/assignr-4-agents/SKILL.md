@@ -49,11 +49,16 @@ If that path does not exist, use the discovered `assignr-mcp-task-runner` skill 
    - Review each worker's final report and changed files.
    - Resolve conflicts only within the relevant task scope.
    - Run the broadest feasible verification after integration.
+   - Run `assignr check-lifecycle` before final reporting. If MCP support is available, `assignr_check_lifecycle` may be used for the same check, but still verify the local CLI surface when feasible.
+   - If lifecycle placement issues are reported, move each misplaced task YAML to the directory matching its `status`: active statuses (`pending`, `in_progress`, `needs_review`, `blocked`, `failed`, `partial`) go to `.assignr/tasks/active`, `complete` goes to `.assignr/tasks/completed`, and `archived` goes to `.assignr/tasks/archived`.
+   - When moving misplaced task files, create the destination directory if needed, never overwrite an existing destination file, and report any collision as a blocker instead of deleting either file.
+   - Re-run `assignr check-lifecycle` after any lifecycle moves and require it to pass before final reporting unless a collision or invalid status blocks the run.
    - Validate Assignr metadata with `assignr_validate` when MCP tools are available.
 
 6. Report the run.
    - Include each worker's assigned task or sidecar responsibility.
    - Include files changed, verification commands and results, final task statuses, blockers, and follow-up work.
+   - Include the lifecycle check result, any task files moved between lifecycle directories, and any lifecycle placement blockers.
    - Explicitly call out any worker that could not complete its task or verify its changes.
 
 ## Worker Prompt Template

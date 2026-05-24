@@ -47,6 +47,7 @@
 		"dev": "tsx src/cli.ts",
 		"format:assignr-yaml": "tsx scripts/formatAssignrYaml.ts",
 		"check:assignr-yaml": "tsx scripts/formatAssignrYaml.ts --check",
+		"check:assignr-lifecycle": "tsx scripts/checkAssignrLifecycle.ts",
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"typecheck": "tsc --noEmit",

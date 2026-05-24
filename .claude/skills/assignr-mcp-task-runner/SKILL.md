@@ -1,17 +1,39 @@
 ---
 name: assignr-mcp-task-runner
-description: Complete implementation, docs, test, refactor, review, or hardening work from Assignr task specs using the Assignr MCP server. Use when the user asks Claude Code to run, complete, pick up, execute, or work through an Assignr task in this repo, especially when MCP tools named assignr_list, assignr_get_task, assignr_compile, assignr_set_status, assignr_run_log, assignr_validate, or assignr_get_compiled_prompt are available.
+description: Complete Assignr task work using the Assignr MCP server, optionally focused on implementation, docs, test, refactor, review, or hardening work; default to any of those task types when no focus is given. Use when the user asks Claude Code to run, complete, pick up, execute, or work through an Assignr task in this repo, especially when MCP tools named assignr_list, assignr_get_task, assignr_compile, assignr_set_status, assignr_run_log, assignr_validate, or assignr_get_compiled_prompt are available.
 ---
 
 # Assignr MCP Task Runner
 
 Use Assignr as the source of truth for task scope. Prefer the MCP tools over shelling out to `assignr` commands whenever they are available.
 
+## Optional Focus
+
+The caller may provide an optional focus parameter or natural-language focus:
+
+- `focus: implementation`
+- `focus: docs`
+- `focus: test`
+- `focus: refactor`
+- `focus: review`
+- `focus: hardening`
+- `focus: any`
+
+When no focus is provided, treat it as `focus: any`.
+
+The focus constrains task selection, not task execution quality:
+
+- For a named task id, load and run that exact task even if its `type` differs from the focus; briefly note the mismatch before continuing.
+- For "choose a task" requests, prefer tasks whose `type` matches the focus.
+- For `focus: any`, choose from implementation, docs, test, refactor, review, and hardening tasks.
+- If no unblocked task matches a specific focus, report that clearly and list the closest available pending or in-progress tasks instead of silently switching focus.
+- Once a task is selected, obey the task spec exactly. Do not expand or shrink `allowed_paths`, `forbidden_paths`, acceptance criteria, or verification just because of the focus.
+
 ## Workflow
 
 1. Discover the task.
    - If the user names a task id, call `assignr_get_task` with that id.
-   - If the user asks to choose a task, call `assignr_list` and select a reasonable `pending` or `in_progress` task. Prefer unblocked, high-priority tasks whose dependencies appear satisfied.
+   - If the user asks to choose a task, call `assignr_list` and select a reasonable `pending` or `in_progress` task matching the requested focus. Prefer unblocked, high-priority tasks whose dependencies appear satisfied.
    - If MCP tools are unavailable, fall back to reading `.assignr/specs/tasks/*.yaml` directly.
 
 2. Start the task.

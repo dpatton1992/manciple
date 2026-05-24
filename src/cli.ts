@@ -13,6 +13,7 @@ import { statusCommand } from "./commands/status.js";
 import { setStatusCommand } from "./commands/setStatus.js";
 import { completeCommand } from "./commands/complete.js";
 import { archiveCommand } from "./commands/archive.js";
+import { checkLifecycleCommand } from "./commands/checkLifecycle.js";
 import { runLogCommand } from "./commands/runLog.js";
 import { reviewCommand } from "./commands/review.js";
 import { doctorCommand } from "./commands/doctor.js";
@@ -164,6 +165,19 @@ program
       specsTasksDir: p.specsTasks,
       archivedDir: p.tasksArchived,
       cwd,
+    });
+  });
+
+// check-lifecycle
+program
+  .command("check-lifecycle")
+  .description("Validate that task files live in the lifecycle directory matching their status.")
+  .action(() => {
+    checkLifecycleCommand({
+      cwd,
+      activeDir: p.tasksActive,
+      completedDir: p.tasksCompleted,
+      archivedDir: p.tasksArchived,
     });
   });
 

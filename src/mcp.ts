@@ -12,6 +12,7 @@ import { loadTasks } from "./specs/loadTasks.js";
 import { validateTasks } from "./specs/validateTasks.js";
 import { listTasksForMcp } from "./mcpList.js";
 import { buildRunLog, timestamp } from "./commands/runLog.js";
+import { checkLifecyclePlacement } from "./lifecycle/placement.js";
 import {
   IMPLEMENTATION_TEMPLATE,
   REVIEW_TEMPLATE,
@@ -146,6 +147,25 @@ server.registerTool(
         },
         errors,
       });
+    })
+);
+
+server.registerTool(
+  "assignr_check_lifecycle",
+  {
+    title: "Check Assignr Lifecycle Placement",
+    description: "Validate that task files live in the lifecycle directory matching their status.",
+  },
+  () =>
+    toolResult(() => {
+      return jsonResult(
+        checkLifecyclePlacement({
+          cwd,
+          activeDir: p.tasksActive,
+          completedDir: p.tasksCompleted,
+          archivedDir: p.tasksArchived,
+        })
+      );
     })
 );
 

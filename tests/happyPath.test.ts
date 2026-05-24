@@ -16,6 +16,7 @@ import { compileCommand } from "../src/commands/compile.js";
 import { reviewCommand } from "../src/commands/review.js";
 import { setStatusCommand } from "../src/commands/setStatus.js";
 import { completeCommand } from "../src/commands/complete.js";
+import { checkLifecycleCommand } from "../src/commands/checkLifecycle.js";
 import { statusCommand } from "../src/commands/status.js";
 import { loadTasks } from "../src/specs/loadTasks.js";
 import { getPaths } from "../src/utils/paths.js";
@@ -612,6 +613,95 @@ describe("assignr complete", () => {
     } finally {
       errorSpy.mockRestore();
       exitSpy.mockRestore();
+    }
+  });
+});
+
+describe("assignr check-lifecycle", () => {
+  it("exits non-zero when task status does not match its lifecycle directory", () => {
+    newCommand("Misplaced complete task", {
+      type: "implementation",
+      domain: "core",
+      priority: "medium",
+      goal: "Create a misplaced completed task.",
+      cwd,
+      activeDir: p.tasksActive,
+    });
+
+    const taskFile = join(p.tasksActive, "misplaced-complete-task.yaml");
+    const spec = parse(readFileSync(taskFile, "utf-8")) as Record<string, unknown>;
+    spec["status"] = "complete";
+    writeFileSync(
+      taskFile,
+      Object.entries(spec)
+        .map(([key, value]) => `${key}: ${typeof value === "string" ? value : JSON.stringify(value)}`)
+        .join("\n") + "\n",
+      "utf-8"
+    );
+
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
+      throw new Error(`process.exit(${code})`);
+    }) as never);
+
+    try {
+      expect(() =>
+        checkLifecycleCommand({
+          cwd,
+          activeDir: p.tasksActive,
+          completedDir: p.tasksCompleted,
+          archivedDir: p.tasksArchived,
+        })
+      ).toThrow("process.exit(1)");
+
+      const output = errorSpy.mock.calls.flat().join("\n");
+      expect(output).toContain("Lifecycle placement issues: 1");
+      expect(output).toContain("misplaced-complete-task.yaml");
+      expect(output).toContain("belongs in .assignr/tasks/completed");
+    } finally {
+      errorSpy.mockRestore();
+      exitSpy.mockRestore();
+    }
+  });
+
+  it("passes when tasks are in lifecycle directories matching their statuses", () => {
+    newCommand("Active task", {
+      type: "implementation",
+      domain: "core",
+      priority: "medium",
+      goal: "Create an active task.",
+      cwd,
+      activeDir: p.tasksActive,
+    });
+    newCommand("Completed task", {
+      type: "implementation",
+      domain: "core",
+      priority: "medium",
+      goal: "Create a completed task.",
+      cwd,
+      activeDir: p.tasksActive,
+    });
+    completeCommand("completed-task", {
+      specsTasksDir: p.specsTasks,
+      completedDir: p.tasksCompleted,
+      cwd,
+    });
+
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    try {
+      expect(() =>
+        checkLifecycleCommand({
+          cwd,
+          activeDir: p.tasksActive,
+          completedDir: p.tasksCompleted,
+          archivedDir: p.tasksArchived,
+        })
+      ).not.toThrow();
+
+      expect(logSpy.mock.calls.flat().join("\n")).toContain("Lifecycle placement OK");
+    } finally {
+      logSpy.mockRestore();
     }
   });
 });
