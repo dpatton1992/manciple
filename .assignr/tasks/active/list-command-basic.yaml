@@ -1,21 +1,15 @@
 id: list-command-basic
 title: Add assignr list command with tabular task output
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: high
 depends_on: []
-goal: >
-  There is currently no way to see all tasks at a glance without manually reading YAML
-  files. `assignr list` should load every spec from `.assignr/specs/tasks`, then print a
-  compact table to stdout with one row per task. The table must show: task ID, title
-  (truncated at ~50 chars if needed), status, and dependency count. No external table
-  library; format the columns with padEnd. Output goes to stdout so it is pipeable.
+goal: |
+  There is currently no way to see all tasks at a glance without manually reading YAML files. `assignr list` should load every spec from `.assignr/specs/tasks`, then print a compact table to stdout with one row per task. The table must show: task ID, title (truncated at ~50 chars if needed), status, and dependency count. No external table library; format the columns with padEnd. Output goes to stdout so it is pipeable.
 acceptance_criteria:
-  - Running `assignr list` prints a header row followed by one row per task found in
-    `.assignr/specs/tasks`
-  - Each row shows the task id, title (truncated at 50 chars with ellipsis if longer),
-    status, and dep count (number of items in depends_on)
+  - Running `assignr list` prints a header row followed by one row per task found in `.assignr/specs/tasks`
+  - Each row shows the task id, title (truncated at 50 chars with ellipsis if longer), status, and dep count (number of items in depends_on)
   - If no tasks are found the command prints "No tasks found." and exits 0
   - The command exits non-zero and prints to stderr if the tasks directory does not exist
   - Column widths are consistent across rows (padEnd alignment)
@@ -36,10 +30,8 @@ outputs_required:
   - files_changed
   - risks
 notes:
-  - Create src/commands/list.ts as a new file; follow the pattern of
-    src/commands/status.ts for how commands are structured and exported
+  - Create src/commands/list.ts as a new file; follow the pattern of src/commands/status.ts for how commands are structured and exported
   - Reuse loadTasks from src/specs/loadTasks.ts; do not re-implement glob loading
   - Do not sort by default; preserve filesystem order for v0
   - Do not add color or chalk; keep dependencies flat
-  - "Title truncation example: if title is 55 chars, show the first 47 characters
-    followed by three dots"
+  - "Title truncation example: if title is 55 chars, show the first 47 characters followed by three dots"

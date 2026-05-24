@@ -1,26 +1,19 @@
 id: lifecycle-validate-compile
 title: Scope validate and compile to tasks/active by default
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: high
 depends_on:
   - lifecycle-task-discovery
-goal: >
-  `assignr validate` and `assignr compile` currently read from `specs/tasks`. They
-  should be updated to read from `tasks/active` by default, since active tasks are the
-  intended agent context. Completed and archived tasks should be excluded unless an
-  explicit flag is passed. This keeps validation output focused and prevents stale
-  completed-task specs from generating noise or blocking a clean validate run.
+goal: |
+  `assignr validate` and `assignr compile` currently read from `specs/tasks`. They should be updated to read from `tasks/active` by default, since active tasks are the intended agent context. Completed and archived tasks should be excluded unless an explicit flag is passed. This keeps validation output focused and prevents stale completed-task specs from generating noise or blocking a clean validate run.
 acceptance_criteria:
-  - "`assignr validate` reads from tasks/active by default and reports only active task
-    errors"
-  - "`assignr validate --all` reads from all three lifecycle directories and validates
-    every spec"
+  - "`assignr validate` reads from tasks/active by default and reports only active task errors"
+  - "`assignr validate --all` reads from all three lifecycle directories and validates every spec"
   - "`assignr compile` and `assignr compile <task-id>` search tasks/active by default"
   - "`assignr compile --all` compiles from all three lifecycle directories"
-  - Tasks in tasks/completed or tasks/archived do not appear in default validate or
-    compile output
+  - Tasks in tasks/completed or tasks/archived do not appear in default validate or compile output
   - Both commands still exit non-zero on errors
   - All existing tests continue to pass
 allowed_paths:
@@ -44,12 +37,7 @@ outputs_required:
   - files_changed
   - risks
 notes:
-  - In cli.ts, pass p.tasksActive to validateCommand and compileCommand instead of
-    p.specsTasks; the --all flag should pass a combined or multi-tier load using the
-    'all' tier from lifecycle-task-discovery
-  - compileCommand already accepts a specsTasksDir string; update the signature to
-    accept a tier or multiple directories if needed
-  - Do not add --completed or --archived flags to these commands in this task; the --all
-    flag is sufficient for v1
-  - The compile command's existing --all flag means "compile all tasks in the given
-    directory"; do not confuse it with the new lifecycle --all
+  - In cli.ts, pass p.tasksActive to validateCommand and compileCommand instead of p.specsTasks; the --all flag should pass a combined or multi-tier load using the 'all' tier from lifecycle-task-discovery
+  - compileCommand already accepts a specsTasksDir string; update the signature to accept a tier or multiple directories if needed
+  - Do not add --completed or --archived flags to these commands in this task; the --all flag is sufficient for v1
+  - The compile command's existing --all flag means "compile all tasks in the given directory"; do not confuse it with the new lifecycle --all
