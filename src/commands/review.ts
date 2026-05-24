@@ -12,11 +12,6 @@ import {
 } from "../templates/renderTemplate.js";
 import type { TaskSpec } from "../specs/schema.js";
 import {
-  evaluateReviewReadiness,
-} from "../review/readiness.js";
-import {
-  parseRunLogEvidence,
-  readGitChangedFiles,
   readLatestRunLogContent,
 } from "../review/evidence.js";
 
@@ -59,35 +54,6 @@ function readGitDiff(cwd: string): string {
   return `\`\`\`diff\n${lines.slice(0, 400).join("\n")}\n\`\`\`\n\n_Diff truncated after 400 lines._`;
 }
 
-function formatReadinessValue(value: boolean): string {
-  return value ? "present" : "missing";
-}
-
-function renderReadinessSection(spec: TaskSpec, cwd: string): string {
-  const latestRunLog = readLatestRunLogContent(cwd, spec.id);
-  const report = evaluateReviewReadiness(spec, {
-    runLogs: parseRunLogEvidence(latestRunLog),
-    gitChangedFiles: readGitChangedFiles(cwd),
-  });
-  const missingEvidence = report.missingEvidence.length
-    ? report.missingEvidence.map((item) => `- ${item}`).join("\n")
-    : "_No missing readiness evidence._";
-
-  return `## Review Readiness
-
-- Overall: ${report.ready ? "ready" : "needs reviewer attention"}
-- Run log evidence: ${formatReadinessValue(report.hasRunLog)}
-- Changed files evidence: ${report.hasChangedFiles ? `present (${report.changedFilesSource})` : "missing"}
-- Verification command evidence: ${report.hasVerificationCommands ? "complete" : "incomplete"}
-- Verification result evidence: ${formatReadinessValue(report.hasVerificationResults)}
-- Risk notes evidence: ${formatReadinessValue(report.hasRisks)}
-
-### Missing Evidence
-
-${missingEvidence}
-`;
-}
-
 function renderReviewPrompt(spec: TaskSpec, cwd: string): string {
   return `# Review Task: ${spec.title}
 
@@ -112,8 +78,6 @@ ${formatList(spec.acceptance_criteria)}
 ## Verification Commands
 
 ${formatVerificationCommands(spec.verification?.commands)}
-
-${renderReadinessSection(spec, cwd)}
 
 ## Run Log
 

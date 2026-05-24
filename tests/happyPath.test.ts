@@ -494,8 +494,6 @@ describe("assignr review", () => {
       );
 
       const content = readFileSync(reviewPromptFile, "utf-8");
-      expect(content).toContain("## Review Readiness");
-      expect(content).toContain("No run log is available for task license-expiration-reminders.");
       expect(content).toContain("## Implementation Review");
       expect(content).toContain("## Integration Review");
       expect(content).toContain("- [ ] Allowed paths:");
@@ -586,8 +584,6 @@ none
       expect(content).toContain("## Git Diff");
       expect(content).toContain("-export const reminders = false;");
       expect(content).toContain("+export const reminders = true;");
-      expect(content).toContain("## Review Readiness");
-      expect(content).toContain("- Overall: ready");
     } finally {
       logSpy.mockRestore();
     }

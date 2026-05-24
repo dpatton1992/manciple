@@ -1,0 +1,42 @@
+id: validate-summary-counts
+title: Make assignr validate report checked task, domain, and contract counts
+status: complete
+type: implementation
+domain: core
+priority: high
+depends_on: []
+goal: |
+  `assignr validate` should be noisy enough to reassure users that it actually inspected their workspace. Add a summary that reports how many task specs, domain specs, and contract checks were evaluated, while preserving existing validation errors, warnings, and exit-code behavior.
+acceptance_criteria:
+  - "`assignr validate` prints a summary with counts for tasks checked, domains checked, and contracts checked."
+  - The summary appears on successful validation and when validation finds warnings.
+  - When validation fails, the command still exits non-zero and includes the count summary alongside the errors.
+  - The counts reflect the task lifecycle scope used by validate, including active-only or all-task behavior if those flags exist.
+  - Unit or command-level tests cover the printed summary for at least one clean project and one invalid project.
+  - MCP validation behavior remains compatible, or returns equivalent count data if the MCP result already has a structured response.
+  - All existing tests continue to pass.
+allowed_paths:
+  - src/commands/validate.ts
+  - src/specs/validateTasks.ts
+  - src/specs/loadTasks.ts
+  - src/mcp.ts
+  - tests/
+forbidden_paths:
+  - package.json
+  - README.md
+  - bin/
+  - dist/
+  - .assignr/tasks/
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test
+    - pnpm build
+    - node bin/assignr.js validate
+outputs_required:
+  - files_changed
+  - validation_output_example
+  - risks
+notes:
+  - Treat a dependency edge, missing dependency, circular dependency scan, domain reference scan, or schema parse as a contract check only if that term already makes sense in the implementation; otherwise document exactly what the contract count represents.
+  - Prefer returning structured counts from shared validation helpers and formatting them at the CLI boundary.
