@@ -1,6 +1,6 @@
 id: lifecycle-docs
 title: Update README to document lifecycle directories and commands
-status: pending
+status: needs_review
 type: docs
 domain: core
 priority: low
@@ -11,30 +11,16 @@ depends_on:
   - lifecycle-reopen-command
   - lifecycle-list-flags
   - lifecycle-migration
-goal: >
-  The README currently shows the old flat `specs/tasks` structure and does not mention
-  lifecycle commands. This task updates the README to reflect the new directory
-  structure and explains the lifecycle concept: active tasks are the default agent
-  context; completed and archived tasks are audit history. Command examples should be
-  updated throughout.
+goal: |
+  The README currently shows the old flat `specs/tasks` structure and does not mention lifecycle commands. This task updates the README to reflect the new directory structure and explains the lifecycle concept: active tasks are the default agent context; completed and archived tasks are audit history. Command examples should be updated throughout.
 acceptance_criteria:
-  - The folder structure section in the README shows .assignr/tasks/active,
-    .assignr/tasks/completed, and .assignr/tasks/archived with one-line explanations of
-    each
-  - "A 'Task lifecycle' section is added (or the existing workflow section is updated)
-    explaining that: - New tasks start in active - Completed tasks move to completed via
-    `assignr complete` - Abandoned tasks move to archived via `assignr archive` - Tasks
-    can return to active via `assignr reopen`"
-  - Command examples show `assignr complete`, `assignr archive`, and `assignr reopen`
-    with realistic task IDs
-  - "`assignr list` examples show the --completed, --archived, and --all flags with
-    one-line descriptions"
-  - A note explains that `assignr migrate-tasks` exists for repos on the old flat
-    structure
-  - The existing 'What it looks like' section is updated if it references the old
-    specs/tasks path
-  - The README does not grow significantly longer; replace or consolidate existing
-    sections rather than appending
+  - The folder structure section in the README shows .assignr/tasks/active, .assignr/tasks/completed, and .assignr/tasks/archived with one-line explanations of each
+  - "A 'Task lifecycle' section is added (or the existing workflow section is updated) explaining that: - New tasks start in active - Completed tasks move to completed via `assignr complete` - Abandoned tasks move to archived via `assignr archive` - Tasks can return to active via `assignr reopen`"
+  - Command examples show `assignr complete`, `assignr archive`, and `assignr reopen` with realistic task IDs
+  - "`assignr list` examples show the --completed, --archived, and --all flags with one-line descriptions"
+  - A note explains that `assignr migrate-tasks` exists for repos on the old flat structure
+  - The existing 'What it looks like' section is updated if it references the old specs/tasks path
+  - The README does not grow significantly longer; replace or consolidate existing sections rather than appending
 allowed_paths:
   - README.md
 forbidden_paths:
@@ -52,10 +38,7 @@ verification:
 outputs_required:
   - files_changed
 notes:
-  - Prioritize clarity over completeness; a developer should understand the lifecycle
-    model in under two minutes of reading
-  - Do not add a full command reference table; the --help output is the reference. The
-    README should explain the mental model
-  - The active/completed/archived directories replace the role that status filtering
-    alone played; make that tradeoff explicit
+  - Prioritize clarity over completeness; a developer should understand the lifecycle model in under two minutes of reading
+  - Do not add a full command reference table; the --help output is the reference. The README should explain the mental model
+  - The active/completed/archived directories replace the role that status filtering alone played; make that tradeoff explicit
   - Keep the existing install and quick-start sections intact

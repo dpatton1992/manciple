@@ -1,6 +1,6 @@
 id: lifecycle-reopen-test
 title: Lifecycle reopen test
-status: in_progress
+status: needs_review
 type: test
 domain: core
 priority: medium

@@ -12,12 +12,16 @@ import { listCommand } from "./commands/list.js";
 import { statusCommand } from "./commands/status.js";
 import { setStatusCommand } from "./commands/setStatus.js";
 import { completeCommand } from "./commands/complete.js";
+import { approveCommand } from "./commands/approve.js";
+import { requestChangesCommand } from "./commands/requestChanges.js";
+import { blockReviewCommand } from "./commands/blockReview.js";
 import { archiveCommand } from "./commands/archive.js";
 import { reopenCommand } from "./commands/reopen.js";
 import { checkLifecycleCommand } from "./commands/checkLifecycle.js";
 import { migrateTasksCommand } from "./commands/migrateTasks.js";
 import { runLogCommand } from "./commands/runLog.js";
 import { reviewCommand } from "./commands/review.js";
+import { reviewCheckCommand } from "./commands/reviewCheck.js";
 import { doctorCommand } from "./commands/doctor.js";
 import { mcpConfigCommand } from "./commands/mcpConfig.js";
 import type { Status, TaskType, Priority } from "./constants.js";
@@ -159,6 +163,45 @@ program
     });
   });
 
+// approve
+program
+  .command("approve <task-id>")
+  .description("Approve a task in needs_review, record the outcome, and move it to tasks/completed.")
+  .action((taskId: string) => {
+    approveCommand(taskId, {
+      specsTasksDir: p.specsTasks,
+      completedDir: p.tasksCompleted,
+      runsDir: p.runs,
+      cwd,
+    });
+  });
+
+// request-changes
+program
+  .command("request-changes <task-id>")
+  .description("Request changes for a task in needs_review and return it to in_progress.")
+  .requiredOption("--reason <text>", "Reason changes are required.")
+  .action((taskId: string, opts: { reason: string }) => {
+    requestChangesCommand(taskId, opts.reason, {
+      specsTasksDir: p.specsTasks,
+      runsDir: p.runs,
+      cwd,
+    });
+  });
+
+// block-review
+program
+  .command("block-review <task-id>")
+  .description("Block review for a task in needs_review and record the blocking reason.")
+  .requiredOption("--reason <text>", "Reason review is blocked.")
+  .action((taskId: string, opts: { reason: string }) => {
+    blockReviewCommand(taskId, opts.reason, {
+      specsTasksDir: p.specsTasks,
+      runsDir: p.runs,
+      cwd,
+    });
+  });
+
 // archive
 program
   .command("archive <task-id>")
@@ -259,6 +302,14 @@ program
   .description("Generate a review prompt for a task.")
   .action((taskId: string) => {
     reviewCommand(taskId, p.specsTasks, p.promptsGenerated, cwd);
+  });
+
+// review-check
+program
+  .command("review-check [task-id]")
+  .description("Check review readiness evidence for active needs_review tasks.")
+  .action((taskId: string | undefined) => {
+    reviewCheckCommand(p.tasksActive, cwd, taskId);
   });
 
 // doctor

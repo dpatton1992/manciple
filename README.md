@@ -81,7 +81,13 @@ assignr complete build-login-page
 
 ## Task Spec
 
-Tasks are YAML files in `.assignr/tasks/active/`:
+Tasks are YAML files organized by lifecycle:
+
+- `.assignr/tasks/active/` - current work and the default context for agents.
+- `.assignr/tasks/completed/` - finished work kept for audit history.
+- `.assignr/tasks/archived/` - abandoned or deferred work kept out of active context.
+
+New task specs start in `.assignr/tasks/active/`:
 
 ```yaml
 id: build-login-page
@@ -107,6 +113,31 @@ outputs_required:
   - risks
 ```
 
+## Task Lifecycle
+
+New tasks start as active work. When implementation and review are finished, move a task out of active context:
+
+```bash
+assignr complete build-login-page
+```
+
+Archive abandoned or deferred work, and reopen it when it should return to active work:
+
+```bash
+assignr archive spike-legacy-auth
+assignr reopen spike-legacy-auth
+```
+
+Use lifecycle-aware listing when you need history:
+
+```bash
+assignr list --completed  # completed audit history
+assignr list --archived   # archived or deferred work
+assignr list --all        # active, completed, and archived tasks
+```
+
+For repos created before lifecycle directories, run `assignr migrate-tasks` to move the old flat task structure into `active`, `completed`, and `archived`.
+
 ## Commands
 
 | Command | Purpose |
@@ -115,12 +146,14 @@ outputs_required:
 | `assignr new <title>` | Create a task spec. Add `--interactive` to collect the title and task fields through prompts. |
 | `assignr validate` | Validate all task specs. |
 | `assignr compile [task-id]` | Compile a task into `.assignr/prompts/generated/<task-id>.md`. Use `--all` or `--status <status>` for bulk compile. |
-| `assignr list` | List tasks. Filter with `--status` or `--domain`. |
+| `assignr list` | List active tasks. Use `--completed`, `--archived`, or `--all` for lifecycle history; filter with `--status` or `--domain`. |
 | `assignr status` | Show active status counts, completed lifecycle count, and suggest the next task. |
 | `assignr set-status <id> <status>` | Update status: `pending`, `in_progress`, `needs_review`, `complete`, `blocked`, `failed`, `partial`. |
 | `assignr run-log <id>` | Create a run log with git-detected files and optional metadata flags. |
 | `assignr review <id>` | Generate a separate review prompt at `.assignr/prompts/generated/review-<task-id>.md`. |
 | `assignr complete <id>` | Mark complete and move to `.assignr/tasks/completed/`. |
+| `assignr archive <id>` | Move abandoned or deferred work to `.assignr/tasks/archived/`. |
+| `assignr reopen <id>` | Move a completed or archived task back to `.assignr/tasks/active/`. |
 | `assignr doctor` | Check repo configuration. |
 | `assignr mcp-config` | Write `.mcp.json` for the Assignr MCP server. |
 

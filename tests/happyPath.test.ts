@@ -17,6 +17,8 @@ import { compileCommand } from "../src/commands/compile.js";
 import { reviewCommand } from "../src/commands/review.js";
 import { setStatusCommand } from "../src/commands/setStatus.js";
 import { completeCommand } from "../src/commands/complete.js";
+import { archiveCommand } from "../src/commands/archive.js";
+import { reopenCommand } from "../src/commands/reopen.js";
 import { checkLifecycleCommand } from "../src/commands/checkLifecycle.js";
 import { statusCommand } from "../src/commands/status.js";
 import { loadTasks } from "../src/specs/loadTasks.js";
@@ -769,6 +771,188 @@ describe("assignr complete", () => {
       expect(errorSpy.mock.calls.flat().join("\n")).toBe(
         "Task license-expiration-reminders already exists in completed. Use assignr reopen first."
       );
+    } finally {
+      errorSpy.mockRestore();
+      exitSpy.mockRestore();
+    }
+  });
+});
+
+describe("assignr reopen", () => {
+  it("reopens a completed task into tasks/active/ with in_progress status", () => {
+    newCommand("License expiration reminders", {
+      type: "implementation",
+      domain: "credentialing",
+      priority: "high",
+      goal: "Add expiration reminder support for provider licenses.",
+      cwd,
+      activeDir: p.tasksActive,
+    });
+    completeCommand("license-expiration-reminders", {
+      specsTasksDir: p.specsTasks,
+      completedDir: p.tasksCompleted,
+      cwd,
+    });
+
+    reopenCommand("license-expiration-reminders", {
+      specsTasksDir: p.specsTasks,
+      activeDir: p.tasksActive,
+      cwd,
+    });
+
+    const activeFile = join(p.tasksActive, "license-expiration-reminders.yaml");
+    const completedFile = join(p.tasksCompleted, "license-expiration-reminders.yaml");
+    expect(existsSync(activeFile)).toBe(true);
+    expect(existsSync(completedFile)).toBe(false);
+
+    const spec = parse(readFileSync(activeFile, "utf-8")) as Record<string, unknown>;
+    expect(spec["status"]).toBe("in_progress");
+  });
+
+  it("reopens an archived task into tasks/active/ with in_progress status", () => {
+    newCommand("License expiration reminders", {
+      type: "implementation",
+      domain: "credentialing",
+      priority: "high",
+      goal: "Add expiration reminder support for provider licenses.",
+      cwd,
+      activeDir: p.tasksActive,
+    });
+    archiveCommand("license-expiration-reminders", {
+      specsTasksDir: p.specsTasks,
+      archivedDir: p.tasksArchived,
+      cwd,
+    });
+
+    reopenCommand("license-expiration-reminders", {
+      specsTasksDir: p.specsTasks,
+      activeDir: p.tasksActive,
+      cwd,
+    });
+
+    const activeFile = join(p.tasksActive, "license-expiration-reminders.yaml");
+    const archivedFile = join(p.tasksArchived, "license-expiration-reminders.yaml");
+    expect(existsSync(activeFile)).toBe(true);
+    expect(existsSync(archivedFile)).toBe(false);
+
+    const spec = parse(readFileSync(activeFile, "utf-8")) as Record<string, unknown>;
+    expect(spec["status"]).toBe("in_progress");
+  });
+
+  it("searches completed tasks before archived tasks for duplicate task ids", () => {
+    newCommand("Duplicate lifecycle task", {
+      type: "implementation",
+      domain: "core",
+      priority: "medium",
+      goal: "Use the completed copy when reopening.",
+      cwd,
+      activeDir: p.tasksActive,
+    });
+    completeCommand("duplicate-lifecycle-task", {
+      specsTasksDir: p.specsTasks,
+      completedDir: p.tasksCompleted,
+      cwd,
+    });
+
+    mkdirSync(p.tasksArchived, { recursive: true });
+    const archivedFile = join(p.tasksArchived, "duplicate-lifecycle-task.yaml");
+    writeFileSync(
+      archivedFile,
+      [
+        "id: duplicate-lifecycle-task",
+        "title: Archived duplicate lifecycle task",
+        "status: archived",
+        "type: implementation",
+        "domain: core",
+        "priority: low",
+        "goal: Leave this archived copy untouched.",
+        "",
+      ].join("\n"),
+      "utf-8"
+    );
+
+    reopenCommand("duplicate-lifecycle-task", {
+      specsTasksDir: p.specsTasks,
+      activeDir: p.tasksActive,
+      cwd,
+    });
+
+    const activeFile = join(p.tasksActive, "duplicate-lifecycle-task.yaml");
+    const completedFile = join(p.tasksCompleted, "duplicate-lifecycle-task.yaml");
+    const activeSpec = parse(readFileSync(activeFile, "utf-8")) as Record<string, unknown>;
+    const archivedSpec = parse(readFileSync(archivedFile, "utf-8")) as Record<string, unknown>;
+
+    expect(existsSync(completedFile)).toBe(false);
+    expect(existsSync(archivedFile)).toBe(true);
+    expect(activeSpec["title"]).toBe("Duplicate lifecycle task");
+    expect(activeSpec["status"]).toBe("in_progress");
+    expect(archivedSpec["status"]).toBe("archived");
+  });
+
+  it("exits non-zero without overwriting an existing active task", () => {
+    newCommand("License expiration reminders", {
+      type: "implementation",
+      domain: "credentialing",
+      priority: "high",
+      goal: "Completed task should not overwrite active work.",
+      cwd,
+      activeDir: p.tasksActive,
+    });
+    completeCommand("license-expiration-reminders", {
+      specsTasksDir: p.specsTasks,
+      completedDir: p.tasksCompleted,
+      cwd,
+    });
+
+    const activeFile = join(p.tasksActive, "license-expiration-reminders.yaml");
+    const completedFile = join(p.tasksCompleted, "license-expiration-reminders.yaml");
+    writeFileSync(activeFile, "existing active task\n", "utf-8");
+
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
+      throw new Error(`process.exit(${code})`);
+    }) as never);
+
+    try {
+      expect(() =>
+        reopenCommand("license-expiration-reminders", {
+          specsTasksDir: p.specsTasks,
+          activeDir: p.tasksActive,
+          cwd,
+        })
+      ).toThrow("process.exit(1)");
+
+      const completedSpec = parse(readFileSync(completedFile, "utf-8")) as Record<string, unknown>;
+      expect(readFileSync(activeFile, "utf-8")).toBe("existing active task\n");
+      expect(completedSpec["status"]).toBe("complete");
+      expect(errorSpy.mock.calls.flat().join("\n")).toBe(
+        "Task license-expiration-reminders already exists in active tasks."
+      );
+    } finally {
+      errorSpy.mockRestore();
+      exitSpy.mockRestore();
+    }
+  });
+
+  it("exits non-zero when the task is missing from completed and archived tasks", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
+      throw new Error(`process.exit(${code})`);
+    }) as never);
+
+    try {
+      expect(() =>
+        reopenCommand("missing-task", {
+          specsTasksDir: p.specsTasks,
+          activeDir: p.tasksActive,
+          cwd,
+        })
+      ).toThrow("process.exit(1)");
+
+      expect(errorSpy.mock.calls.flat().join("\n")).toBe(
+        "Task missing-task not found in completed or archived tasks."
+      );
+      expect(existsSync(join(p.tasksActive, "missing-task.yaml"))).toBe(false);
     } finally {
       errorSpy.mockRestore();
       exitSpy.mockRestore();
