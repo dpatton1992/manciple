@@ -8,14 +8,21 @@ depends_on:
   - add-review-decision-checklist-to-generated-prompts
   - add-review-outcome-commands
   - add-review-evidence-validation
-goal: |
-  Update the README so developers understand the evidence-based review workflow: implement a task, record the run log, generate a review prompt, check readiness, and record the reviewer outcome. The docs should explain the mental model without turning the README into a full command reference.
+goal: >
+  Update the README so developers understand the evidence-based review workflow:
+  implement a task, record the run log, generate a review prompt, check readiness, and
+  record the reviewer outcome. The docs should explain the mental model without turning
+  the README into a full command reference.
 acceptance_criteria:
   - The README explains what `needs_review` means in Assignr.
-  - The README shows the expected review flow from implementation through reviewer decision.
-  - The README includes examples for `assignr review`, `assignr review-check`, `assignr approve`, `assignr request-changes`, and `assignr block-review`.
-  - The docs explain the difference between implementation review and integration review, especially for multi-agent runs.
-  - The docs mention that review prompts include task context, run log evidence, git diff, checklist items, and a decision section.
+  - The README shows the expected review flow from implementation through reviewer
+    decision.
+  - The README includes examples for `assignr review`, `assignr review-check`, `assignr
+    approve`, `assignr request-changes`, and `assignr block-review`.
+  - The docs explain the difference between implementation review and integration
+    review, especially for multi-agent runs.
+  - The docs mention that review prompts include task context, run log evidence, git
+    diff, checklist items, and a decision section.
   - Existing quick-start and install sections remain concise.
 allowed_paths:
   - README.md
@@ -36,5 +43,7 @@ outputs_required:
   - files_changed
   - risks
 notes:
-  - Keep the section skimmable; favor a short workflow example over a large reference table.
-  - If README lifecycle docs are not merged yet, place this near the task lifecycle section once it exists.
+  - Keep the section skimmable; favor a short workflow example over a large reference
+    table.
+  - If README lifecycle docs are not merged yet, place this near the task lifecycle
+    section once it exists.

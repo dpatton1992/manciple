@@ -7,15 +7,23 @@ priority: medium
 depends_on:
   - review-prompt-enrich
   - define-needs-review-readiness-contract
-goal: |
-  Turn generated review prompts into decision documents. The reviewer should see a concise checklist for scope, acceptance criteria, verification, artifacts, and risk, followed by an explicit approve/request-changes/block decision section.
+goal: >
+  Turn generated review prompts into decision documents. The reviewer should see a
+  concise checklist for scope, acceptance criteria, verification, artifacts, and risk,
+  followed by an explicit approve/request-changes/block decision section.
 acceptance_criteria:
-  - The `assignr review <task-id>` command includes a "## Review Readiness" section based on the shared readiness helper.
-  - The prompt includes checklist items for allowed paths, forbidden paths, acceptance criteria evidence, verification evidence, generated artifacts, and risk notes.
-  - The prompt includes separate "Implementation Review" and "Integration Review" subsections so multi-agent runs can be assessed at both levels.
-  - The prompt includes a "## Decision" section with options for approve, request changes, or block, plus space for reviewer notes.
-  - Missing readiness evidence is called out in the prompt without preventing prompt generation.
-  - Tests assert that the generated review prompt contains the new sections and still includes the enriched task, run log, and diff content from `review-prompt-enrich`.
+  - The `assignr review <task-id>` command includes a "## Review Readiness" section
+    based on the shared readiness helper.
+  - The prompt includes checklist items for allowed paths, forbidden paths, acceptance
+    criteria evidence, verification evidence, generated artifacts, and risk notes.
+  - The prompt includes separate "Implementation Review" and "Integration Review"
+    subsections so multi-agent runs can be assessed at both levels.
+  - The prompt includes a "## Decision" section with options for approve, request
+    changes, or block, plus space for reviewer notes.
+  - Missing readiness evidence is called out in the prompt without preventing prompt
+    generation.
+  - Tests assert that the generated review prompt contains the new sections and still
+    includes the enriched task, run log, and diff content from `review-prompt-enrich`.
 allowed_paths:
   - src/commands/review.ts
   - src/review/
@@ -34,7 +42,8 @@ verification:
     - pnpm build
     - pnpm test
     - node bin/assignr.js review review-prompt-enrich
-    - grep -c "Review Readiness" .assignr/prompts/generated/review-review-prompt-enrich.md
+    - grep -c "Review Readiness"
+      .assignr/prompts/generated/review-review-prompt-enrich.md
     - grep -c "Decision" .assignr/prompts/generated/review-review-prompt-enrich.md
 outputs_required:
   - files_changed
@@ -42,4 +51,5 @@ outputs_required:
 notes:
   - Keep the prompt useful for both human and AI reviewers.
   - Do not add a model execution step; Assignr should only generate review context.
-  - If the generated prompt path changes in another task, follow that task's naming convention rather than introducing a second convention.
+  - If the generated prompt path changes in another task, follow that task's naming
+    convention rather than introducing a second convention.

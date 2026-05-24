@@ -7,19 +7,29 @@ priority: medium
 depends_on:
   - lifecycle-task-discovery
   - lifecycle-init-new
-goal: |
-  Repos that ran `assignr init` before the lifecycle directories were introduced have task files directly under `.assignr/specs/tasks`. A migration command gives them a safe, explicit path to the new structure. `assignr migrate-tasks` should scan `specs/tasks`, read the status of each file, and move it to the appropriate lifecycle directory (`active`, `completed`, or `archived`) based on its status value.
+goal: >
+  Repos that ran `assignr init` before the lifecycle directories were introduced have
+  task files directly under `.assignr/specs/tasks`. A migration command gives them a
+  safe, explicit path to the new structure. `assignr migrate-tasks` should scan
+  `specs/tasks`, read the status of each file, and move it to the appropriate lifecycle
+  directory (`active`, `completed`, or `archived`) based on its status value.
 acceptance_criteria:
   - "`assignr migrate-tasks` reads all YAML files from specs/tasks"
-  - Files with status in ('pending', 'in_progress', 'needs_review', 'partial', 'blocked', 'failed') are moved to tasks/active
+  - Files with status in ('pending', 'in_progress', 'needs_review', 'partial',
+    'blocked', 'failed') are moved to tasks/active
   - Files with status 'complete' are moved to tasks/completed
   - Files with status 'archived' are moved to tasks/archived
-  - "Before moving any file, the command prints a dry-run preview listing each file and its destination, then asks for confirmation: 'Proceed? [y/N]'"
+  - "Before moving any file, the command prints a dry-run preview listing each file and
+    its destination, then asks for confirmation: 'Proceed? [y/N]'"
   - The three lifecycle directories are created if they do not exist
-  - If a destination file already exists, that file is skipped and a warning is printed; other files continue to be migrated
-  - "On completion, a summary is printed: 'Migrated N tasks. Skipped M. specs/tasks still contains X files.'"
-  - The command does NOT delete the source files from specs/tasks on its own; it only copies them; the user can manually remove specs/tasks after verifying the migration
-  - If specs/tasks does not exist or is empty, the command prints 'Nothing to migrate.' and exits 0
+  - If a destination file already exists, that file is skipped and a warning is printed;
+    other files continue to be migrated
+  - "On completion, a summary is printed: 'Migrated N tasks. Skipped M. specs/tasks
+    still contains X files.'"
+  - The command does NOT delete the source files from specs/tasks on its own; it only
+    copies them; the user can manually remove specs/tasks after verifying the migration
+  - If specs/tasks does not exist or is empty, the command prints 'Nothing to migrate.'
+    and exits 0
   - All existing tests continue to pass
 allowed_paths:
   - src/commands/migrateTasks.ts
@@ -39,8 +49,13 @@ outputs_required:
   - files_changed
   - risks
 notes:
-  - The confirmation prompt should use readline from Node built-ins; do not add a dependency for a simple y/N prompt
-  - Copy files with fs.copyFileSync and flag COPYFILE_EXCL so that existing destination files cause an error rather than being silently overwritten; catch that error per-file and emit the skip warning
+  - The confirmation prompt should use readline from Node built-ins; do not add a
+    dependency for a simple y/N prompt
+  - Copy files with fs.copyFileSync and flag COPYFILE_EXCL so that existing destination
+    files cause an error rather than being silently overwritten; catch that error
+    per-file and emit the skip warning
   - "Status bucketing: treat any unknown status value as active to avoid data loss"
-  - Register as "migrate-tasks" in cli.ts with a description that clearly marks it as a one-time migration command
-  - The fact that this command copies (not moves) is intentional; it gives the user a chance to verify the result before deleting the legacy dir
+  - Register as "migrate-tasks" in cli.ts with a description that clearly marks it as a
+    one-time migration command
+  - The fact that this command copies (not moves) is intentional; it gives the user a
+    chance to verify the result before deleting the legacy dir

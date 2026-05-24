@@ -5,17 +5,29 @@ type: implementation
 domain: core
 priority: high
 depends_on: []
-goal: |
-  Improve the first task-creation experience so `assignr new` can guide users through a useful task spec instead of producing a TODO-heavy file. Add an interactive mode that prompts for the fields users most often need to edit after generation, while keeping the existing non-interactive command behavior scriptable.
+goal: >
+  Improve the first task-creation experience so `assignr new` can guide users through a
+  useful task spec instead of producing a TODO-heavy file. Add an interactive mode that
+  prompts for the fields users most often need to edit after generation, while keeping
+  the existing non-interactive command behavior scriptable.
 acceptance_criteria:
-  - "`assignr new <title> --interactive` asks follow-up prompts for goal, type, domain, priority, acceptance criteria, verification commands, allowed paths, forbidden paths, outputs required, and notes."
-  - "`assignr new --interactive` can collect the title interactively when no title argument is supplied."
-  - The generated YAML contains user-provided values and avoids placeholder TODO text for any field answered during the interactive flow.
-  - Empty optional answers are omitted or rendered as empty arrays consistently with the existing schema.
-  - The existing non-interactive `assignr new <title>` behavior remains compatible with current tests and automation.
-  - The command exits cleanly without writing a partial task if the user cancels or an interactive prompt fails.
-  - README command docs mention interactive task creation without making it the only documented path.
-  - Tests cover non-interactive compatibility and at least one interactive generation path using mocked stdin or prompt helpers.
+  - "`assignr new <title> --interactive` asks follow-up prompts for goal, type, domain,
+    priority, acceptance criteria, verification commands, allowed paths, forbidden
+    paths, outputs required, and notes."
+  - "`assignr new --interactive` can collect the title interactively when no title
+    argument is supplied."
+  - The generated YAML contains user-provided values and avoids placeholder TODO text
+    for any field answered during the interactive flow.
+  - Empty optional answers are omitted or rendered as empty arrays consistently with the
+    existing schema.
+  - The existing non-interactive `assignr new <title>` behavior remains compatible with
+    current tests and automation.
+  - The command exits cleanly without writing a partial task if the user cancels or an
+    interactive prompt fails.
+  - README command docs mention interactive task creation without making it the only
+    documented path.
+  - Tests cover non-interactive compatibility and at least one interactive generation
+    path using mocked stdin or prompt helpers.
 allowed_paths:
   - src/commands/new.ts
   - src/cli.ts
@@ -30,12 +42,14 @@ verification:
     - pnpm typecheck
     - pnpm test
     - pnpm build
-    - node bin/assignr.js new "Interactive smoke task" --type implementation --domain core
+    - node bin/assignr.js new "Interactive smoke task" --type implementation --domain
+      core
 outputs_required:
   - files_changed
   - interactive_transcript_example
   - risks
 notes:
   - Prefer Node built-ins such as readline/promises before adding a prompt dependency.
-  - Keep the interactive implementation thin enough that command tests can exercise the field collection without brittle terminal behavior.
+  - Keep the interactive implementation thin enough that command tests can exercise the
+    field collection without brittle terminal behavior.
   - Do not remove the current goal flag; interactive mode should complement it.

@@ -5,13 +5,19 @@ type: docs
 domain: core
 priority: high
 depends_on: []
-goal: |
-  The README is much better, but it still needs an immediate value demo. Add one compact before/after example that shows how Assignr turns a messy agent prompt into a scoped task an agent can actually run.
+goal: >
+  The README is much better, but it still needs an immediate value demo. Add one compact
+  before/after example that shows how Assignr turns a messy agent prompt into a scoped
+  task an agent can actually run.
 acceptance_criteria:
-  - The top section of README.md includes a short "before" example of a messy agent prompt.
-  - The same section includes the corresponding "after" Assignr task shape or command flow.
-  - The example can be understood in about 30 seconds without reading the full command reference.
-  - "The demo reinforces concrete value: scope, acceptance criteria, allowed paths, verification, or review handoff."
+  - The top section of README.md includes a short "before" example of a messy agent
+    prompt.
+  - The same section includes the corresponding "after" Assignr task shape or command
+    flow.
+  - The example can be understood in about 30 seconds without reading the full command
+    reference.
+  - "The demo reinforces concrete value: scope, acceptance criteria, allowed paths,
+    verification, or review handoff."
   - The addition does not reintroduce long repetitive README content.
   - Existing install, quickstart, command reference, and MCP notes remain accurate.
   - README formatting renders cleanly on npm and GitHub.
@@ -26,11 +32,13 @@ forbidden_paths:
 verification:
   commands:
     - wc -l README.md
-    - rg -n "Before|After|assignr new|acceptance_criteria|allowed_paths|verification" README.md
+    - rg -n "Before|After|assignr new|acceptance_criteria|allowed_paths|verification"
+      README.md
 outputs_required:
   - files_changed
   - before_after_excerpt
   - risks
 notes:
-  - Keep this separate from broad README trimming; the task is to add one high-signal value demo, not rewrite the whole page.
+  - Keep this separate from broad README trimming; the task is to add one high-signal
+    value demo, not rewrite the whole page.
   - Prefer a realistic engineering prompt over a toy example.
