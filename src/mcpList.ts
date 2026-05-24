@@ -8,6 +8,7 @@ const TASK_TIER_FILTERS = ["active", "completed", "archived", "all"] as const;
 
 export interface McpListFilters {
   status?: string;
+  tier?: string;
   domain?: string;
 }
 
@@ -35,7 +36,13 @@ export function listTasksForMcp(
   filters: McpListFilters = {}
 ): McpTaskSummary[] {
   const tier: LoadTaskTier =
-    filters.status && isTaskTierFilter(filters.status) ? filters.status : "active";
+    filters.tier && isTaskTierFilter(filters.tier)
+      ? filters.tier
+      : filters.status && isTaskTierFilter(filters.status)
+        ? filters.status
+        : filters.status && isTaskStatus(filters.status)
+          ? "all"
+          : "active";
   const status = filters.status && isTaskStatus(filters.status) ? filters.status : undefined;
   const { tasks, errors } = loadTasks(specsTasksDir, tier);
 

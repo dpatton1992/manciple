@@ -83,6 +83,38 @@ describe("listTasksForMcp", () => {
     expect(tasks.map((task) => task.id)).toEqual(["review-task"]);
   });
 
+  it("lists active lifecycle tasks independently of task status", async () => {
+    const root = await mkdtemp(join(tmpdir(), "assignr-mcp-list-"));
+    tempDirs.push(root);
+    const paths = getPaths(root, ".assignr");
+    writeTask(root, "active", "pending-task");
+    writeTask(root, "active", "review-task", "needs_review");
+    writeTask(root, "active", "blocked-task", "blocked");
+    writeTask(root, "completed", "completed-task", "complete");
+
+    const tasks = listTasksForMcp(paths.specsTasks, root, { tier: "active" });
+
+    expect(tasks.map((task) => [task.id, task.status, task.tier]).sort()).toEqual([
+      ["blocked-task", "blocked", "active"],
+      ["pending-task", "pending", "active"],
+      ["review-task", "needs_review", "active"],
+    ]);
+  });
+
+  it("finds completed tasks when filtering by complete status", async () => {
+    const root = await mkdtemp(join(tmpdir(), "assignr-mcp-list-"));
+    tempDirs.push(root);
+    const paths = getPaths(root, ".assignr");
+    writeTask(root, "active", "pending-task");
+    writeTask(root, "completed", "completed-task", "complete");
+
+    const tasks = listTasksForMcp(paths.specsTasks, root, { status: "complete" });
+
+    expect(tasks.map((task) => [task.id, task.tier])).toEqual([
+      ["completed-task", "completed"],
+    ]);
+  });
+
   it("can list every lifecycle tier with status=all", async () => {
     const root = await mkdtemp(join(tmpdir(), "assignr-mcp-list-"));
     tempDirs.push(root);

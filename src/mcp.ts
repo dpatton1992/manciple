@@ -142,12 +142,13 @@ server.registerTool(
     description: "List Assignr tasks, optionally filtered by status or domain.",
     inputSchema: {
       status: z.string().optional(),
+      tier: z.enum(["active", "completed", "archived", "all"]).optional(),
       domain: z.string().optional(),
     },
   },
-  ({ status, domain }) =>
+  ({ status, tier, domain }) =>
     toolResult(() => {
-      return jsonResult(listTasksForMcp(p.specsTasks, cwd, { status, domain }));
+      return jsonResult(listTasksForMcp(p.specsTasks, cwd, { status, tier, domain }));
     })
 );
 
