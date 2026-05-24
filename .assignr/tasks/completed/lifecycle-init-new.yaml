@@ -1,6 +1,6 @@
 id: lifecycle-init-new
 title: Update init and new commands to use tasks/active directory
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: high

@@ -1,0 +1,24 @@
+id: lifecycle-complete-test
+title: Lifecycle complete test
+status: complete
+type: implementation
+domain: core
+priority: medium
+depends_on: []
+allowed_paths:
+  - "TODO: add allowed paths"
+forbidden_paths:
+  - "TODO: add forbidden paths"
+goal: "TODO: describe the goal of this task."
+acceptance_criteria:
+  - "TODO: add acceptance criteria"
+verification:
+  commands:
+    - "TODO: add verification commands"
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+  - follow_up_tasks
+notes:
+  - "TODO: add any notes or constraints."

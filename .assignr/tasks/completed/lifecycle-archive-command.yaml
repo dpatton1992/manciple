@@ -1,6 +1,6 @@
 id: lifecycle-archive-command
 title: Add assignr archive command to move obsolete tasks out of active
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: medium

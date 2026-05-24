@@ -572,7 +572,7 @@ describe("assignr complete", () => {
         })
       ).toThrow("process.exit(1)");
 
-      expect(errorSpy.mock.calls.flat().join("\n")).toContain("Active task not found: missing-task");
+      expect(errorSpy.mock.calls.flat().join("\n")).toBe("Task missing-task not found in active tasks.");
     } finally {
       errorSpy.mockRestore();
       exitSpy.mockRestore();
@@ -609,7 +609,9 @@ describe("assignr complete", () => {
 
       expect(readFileSync(completedFile, "utf-8")).toBe("already completed\n");
       expect(existsSync(join(p.tasksActive, "license-expiration-reminders.yaml"))).toBe(true);
-      expect(errorSpy.mock.calls.flat().join("\n")).toContain("Refusing to overwrite it.");
+      expect(errorSpy.mock.calls.flat().join("\n")).toBe(
+        "Task license-expiration-reminders already exists in completed. Use assignr reopen first."
+      );
     } finally {
       errorSpy.mockRestore();
       exitSpy.mockRestore();

@@ -29,19 +29,13 @@ export function completeCommand(taskId: string, options: CompleteCommandOptions)
   const found = tasks.find((t) => t.spec.id === taskId);
 
   if (!found) {
-    console.error(
-      `Task ${taskId} not found in active tasks.\n` +
-        `Active task not found: ${taskId}`
-    );
+    console.error(`Task ${taskId} not found in active tasks.`);
     process.exit(1);
   }
 
   const destination = join(completedDir, `${taskId}.yaml`);
   if (existsSync(destination)) {
-    console.error(
-      `Task ${taskId} already exists in completed. Use assignr reopen first.\n` +
-        `Refusing to overwrite it.`
-    );
+    console.error(`Task ${taskId} already exists in completed. Use assignr reopen first.`);
     process.exit(1);
   }
 

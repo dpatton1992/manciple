@@ -1,6 +1,6 @@
 id: lifecycle-complete-command
 title: Add assignr complete command to mark and move finished tasks
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: high
