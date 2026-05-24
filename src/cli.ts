@@ -13,6 +13,7 @@ import { statusCommand } from "./commands/status.js";
 import { setStatusCommand } from "./commands/setStatus.js";
 import { completeCommand } from "./commands/complete.js";
 import { archiveCommand } from "./commands/archive.js";
+import { reopenCommand } from "./commands/reopen.js";
 import { checkLifecycleCommand } from "./commands/checkLifecycle.js";
 import { runLogCommand } from "./commands/runLog.js";
 import { reviewCommand } from "./commands/review.js";
@@ -165,6 +166,18 @@ program
     archiveCommand(taskId, {
       specsTasksDir: p.specsTasks,
       archivedDir: p.tasksArchived,
+      cwd,
+    });
+  });
+
+// reopen
+program
+  .command("reopen <task-id>")
+  .description("Reopen a completed or archived task, searching completed first, and move it to tasks/active.")
+  .action((taskId: string) => {
+    reopenCommand(taskId, {
+      specsTasksDir: p.specsTasks,
+      activeDir: p.tasksActive,
       cwd,
     });
   });

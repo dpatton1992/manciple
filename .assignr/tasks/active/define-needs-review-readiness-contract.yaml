@@ -1,30 +1,21 @@
 id: define-needs-review-readiness-contract
 title: Define needs review readiness contract
-status: pending
+status: needs_review
 type: implementation
 domain: core
 priority: high
 depends_on:
   - run-log-auto-capture
-goal: >
-  Make `needs_review` mean something concrete. A task should only be considered ready
-  for review when Assignr can show the reviewer what changed, which verification ran,
-  which acceptance criteria were addressed, and what risks remain. This task defines a
-  reusable readiness model in code so review prompts, future review gates, and docs all
-  speak the same language.
+goal: |
+  Make `needs_review` mean something concrete. A task should only be considered ready for review when Assignr can show the reviewer what changed, which verification ran, which acceptance criteria were addressed, and what risks remain. This task defines a reusable readiness model in code so review prompts, future review gates, and docs all speak the same language.
 acceptance_criteria:
-  - A shared review-readiness helper exists and can evaluate a loaded task plus its run
-    log metadata.
+  - A shared review-readiness helper exists and can evaluate a loaded task plus its run log metadata.
   - The helper reports whether the task has at least one run log.
-  - The helper reports whether changed files are present in the run log or available
-    from git status.
+  - The helper reports whether changed files are present in the run log or available from git status.
   - The helper reports whether verification commands/results are present in the run log.
-  - The helper reports whether risks are explicitly present, even if the value is
-    "none".
-  - The helper produces human-readable missing-evidence messages suitable for CLI or
-    prompt output.
-  - Existing `assignr review` behavior is not changed in this task beyond optionally
-    importing the helper in tests.
+  - The helper reports whether risks are explicitly present, even if the value is "none".
+  - The helper produces human-readable missing-evidence messages suitable for CLI or prompt output.
+  - Existing `assignr review` behavior is not changed in this task beyond optionally importing the helper in tests.
   - Unit tests cover ready, partially ready, and no-run-log cases.
 allowed_paths:
   - src/review/
@@ -45,7 +36,6 @@ outputs_required:
   - risks
   - follow_up_tasks
 notes:
-  - Keep the readiness helper transport-neutral; it should not print directly or call
-    process.exit.
+  - Keep the readiness helper transport-neutral; it should not print directly or call process.exit.
   - Do not make review fail on missing evidence yet. This task defines the model only.
   - Prefer small typed data structures over parsing rendered markdown.
