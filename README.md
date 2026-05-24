@@ -1,10 +1,12 @@
 # Assignr
 
-Task management for coding agents. Define work as scoped YAML specs, compile them into agent-ready prompts, track status and run logs in your repo.
+Structured task management for coding agents.
 
-- No hosted service. Everything lives in `.assignr/` alongside your code.
-- Works with any agent: Claude Code, Codex, Cursor, Aider, Goose, or a plain chat window.
-- Gives agents a consistent scope: goals, acceptance criteria, allowed paths, and verification commands.
+Define work as scoped YAML specs, compile them into agent-ready prompts, and track execution evidence in your repo — with no hosted service, no login, and no lock-in.
+
+- Git-native: text files, inspectable history, works with any version control workflow.
+- Agent-agnostic: Claude Code, Codex, Cursor, Aider, Goose, or a plain chat window.
+- Gives agents explicit scope: goals, acceptance criteria, allowed paths, and verification commands.
 
 ## 30-Second Demo
 
@@ -40,14 +42,16 @@ The compiled prompt gives the agent the scope, success criteria, files it may to
 
 ## Why
 
-Ad-hoc prompts don't scale. Problems with the typical "paste a description into an agent" workflow:
+The "paste a description into chat" workflow works for one-off tasks. It breaks down across long-running software work.
 
-- No record of what was asked, what ran, or what changed.
-- Agents drift out of scope without explicit boundaries.
-- No way to track work across sessions or hand off between agents.
-- Review and verification are informal and easy to skip.
+What goes wrong:
 
-Assignr fixes this by treating agent work like structured tasks: defined upfront, compiled to a prompt, logged after execution, and closed when done.
+- **Context drift.** Agents re-interpret the goal each session. Without scope boundaries, they edit files they shouldn't.
+- **Forgotten constraints.** Repo conventions and forbidden paths live in your head. They don't survive the next prompt.
+- **No execution record.** What changed? What commands ran? What was skipped? That history disappears when the chat window closes.
+- **Informal review.** No consistent handoff. Reviewers work from memory and hope the agent self-reported accurately.
+
+Assignr treats agent work like structured software tasks: scope defined upfront, compiled into a prompt, execution logged, and review evidence collected — all in your repo.
 
 ## Quick Start
 
