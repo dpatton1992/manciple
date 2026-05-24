@@ -15,6 +15,7 @@ import { completeCommand } from "./commands/complete.js";
 import { archiveCommand } from "./commands/archive.js";
 import { reopenCommand } from "./commands/reopen.js";
 import { checkLifecycleCommand } from "./commands/checkLifecycle.js";
+import { migrateTasksCommand } from "./commands/migrateTasks.js";
 import { runLogCommand } from "./commands/runLog.js";
 import { reviewCommand } from "./commands/review.js";
 import { doctorCommand } from "./commands/doctor.js";
@@ -192,6 +193,20 @@ program
       activeDir: p.tasksActive,
       completedDir: p.tasksCompleted,
       archivedDir: p.tasksArchived,
+    });
+  });
+
+// migrate-tasks
+program
+  .command("migrate-tasks")
+  .description("One-time migration: copy legacy specs/tasks task files into lifecycle directories.")
+  .action(async () => {
+    await migrateTasksCommand({
+      specsTasksDir: p.specsTasks,
+      activeDir: p.tasksActive,
+      completedDir: p.tasksCompleted,
+      archivedDir: p.tasksArchived,
+      cwd,
     });
   });
 

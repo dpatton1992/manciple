@@ -7,6 +7,7 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, readFileSync, writeFileSync
 import { join } from "path";
 import { tmpdir } from "os";
 import { parse } from "yaml";
+import { spawnSync } from "child_process";
 
 import { initCommand } from "../src/commands/init.js";
 import { newCommand, newInteractiveCommand } from "../src/commands/new.js";
@@ -443,6 +444,102 @@ describe("assignr review", () => {
       expect(logSpy).toHaveBeenCalledWith(
         `Review prompts are separate from compiled implementation prompts, which use ${implementationPromptPath}.`
       );
+
+      const content = readFileSync(reviewPromptFile, "utf-8");
+      expect(content).toContain("## Review Readiness");
+      expect(content).toContain("No run log is available for task license-expiration-reminders.");
+      expect(content).toContain("## Implementation Review");
+      expect(content).toContain("## Integration Review");
+      expect(content).toContain("- [ ] Allowed paths:");
+      expect(content).toContain("- [ ] Forbidden paths:");
+      expect(content).toContain("- [ ] Acceptance criteria evidence:");
+      expect(content).toContain("- [ ] Verification evidence:");
+      expect(content).toContain("- [ ] Generated artifacts:");
+      expect(content).toContain("- [ ] Risk notes:");
+      expect(content).toContain("## Decision");
+      expect(content).toContain("- [ ] Approve");
+      expect(content).toContain("- [ ] Request changes");
+      expect(content).toContain("- [ ] Block");
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
+
+  it("keeps enriched task, run log, and diff content in the review prompt", () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    try {
+      newCommand("License expiration reminders", {
+        type: "implementation",
+        domain: "credentialing",
+        priority: "high",
+        goal: "Add expiration reminder support for provider licenses.",
+        cwd,
+        activeDir: p.tasksActive,
+      });
+
+      const runLogPath = join(p.runs, "2026-05-23-12-00-00-license-expiration-reminders.md");
+      writeFileSync(runLogPath, `# Run Log: License expiration reminders
+
+## Files Changed
+
+_Source: provided by user_
+
+- src/features/licenses/reminders.ts
+
+## Commands Run
+
+_Source: provided by user_
+
+- TODO: add verification commands
+
+## Result
+
+_Source: provided by user_
+
+complete
+
+## Risks
+
+_Source: provided by user_
+
+none
+`, "utf-8");
+
+      const featureDir = join(cwd, "src", "features", "licenses");
+      mkdirSync(featureDir, { recursive: true });
+      const featureFile = join(featureDir, "reminders.ts");
+      writeFileSync(featureFile, "export const reminders = false;\n", "utf-8");
+      spawnSync("git", ["init"], { cwd, encoding: "utf-8" });
+      spawnSync("git", ["config", "user.email", "test@example.com"], { cwd, encoding: "utf-8" });
+      spawnSync("git", ["config", "user.name", "Assignr Test"], { cwd, encoding: "utf-8" });
+      spawnSync("git", ["add", "."], { cwd, encoding: "utf-8" });
+      spawnSync("git", ["commit", "-m", "baseline"], { cwd, encoding: "utf-8" });
+      writeFileSync(featureFile, "export const reminders = true;\n", "utf-8");
+
+      reviewCommand(
+        "license-expiration-reminders",
+        p.specsTasks,
+        p.promptsGenerated,
+        cwd
+      );
+
+      const reviewPromptFile = join(
+        p.promptsGenerated,
+        "review-license-expiration-reminders.md"
+      );
+      const content = readFileSync(reviewPromptFile, "utf-8");
+
+      expect(content).toContain("## Task Goal");
+      expect(content).toContain("Add expiration reminder support for provider licenses.");
+      expect(content).toContain("## Run Log");
+      expect(content).toContain("# Run Log: License expiration reminders");
+      expect(content).toContain("src/features/licenses/reminders.ts");
+      expect(content).toContain("## Git Diff");
+      expect(content).toContain("-export const reminders = false;");
+      expect(content).toContain("+export const reminders = true;");
+      expect(content).toContain("## Review Readiness");
+      expect(content).toContain("- Overall: ready");
     } finally {
       logSpy.mockRestore();
     }
@@ -485,6 +582,66 @@ describe("assignr set-status", () => {
     const taskFile = join(p.tasksActive, "license-expiration-reminders.yaml");
     const spec = parse(readFileSync(taskFile, "utf-8")) as Record<string, unknown>;
     expect(spec["status"]).toBe("needs_review");
+  });
+
+  it("moves a task to tasks/completed/ when setting status complete", () => {
+    newCommand("License expiration reminders", {
+      type: "implementation",
+      domain: "credentialing",
+      priority: "high",
+      goal: "Add expiration reminder support for provider licenses.",
+      cwd,
+      activeDir: p.tasksActive,
+    });
+    rmSync(p.tasksCompleted, { recursive: true, force: true });
+
+    setStatusCommand("license-expiration-reminders", "complete", p.specsTasks, cwd);
+
+    const activeFile = join(p.tasksActive, "license-expiration-reminders.yaml");
+    const completedFile = join(p.tasksCompleted, "license-expiration-reminders.yaml");
+    expect(existsSync(activeFile)).toBe(false);
+    expect(existsSync(completedFile)).toBe(true);
+
+    const spec = parse(readFileSync(completedFile, "utf-8")) as Record<string, unknown>;
+    expect(spec["status"]).toBe("complete");
+  });
+
+  it("does not overwrite an existing completed task when setting status complete", () => {
+    newCommand("License expiration reminders", {
+      type: "implementation",
+      domain: "credentialing",
+      priority: "high",
+      goal: "Add expiration reminder support for provider licenses.",
+      cwd,
+      activeDir: p.tasksActive,
+    });
+
+    mkdirSync(p.tasksCompleted, { recursive: true });
+    const completedFile = join(p.tasksCompleted, "license-expiration-reminders.yaml");
+    writeFileSync(completedFile, "already completed\n", "utf-8");
+
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
+      throw new Error(`process.exit(${code})`);
+    }) as never);
+
+    try {
+      expect(() =>
+        setStatusCommand("license-expiration-reminders", "complete", p.specsTasks, cwd)
+      ).toThrow("process.exit(1)");
+
+      expect(readFileSync(completedFile, "utf-8")).toBe("already completed\n");
+      const activeFile = join(p.tasksActive, "license-expiration-reminders.yaml");
+      expect(existsSync(activeFile)).toBe(true);
+      const activeSpec = parse(readFileSync(activeFile, "utf-8")) as Record<string, unknown>;
+      expect(activeSpec["status"]).toBe("pending");
+      expect(errorSpy.mock.calls.flat().join("\n")).toBe(
+        "Task license-expiration-reminders already exists in completed tasks."
+      );
+    } finally {
+      errorSpy.mockRestore();
+      exitSpy.mockRestore();
+    }
   });
 });
 

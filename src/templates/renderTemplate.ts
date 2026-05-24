@@ -138,25 +138,35 @@ Evaluate whether the implementation satisfies the task without creating unnecess
 
 {{forbidden_paths}}
 
-## Check
+## Review Readiness
 
-- acceptance criteria
-- changed files
-- forbidden path violations
-- dependency violations
-- tests run
-- type/lint/test failures
-- architecture consistency
-- duplicated abstractions
-- excessive scope
-- missing edge cases
-- follow-up tasks
+- Check run log, changed files, verification, generated artifacts, and risk evidence before deciding.
+- Missing readiness evidence should be called out without blocking prompt generation.
 
-## Return
+## Implementation Review
 
-### Verdict
+- [ ] Allowed paths: changed files are limited to the task's allowed paths or clearly justified.
+- [ ] Forbidden paths: no forbidden paths were modified.
+- [ ] Acceptance criteria evidence: each criterion has implementation evidence in the diff or run log.
+- [ ] Verification evidence: required commands were run and their results are recorded.
+- [ ] Generated artifacts: generated prompts, run logs, or other artifacts are present and named as expected.
+- [ ] Risk notes: risks are recorded, or explicitly marked as none.
 
-approved | needs_changes | blocked
+## Integration Review
+
+- [ ] The change fits existing architecture and command/template conventions.
+- [ ] Dependencies and lifecycle status are consistent with the task.
+- [ ] Test, typecheck, and build coverage are adequate for the blast radius.
+- [ ] No unnecessary abstractions, excessive scope, or duplicated behavior were introduced.
+- [ ] Follow-up tasks are identified for any work outside scope.
+
+## Decision
+
+- [ ] Approve
+- [ ] Request changes
+- [ ] Block
+
+### Reviewer Notes
 
 ### Findings
 
