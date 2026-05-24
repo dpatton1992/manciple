@@ -136,7 +136,7 @@ export function reviewCommand(
   generatedDir: string,
   cwd: string
 ): void {
-  const { tasks, errors } = loadTasks(specsTasksDir);
+  const { tasks, errors } = loadTasks(specsTasksDir, "all");
 
   if (errors.length > 0) {
     console.warn(`⚠ ${errors.length} task(s) failed to load.`);

@@ -1,0 +1,42 @@
+id: review-prompt-enrich
+title: Enrich assignr review output with git diff and run log content
+status: complete
+type: implementation
+domain: core
+priority: medium
+depends_on: []
+goal: |
+  `assignr review <task-id>` currently produces a minimal stub. A useful review prompt must give the reviewer—human or AI—everything needed to assess the implementation without switching context. This task enriches the generated review prompt to include: the task goal, all acceptance criteria, all verification commands, the content of the most recent run log for that task (if one exists), and the output of `git diff HEAD` so the reviewer sees exactly what changed. The command should not run the review itself; it only produces the prompt file.
+acceptance_criteria:
+  - The generated review prompt includes a "## Task Goal" section with the goal text from the task spec
+  - The generated review prompt includes a "## Acceptance Criteria" section listing each criterion
+  - The generated review prompt includes a "## Verification Commands" section listing the commands from the spec
+  - If a run log exists for the task under `.assignr/runs/<task-id>/`, the most recent file (by filename sort) is read and its content is included under "## Run Log"
+  - The output of `git diff HEAD` is captured via spawnSync and included under "## Git Diff"; if git is unavailable or the diff is empty a note is included instead ("No diff available" or "No changes staged")
+  - The review prompt is written to `.assignr/prompts/generated/review-<task-id>.md`
+  - Running the command when the task ID does not exist exits non-zero with a clear error message
+  - Assignr does not execute any model or send the prompt anywhere
+allowed_paths:
+  - src/commands/review.ts
+  - src/templates/renderTemplate.ts
+forbidden_paths:
+  - src/specs/schema.ts
+  - src/specs/validateTasks.ts
+  - src/commands/validate.ts
+  - src/commands/compile.ts
+  - bin/
+verification:
+  commands:
+    - pnpm build
+    - pnpm test
+    - node bin/assignr.js review dep-validation-missing-refs
+    - cat .assignr/prompts/generated/review-dep-validation-missing-refs.md
+outputs_required:
+  - files_changed
+  - risks
+notes:
+  - Use spawnSync("git", ["diff", "HEAD"]) with encoding "utf8"; trim the output; do not crash if git is unavailable
+  - For run log lookup, glob `.assignr/runs/<task-id>/*.md`, sort alphabetically, and take the last file. The filename convention is date-based so alphabetic sort gives chronological order
+  - Cap the included git diff at 400 lines; if longer, show the first 400 lines and add a truncation notice at the end
+  - The output file name uses "review-" prefix to distinguish it from compiled task prompts in the same generated/ directory
+  - Do not add a new dependency for diff parsing; raw unified diff output is sufficient for a reviewer

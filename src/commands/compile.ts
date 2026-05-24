@@ -57,7 +57,7 @@ export interface CompileOptions {
 
 export function compileCommand(options: CompileOptions): void {
   const { specsTasksDir, generatedDir, cwd, taskId, status, all } = options;
-  const tier: LoadTaskTier = all ? "all" : "active";
+  const tier: LoadTaskTier = all || taskId ? "all" : "active";
   const { tasks, errors } = loadTasks(specsTasksDir, tier);
 
   if (errors.length > 0) {

@@ -1,0 +1,40 @@
+id: lifecycle-reopen-test
+title: Lifecycle reopen test
+status: complete
+type: test
+domain: core
+priority: medium
+depends_on:
+  - lifecycle-reopen-command
+allowed_paths:
+  - tests/happyPath.test.ts
+forbidden_paths:
+  - src/
+  - bin/
+  - dist/
+  - README.md
+  - .assignr/tasks/
+goal: |
+  Add regression coverage for `assignr reopen` so the lifecycle command stays reliable after review. The tests should prove that completed and archived tasks can be reopened into `tasks/active`, that reopened tasks are marked `in_progress`, and that failure cases do not overwrite existing active tasks or silently ignore missing task IDs.
+acceptance_criteria:
+  - Tests cover reopening a completed task into `.assignr/tasks/active/<id>.yaml` with status `in_progress`.
+  - Tests cover reopening an archived task into `.assignr/tasks/active/<id>.yaml` with status `in_progress`.
+  - Tests assert the command searches completed tasks before archived tasks when both tiers contain the same task id.
+  - Tests assert reopening fails clearly when a matching task already exists in active tasks.
+  - Tests assert reopening fails clearly when the task is absent from completed and archived tasks.
+  - The test coverage uses the existing command helpers and temporary Assignr repo setup patterns in `tests/happyPath.test.ts`.
+  - Existing tests continue to pass.
+verification:
+  commands:
+    - pnpm test -- tests/happyPath.test.ts
+    - pnpm test
+    - node bin/assignr.js check-lifecycle
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+  - follow_up_tasks
+notes:
+  - Keep this task limited to test coverage; do not change `src/commands/reopen.ts` unless a failing test exposes an implementation bug that cannot be left as follow-up.
+  - Use repo-local `node bin/assignr.js` for CLI smoke checks. The prior sidecar found that `pnpm exec assignr` resolves to a stale/global binary in this environment and should be handled by a separate package/CLI parity task.
+  - Do not edit task YAML files directly while implementing this task, except through Assignr status tooling.
