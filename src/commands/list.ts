@@ -1,3 +1,5 @@
+import { existsSync } from "fs";
+import { basename, dirname, join } from "path";
 import { STATUSES } from "../constants.js";
 import { loadTasks } from "../specs/loadTasks.js";
 import type { LoadedTaskWithTier, LoadTaskTier } from "../specs/loadTasks.js";
@@ -108,8 +110,46 @@ function resolveTier(options: ListCommandOptions): LoadTaskTier {
   return "active";
 }
 
+function resolveTasksRoot(tasksDir: string): string {
+  const lastSegment = basename(tasksDir);
+  const parentDir = dirname(tasksDir);
+
+  if (
+    ["active", "completed", "archived"].includes(lastSegment) &&
+    basename(parentDir) === "tasks"
+  ) {
+    return parentDir;
+  }
+
+  if (lastSegment === "tasks" && basename(parentDir) === "specs") {
+    return join(dirname(parentDir), "tasks");
+  }
+
+  return tasksDir;
+}
+
+function requiredTaskDirs(specsTasksDir: string, tier: LoadTaskTier): string[] {
+  const tasksRoot = resolveTasksRoot(specsTasksDir);
+
+  if (tier === "all") {
+    return ["active", "completed", "archived"].map((taskTier) =>
+      join(tasksRoot, taskTier)
+    );
+  }
+
+  return [join(tasksRoot, tier)];
+}
+
 export function listCommand(specsTasksDir: string, _cwd: string, options: ListCommandOptions = {}): void {
   const tier = resolveTier(options);
+  const taskDirs = requiredTaskDirs(specsTasksDir, tier);
+  const hasReadableTaskDir = taskDirs.some((taskDir) => existsSync(taskDir));
+
+  if (!hasReadableTaskDir) {
+    console.error(`Tasks directory does not exist: ${taskDirs[0]}`);
+    process.exit(1);
+  }
+
   const { tasks, errors } = loadTasks(specsTasksDir, tier);
 
   if (errors.length > 0) {

@@ -6,8 +6,9 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { loadConfig } from "./config.js";
-import { STATUSES } from "./constants.js";
+import { STATUSES, TASK_TYPES, PRIORITIES } from "./constants.js";
 import type { Status } from "./constants.js";
+import { slugify } from "./utils/slugify.js";
 import { loadTasks } from "./specs/loadTasks.js";
 import type { LoadedTaskWithTier } from "./specs/loadTasks.js";
 import { validateTasks } from "./specs/validateTasks.js";
@@ -22,6 +23,7 @@ import {
   renderTemplate,
 } from "./templates/renderTemplate.js";
 import { getPaths } from "./utils/paths.js";
+import { TaskSpecSchema } from "./specs/schema.js";
 import type { LoadedTask, TaskSpec } from "./specs/schema.js";
 
 const cwd = process.cwd();
@@ -210,6 +212,87 @@ server.registerTool(
           archivedDir: p.tasksArchived,
         })
       );
+    })
+);
+
+server.registerTool(
+  "assignr_create",
+  {
+    title: "Create Assignr Task",
+    description:
+      "Create a new Assignr task spec in the active tasks directory. Generates the task id from the title using slugify. Returns an error if a task with the same id already exists.",
+    inputSchema: {
+      title: z.string().min(1).describe("Human-readable task title. The id is derived from this."),
+      type: z.enum(TASK_TYPES).describe("Task type."),
+      domain: z.string().min(1).describe("Domain label, e.g. auth, core, api."),
+      priority: z.enum(PRIORITIES).optional().describe("Task priority. Defaults to medium."),
+      goal: z.string().min(1).describe("One sentence describing what is done when this task is complete."),
+      acceptance_criteria: z.array(z.string()).min(1).describe("Specific, testable criteria the implementation must satisfy."),
+      verification_commands: z.array(z.string()).min(1).describe("Shell commands to verify the work. Must be runnable in the repo as-is."),
+      allowed_paths: z.array(z.string()).optional().describe("Glob patterns or exact paths the agent may edit."),
+      forbidden_paths: z.array(z.string()).optional().describe("Paths the agent must not touch."),
+      depends_on: z.array(z.string()).optional().describe("IDs of tasks that must complete before this one starts."),
+      outputs_required: z.array(z.string()).optional().describe("Evidence fields the agent must report. Defaults to files_changed, tests_run, risks."),
+      notes: z.array(z.string()).optional().describe("Free-form notes or constraints."),
+    },
+  },
+  ({
+    title,
+    type,
+    domain,
+    priority,
+    goal,
+    acceptance_criteria,
+    verification_commands,
+    allowed_paths,
+    forbidden_paths,
+    depends_on,
+    outputs_required,
+    notes,
+  }) =>
+    toolResult(() => {
+      const id = slugify(title);
+
+      const existing = findTask(id);
+      if (existing) {
+        return errorResult(
+          `A task with id "${id}" already exists at ${relative(cwd, existing.filePath)}. Choose a different title or update the existing task.`
+        );
+      }
+
+      const spec = {
+        id,
+        title,
+        status: "pending" as const,
+        type,
+        domain,
+        priority: priority ?? "medium",
+        depends_on: depends_on ?? [],
+        allowed_paths: allowed_paths ?? [],
+        forbidden_paths: forbidden_paths ?? [],
+        goal,
+        acceptance_criteria,
+        verification: { commands: verification_commands },
+        outputs_required: outputs_required ?? ["files_changed", "tests_run", "risks"],
+        notes: notes ?? [],
+      };
+
+      const parsed = TaskSpecSchema.safeParse(spec);
+      if (!parsed.success) {
+        const messages = parsed.error.issues
+          .map((i) => `${i.path.join(".")}: ${i.message}`)
+          .join("; ");
+        return errorResult(`Invalid task spec: ${messages}`);
+      }
+
+      if (!existsSync(p.tasksActive)) {
+        mkdirSync(p.tasksActive, { recursive: true });
+      }
+
+      const filePath = join(p.tasksActive, `${id}.yaml`);
+      writeFileSync(filePath, stringify(parsed.data, { lineWidth: 0 }), "utf-8");
+
+      return jsonResult({ id, file_path: relative(cwd, filePath) });
     })
 );
 

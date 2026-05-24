@@ -5,19 +5,15 @@ type: implementation
 domain: core
 priority: high
 depends_on: []
-goal: >
-  Add `assignr complete <task>` so finished work can leave the agent context. The
-  command should find an active task, mark it complete, and move the YAML from
-  `.assignr/tasks/active` to `.assignr/tasks/completed`.
+goal: |
+  Add `assignr complete <task>` so finished work can leave the agent context. The command should find an active task, mark it complete, and move the YAML from `.assignr/tasks/active` to `.assignr/tasks/completed`.
 acceptance_criteria:
   - "`assignr complete <task>` locates the task in `.assignr/tasks/active` by id."
   - The command updates the YAML `status` field to `complete` before moving the file.
   - The task file is moved to `.assignr/tasks/completed/<task>.yaml`.
   - The completed directory is created if it does not exist.
-  - If the task is missing from active tasks, the command exits non-zero with a clear
-    error.
-  - If the completed destination already exists, the command exits non-zero without
-    overwriting it.
+  - If the task is missing from active tasks, the command exits non-zero with a clear error.
+  - If the completed destination already exists, the command exits non-zero without overwriting it.
   - The command is registered in CLI help and README command docs.
   - Tests cover success, missing active task, and duplicate destination cases.
   - All existing tests continue to pass.
@@ -37,17 +33,10 @@ verification:
     - pnpm typecheck
     - pnpm test
     - pnpm build
-    - tmpdir="$(mktemp -d)" && cd "$tmpdir" && node
-      /Users/danielpatton/Documents/GitHub/promptops/bin/assignr.js init && node
-      /Users/danielpatton/Documents/GitHub/promptops/bin/assignr.js new "Test task" &&
-      node /Users/danielpatton/Documents/GitHub/promptops/bin/assignr.js complete
-      test-task && test -f .assignr/tasks/completed/test-task.yaml
+    - tmpdir="$(mktemp -d)" && cd "$tmpdir" && node /Users/danielpatton/Documents/GitHub/promptops/bin/assignr.js init && node /Users/danielpatton/Documents/GitHub/promptops/bin/assignr.js new "Test task" && node /Users/danielpatton/Documents/GitHub/promptops/bin/assignr.js complete test-task && test -f .assignr/tasks/completed/test-task.yaml
 outputs_required:
   - files_changed
   - risks
 notes:
-  - An older task named `lifecycle-complete-command` overlaps this scope, but its YAML
-    currently cannot be loaded. Use this valid task as the implementable contract unless
-    that older task is repaired first.
-  - Use atomic rename where possible; fall back to copy and delete for cross-device
-    moves.
+  - An older task named `lifecycle-complete-command` overlaps this scope, but its YAML currently cannot be loaded. Use this valid task as the implementable contract unless that older task is repaired first.
+  - Use atomic rename where possible; fall back to copy and delete for cross-device moves.
