@@ -1,7 +1,8 @@
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from "fs";
-import { join } from "path";
+import { dirname, join, relative } from "path";
 import { parse } from "yaml";
 import { loadTasks } from "../specs/loadTasks.js";
+import type { LoadTaskTier } from "../specs/loadTasks.js";
 import {
   renderTemplate,
   renderDomainContext,
@@ -12,6 +13,7 @@ import {
 } from "../templates/renderTemplate.js";
 import type { Status } from "../constants.js";
 import type { TaskSpec } from "../specs/schema.js";
+import { getPaths } from "../utils/paths.js";
 
 function getTemplate(type: TaskSpec["type"]): string {
   switch (type) {
@@ -25,7 +27,8 @@ function getTemplate(type: TaskSpec["type"]): string {
 }
 
 function loadDomainContext(specsTasksDir: string, domain: string, cwd: string): string | undefined {
-  const domainPath = join(specsTasksDir, "..", "domains", `${domain}.yaml`);
+  const assignrRoot = relative(cwd, dirname(dirname(specsTasksDir)));
+  const domainPath = join(getPaths(cwd, assignrRoot).specsDomains, `${domain}.yaml`);
 
   if (!existsSync(domainPath)) {
     console.error(
@@ -54,7 +57,8 @@ export interface CompileOptions {
 
 export function compileCommand(options: CompileOptions): void {
   const { specsTasksDir, generatedDir, cwd, taskId, status, all } = options;
-  const { tasks, errors } = loadTasks(specsTasksDir);
+  const tier: LoadTaskTier = all ? "all" : "active";
+  const { tasks, errors } = loadTasks(specsTasksDir, tier);
 
   if (errors.length > 0) {
     console.error(`Cannot compile: ${errors.length} task(s) failed to load.`);

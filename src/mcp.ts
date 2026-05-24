@@ -9,6 +9,7 @@ import { loadConfig } from "./config.js";
 import { STATUSES } from "./constants.js";
 import type { Status } from "./constants.js";
 import { loadTasks } from "./specs/loadTasks.js";
+import type { LoadedTaskWithTier } from "./specs/loadTasks.js";
 import { validateTasks } from "./specs/validateTasks.js";
 import { listTasksForMcp } from "./mcpList.js";
 import { buildRunLog, timestamp } from "./commands/runLog.js";
@@ -79,11 +80,11 @@ function loadDomainContext(domain: string): { content?: string; warning?: string
 }
 
 function findTask(taskId: string): LoadedTask | undefined {
-  return loadTasks(p.specsTasks).tasks.find((task) => task.spec.id === taskId);
+  return loadTasks(p.specsTasks, "all").tasks.find((task) => task.spec.id === taskId);
 }
 
 function loadTasksOrError(): LoadedTask[] {
-  const { tasks, errors } = loadTasks(p.specsTasks);
+  const { tasks, errors } = loadTasks(p.specsTasks, "all");
   if (errors.length > 0) {
     const message = errors
       .map((error) => `${relative(cwd, error.filePath)}: ${error.error}`)
@@ -91,6 +92,44 @@ function loadTasksOrError(): LoadedTask[] {
     throw new Error(`Cannot load tasks: ${message}`);
   }
   return tasks;
+}
+
+function dependencyContextTask(task: LoadedTaskWithTier): LoadedTaskWithTier {
+  return {
+    ...task,
+    spec: {
+      ...task.spec,
+      depends_on: [],
+      allowed_paths: ["dependency-context"],
+      forbidden_paths: ["dependency-context"],
+      outputs_required: ["dependency-context"],
+      notes: ["Loaded only so active task dependency references can be resolved."],
+    },
+  };
+}
+
+function loadActiveValidationTasks(): {
+  tasks: LoadedTaskWithTier[];
+  errors: Array<{ filePath: string; error: string }>;
+  activeFilePaths: Set<string>;
+  activeTaskCount: number;
+  activeDomainCount: number;
+} {
+  const activeResult = loadTasks(p.specsTasks, "active");
+  const allResult = loadTasks(p.specsTasks, "all");
+  const activeIds = new Set(activeResult.tasks.map((task) => task.spec.id));
+  const activeFilePaths = new Set(activeResult.tasks.map((task) => task.filePath));
+  const contextTasks = allResult.tasks
+    .filter((task) => !activeIds.has(task.spec.id))
+    .map(dependencyContextTask);
+
+  return {
+    tasks: [...activeResult.tasks, ...contextTasks],
+    errors: activeResult.errors,
+    activeFilePaths,
+    activeTaskCount: activeResult.tasks.length,
+    activeDomainCount: new Set(activeResult.tasks.map((task) => task.spec.domain)).size,
+  };
 }
 
 const server = new McpServer({
@@ -122,8 +161,16 @@ server.registerTool(
   },
   () =>
     toolResult(() => {
-      const { tasks, errors: loadErrors } = loadTasks(p.specsTasks);
-      const { valid, invalid, counts } = validateTasks(tasks, { specsDomainsDir: p.specsDomains });
+      const {
+        tasks,
+        errors: loadErrors,
+        activeFilePaths,
+        activeTaskCount,
+        activeDomainCount,
+      } = loadActiveValidationTasks();
+      const result = validateTasks(tasks, { specsDomainsDir: p.specsDomains });
+      const valid = result.valid.filter((task) => activeFilePaths.has(task.filePath));
+      const invalid = result.invalid.filter((entry) => activeFilePaths.has(entry.filePath));
       const errors = [
         ...loadErrors.map((error) => ({
           file: relative(cwd, error.filePath),
@@ -141,9 +188,9 @@ server.registerTool(
         valid_count: valid.length,
         error_count: errors.length,
         counts: {
-          tasks_checked: counts.tasksChecked + loadErrors.length,
-          domains_checked: counts.domainsChecked,
-          contracts_checked: counts.contractsChecked + loadErrors.length,
+          tasks_checked: activeTaskCount + loadErrors.length,
+          domains_checked: activeDomainCount,
+          contracts_checked: result.counts.contractsChecked + loadErrors.length,
         },
         errors,
       });

@@ -1,6 +1,8 @@
 import { loadTasks } from "../specs/loadTasks.js";
+import type { LoadedTaskWithTier } from "../specs/loadTasks.js";
 import { validateTasks } from "../specs/validateTasks.js";
 import type { ValidationCounts } from "../specs/validateTasks.js";
+import type { TaskSpec } from "../specs/schema.js";
 import { getPaths } from "../utils/paths.js";
 import { dirname, relative } from "path";
 
@@ -16,8 +18,58 @@ function withLoadErrorCounts(counts: ValidationCounts, loadErrorCount: number): 
   };
 }
 
-export function validateCommand(specsTasksDir: string, cwd: string): void {
-  const { tasks, errors: loadErrors } = loadTasks(specsTasksDir);
+export interface ValidateCommandOptions {
+  all?: boolean;
+}
+
+function dependencyContextTask(task: LoadedTaskWithTier): LoadedTaskWithTier {
+  const spec: TaskSpec = {
+    ...task.spec,
+    depends_on: [],
+    allowed_paths: ["dependency-context"],
+    forbidden_paths: ["dependency-context"],
+    goal: task.spec.goal || "Dependency context task.",
+    acceptance_criteria:
+      task.spec.acceptance_criteria.length > 0
+        ? task.spec.acceptance_criteria
+        : ["Dependency context task."],
+    verification: {
+      commands:
+        task.spec.verification.commands.length > 0
+          ? task.spec.verification.commands
+          : ["Dependency context task."],
+    },
+    outputs_required: ["dependency-context"],
+    notes: ["Loaded only so active task dependency references can be resolved."],
+  };
+
+  return { spec, filePath: task.filePath, tier: task.tier };
+}
+
+function activeOnlyValidationTasks(specsTasksDir: string): ReturnType<typeof loadTasks> {
+  const activeResult = loadTasks(specsTasksDir, "active");
+  const allResult = loadTasks(specsTasksDir, "all");
+  const activeIds = new Set(activeResult.tasks.map((task) => task.spec.id));
+  const contextTasks = allResult.tasks
+    .filter((task) => !activeIds.has(task.spec.id))
+    .map(dependencyContextTask);
+
+  return {
+    tasks: [...activeResult.tasks, ...contextTasks],
+    errors: activeResult.errors,
+  };
+}
+
+export function validateCommand(
+  specsTasksDir: string,
+  cwd: string,
+  options: ValidateCommandOptions = {}
+): void {
+  const activeResult = options.all ? undefined : loadTasks(specsTasksDir, "active");
+  const activeFilePaths = new Set(activeResult?.tasks.map((task) => task.filePath));
+  const { tasks, errors: loadErrors } = options.all
+    ? loadTasks(specsTasksDir, "all")
+    : activeOnlyValidationTasks(specsTasksDir);
   const assignrRoot = relative(cwd, dirname(dirname(specsTasksDir)));
   const specsDomainsDir = getPaths(cwd, assignrRoot).specsDomains;
 
@@ -34,7 +86,24 @@ export function validateCommand(specsTasksDir: string, cwd: string): void {
     console.warn(`  ⚠ No tasks found. Run "assignr new" to create your first task.`);
   }
 
-  const { valid, invalid, warnings, counts } = validateTasks(tasks, { specsDomainsDir });
+  const result = validateTasks(tasks, { specsDomainsDir });
+  const valid = options.all
+    ? result.valid
+    : result.valid.filter((task) => activeFilePaths.has(task.filePath));
+  const invalid = options.all
+    ? result.invalid
+    : result.invalid.filter((entry) => activeFilePaths.has(entry.filePath));
+  const warnings = options.all
+    ? result.warnings
+    : result.warnings.filter((warning) => activeFilePaths.has(warning.filePath));
+  const activeDomainCount = new Set(activeResult?.tasks.map((task) => task.spec.domain)).size;
+  const counts = options.all
+    ? result.counts
+    : {
+        ...result.counts,
+        tasksChecked: activeResult?.tasks.length ?? 0,
+        domainsChecked: activeDomainCount,
+      };
   const checkedCounts = withLoadErrorCounts(counts, loadErrors.length);
 
   for (const { filePath, errors } of invalid) {

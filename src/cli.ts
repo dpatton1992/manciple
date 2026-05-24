@@ -88,8 +88,9 @@ program
 program
   .command("validate")
   .description("Validate all task specs.")
-  .action(() => {
-    validateCommand(p.specsTasks, cwd);
+  .option("--all", "Validate active, completed, and archived tasks.", false)
+  .action((opts: { all: boolean }) => {
+    validateCommand(p.tasksActive, cwd, { all: opts.all });
   });
 
 // compile
@@ -97,10 +98,10 @@ program
   .command("compile [task-id]")
   .description("Compile task specs into markdown prompts.")
   .option("--status <status>", "Compile tasks with this status.")
-  .option("--all", "Compile all tasks.", false)
+  .option("--all", "Compile tasks from active, completed, and archived lifecycle directories.", false)
   .action((taskId: string | undefined, opts: { status?: string; all: boolean }) => {
     compileCommand({
-      specsTasksDir: p.specsTasks,
+      specsTasksDir: p.tasksActive,
       generatedDir: p.promptsGenerated,
       cwd,
       taskId,
