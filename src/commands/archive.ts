@@ -1,7 +1,8 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "fs";
 import { join } from "path";
-import { parse, stringify } from "yaml";
+import { parse } from "yaml";
 import { loadTasks } from "../specs/loadTasks.js";
+import { formatYamlDocument } from "../utils/yamlFormat.js";
 
 export interface ArchiveCommandOptions {
   specsTasksDir: string;
@@ -44,7 +45,7 @@ export function archiveCommand(taskId: string, options: ArchiveCommandOptions): 
   parsed["status"] = "archived";
 
   mkdirSync(archivedDir, { recursive: true });
-  writeFileSync(found.filePath, stringify(parsed, { lineWidth: 0 }), "utf-8");
+  writeFileSync(found.filePath, formatYamlDocument(parsed), "utf-8");
   moveTaskFile(found.filePath, destination);
 
   console.log(`Archived: ${taskId} → ${destination.replace(cwd + "/", "")}`);

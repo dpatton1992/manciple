@@ -23,6 +23,7 @@ import { checkLifecycleCommand } from "../src/commands/checkLifecycle.js";
 import { statusCommand } from "../src/commands/status.js";
 import { loadTasks } from "../src/specs/loadTasks.js";
 import { getPaths } from "../src/utils/paths.js";
+import { formatYamlDocument } from "../src/utils/yamlFormat.js";
 
 let cwd: string;
 let p: ReturnType<typeof getPaths>;
@@ -700,6 +701,35 @@ describe("assignr set-status", () => {
     const taskFile = join(p.tasksActive, "license-expiration-reminders.yaml");
     const spec = parse(readFileSync(taskFile, "utf-8")) as Record<string, unknown>;
     expect(spec["status"]).toBe("in_progress");
+  });
+
+  it("normalizes task YAML deterministically when updating status", () => {
+    const taskFile = join(p.tasksActive, "formatting-task.yaml");
+    const unformatted = [
+      "id: formatting-task",
+      "title: Formatting task",
+      "status: pending",
+      "type: implementation",
+      "domain: core",
+      "priority: medium",
+      "depends_on: []",
+      "allowed_paths: [src/alpha.ts, src/beta.ts, src/gamma.ts, src/delta.ts]",
+      "forbidden_paths: []",
+      "goal: Keep task YAML formatting deterministic.",
+      "acceptance_criteria: [Status updates rewrite task YAML through the canonical formatter.]",
+      "verification: { commands: [pnpm test -- formatting] }",
+      "outputs_required: [files_changed, tests_run, risks]",
+      "notes: []",
+      "",
+    ].join("\n");
+    writeFileSync(taskFile, unformatted, "utf-8");
+
+    setStatusCommand("formatting-task", "in_progress", p.specsTasks, cwd);
+
+    const raw = readFileSync(taskFile, "utf-8");
+    expect(raw).not.toBe(unformatted);
+    expect(raw).toBe(formatYamlDocument(parse(raw)));
+    expect((parse(raw) as Record<string, unknown>)["status"]).toBe("in_progress");
   });
 
   it("set-status finds tasks across all tiers via loadTasks", () => {

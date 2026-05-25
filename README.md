@@ -66,6 +66,113 @@ assignr set-status build-login-page needs_review
 assignr review build-login-page
 ```
 
+## What it looks like
+
+The task spec YAML lives in `.assignr/tasks/active/add-api-rate-limit.yaml` and gives the agent a concrete contract for one feature-sized slice.
+
+```yaml
+id: add-api-rate-limit
+title: Add API rate limiting
+status: pending
+type: implementation
+domain: api
+priority: high
+goal: Add per-user rate limiting to the public API handler.
+acceptance_criteria:
+  - Authenticated API requests are limited to 120 requests per minute per user.
+  - Rate-limited responses return HTTP 429 with a retry-after value.
+  - Existing unauthenticated health checks are not rate limited.
+allowed_paths:
+  - src/api/**
+  - tests/api/**
+verification:
+  commands:
+    - pnpm test -- api-rate-limit
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+```
+
+The compiled prompt is written to `.assignr/prompts/generated/add-api-rate-limit.md` and is the handoff an implementation agent receives.
+
+```markdown
+## Domain Context
+
+### Id
+
+api
+
+### Description
+
+Public API request handling, middleware, and endpoint tests.
+
+# Agent Task: Add API rate limiting
+
+## Goal
+
+Add per-user rate limiting to the public API handler.
+
+## Scope
+
+### Allowed Paths
+
+- src/api/**
+- tests/api/**
+
+## Acceptance Criteria
+
+- Authenticated API requests are limited to 120 requests per minute per user.
+- Rate-limited responses return HTTP 429 with a retry-after value.
+- Existing unauthenticated health checks are not rate limited.
+
+...
+```
+
+The run log stub lives in `.assignr/runs/add-api-rate-limit-2026-05-25.md` and captures the evidence the developer fills in after the agent run.
+
+```markdown
+# Run Log: add-api-rate-limit
+
+- Result: complete
+- Agent: Codex
+- Model: gpt-5-codex
+- Commands run:
+  - pnpm test -- api-rate-limit
+- Files changed:
+  - src/api/middleware/rateLimit.ts
+  - src/api/handler.ts
+  - tests/api/rateLimit.test.ts
+- Risks:
+  - In-memory limiter is suitable for one process; distributed deployments need shared storage.
+```
+
+The review prompt is written to `.assignr/prompts/generated/review-add-api-rate-limit.md` and gives a reviewer the task contract, evidence, and checks to verify.
+
+```markdown
+# Review Task: add-api-rate-limit
+
+## Review Inputs
+
+- Task spec: `.assignr/tasks/active/add-api-rate-limit.yaml`
+- Run log: `.assignr/runs/add-api-rate-limit-2026-05-25.md`
+- Changed files:
+  - src/api/middleware/rateLimit.ts
+  - src/api/handler.ts
+  - tests/api/rateLimit.test.ts
+
+## Acceptance Criteria To Check
+
+- Authenticated API requests are limited to 120 requests per minute per user.
+- Rate-limited responses return HTTP 429 with a retry-after value.
+- Existing unauthenticated health checks are not rate limited.
+
+## Reviewer Instructions
+
+Check the diff, confirm the recorded verification passed, and call out any
+scope violations, missing evidence, or residual deployment risk.
+```
+
 ## Install
 
 Requires Node.js 18+.
@@ -82,9 +189,9 @@ assignr --help
   config.yaml
   domains.yaml
   tasks/
-    active/
-    completed/
-    archived/
+    active/      # default agent context for pending and in-progress work
+    completed/   # audit history for accepted or finished work
+    archived/    # audit history for abandoned or superseded work
   prompts/generated/
   runs/
   reviews/
@@ -114,6 +221,22 @@ outputs_required:
   - risks
 ```
 
+## Task Lifecycle
+
+New tasks start in `.assignr/tasks/active`, which is the default context agents use when listing, compiling, and choosing work. `.assignr/tasks/completed` and `.assignr/tasks/archived` are kept as audit history instead of active queue noise; use list flags when you need to inspect them.
+
+```bash
+assignr complete build-login-page
+assignr archive replace-legacy-router
+assignr reopen replace-legacy-router
+
+assignr list --completed  # show completed history
+assignr list --archived   # show archived history
+assignr list --all        # show active, completed, and archived tasks
+```
+
+Repos that still have the old flat task layout can run `assignr migrate-tasks` to move task files into the lifecycle directories.
+
 ## Command Reference
 
 | Command | Purpose |
@@ -122,7 +245,7 @@ outputs_required:
 | `assignr new <title>` | Create a task spec. Add `--interactive` to collect common fields through prompts. |
 | `assignr validate` | Validate task specs. |
 | `assignr compile [task-id]` | Compile implementation prompts to `.assignr/prompts/generated/<task-id>.md`. Supports `--all` and `--status <status>`. |
-| `assignr list` | List task specs. Supports lifecycle and status/domain filters. |
+| `assignr list` | List active task specs by default. Add `--completed`, `--archived`, or `--all` for lifecycle history. |
 | `assignr status` | Show status counts and a suggested next task. |
 | `assignr set-status <task-id> <status>` | Update task status. |
 | `assignr complete <task-id>` | Mark an active task complete and move it to completed history. |

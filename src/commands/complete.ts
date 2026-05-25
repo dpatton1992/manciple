@@ -1,7 +1,8 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "fs";
 import { join } from "path";
-import { parse, stringify } from "yaml";
+import { parse } from "yaml";
 import { loadTasks } from "../specs/loadTasks.js";
+import { formatYamlDocument } from "../utils/yamlFormat.js";
 
 export interface CompleteCommandOptions {
   specsTasksDir: string;
@@ -44,7 +45,7 @@ export function completeCommand(taskId: string, options: CompleteCommandOptions)
   parsed["status"] = "complete";
 
   mkdirSync(completedDir, { recursive: true });
-  writeFileSync(found.filePath, stringify(parsed, { lineWidth: 0 }), "utf-8");
+  writeFileSync(found.filePath, formatYamlDocument(parsed), "utf-8");
   moveTaskFile(found.filePath, destination);
 
   console.log(`Completed: ${taskId} → ${destination.replace(cwd + "/", "")}`);

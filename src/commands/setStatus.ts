@@ -1,10 +1,11 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "fs";
 import { basename, dirname, join } from "path";
-import { parse, stringify } from "yaml";
+import { parse } from "yaml";
 import { STATUSES } from "../constants.js";
 import type { Status } from "../constants.js";
 import { loadTasks } from "../specs/loadTasks.js";
 import type { TaskTier } from "../specs/loadTasks.js";
+import { formatYamlDocument } from "../utils/yamlFormat.js";
 
 const ACTIVE_STATUSES = new Set<Status>([
   "pending",
@@ -90,7 +91,7 @@ export function setStatusCommand(
     process.exit(1);
   }
 
-  writeFileSync(found.filePath, stringify(parsed, { lineWidth: 0 }), "utf-8");
+  writeFileSync(found.filePath, formatYamlDocument(parsed), "utf-8");
 
   if (shouldMove) {
     mkdirSync(destinationDir, { recursive: true });

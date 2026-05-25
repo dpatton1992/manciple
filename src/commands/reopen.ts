@@ -1,8 +1,9 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "fs";
 import { join } from "path";
-import { parse, stringify } from "yaml";
+import { parse } from "yaml";
 import { loadTasks } from "../specs/loadTasks.js";
 import type { TaskTier } from "../specs/loadTasks.js";
+import { formatYamlDocument } from "../utils/yamlFormat.js";
 
 export interface ReopenCommandOptions {
   specsTasksDir: string;
@@ -47,7 +48,7 @@ export function reopenCommand(taskId: string, options: ReopenCommandOptions): vo
   parsed["status"] = "in_progress";
 
   mkdirSync(activeDir, { recursive: true });
-  writeFileSync(found.filePath, stringify(parsed, { lineWidth: 0 }), "utf-8");
+  writeFileSync(found.filePath, formatYamlDocument(parsed), "utf-8");
   moveTaskFile(found.filePath, destination);
 
   console.log(`Reopened: ${taskId} (from ${found.tier}) → ${destination.replace(cwd + "/", "")}`);

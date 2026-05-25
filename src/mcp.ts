@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "fs";
 import { join, relative } from "path";
-import { parse, stringify } from "yaml";
+import { parse } from "yaml";
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -24,6 +24,7 @@ import {
   renderTemplate,
 } from "./templates/renderTemplate.js";
 import { getPaths } from "./utils/paths.js";
+import { formatYamlDocument } from "./utils/yamlFormat.js";
 import { TaskSpecSchema } from "./specs/schema.js";
 import type { LoadedTask, TaskSpec } from "./specs/schema.js";
 
@@ -341,7 +342,7 @@ server.registerTool(
       }
 
       const filePath = join(p.tasksActive, `${id}.yaml`);
-      writeFileSync(filePath, stringify(parsed.data, { lineWidth: 0 }), "utf-8");
+      writeFileSync(filePath, formatYamlDocument(parsed.data), "utf-8");
 
       return jsonResult({ id, file_path: relative(cwd, filePath) });
     })
@@ -419,7 +420,7 @@ server.registerTool(
       const parsed = parse(raw) as Record<string, unknown>;
       const previousStatus = parsed["status"];
       parsed["status"] = status;
-      writeFileSync(found.filePath, stringify(parsed, { lineWidth: 0 }), "utf-8");
+      writeFileSync(found.filePath, formatYamlDocument(parsed), "utf-8");
 
       return jsonResult({
         previous_status: previousStatus,

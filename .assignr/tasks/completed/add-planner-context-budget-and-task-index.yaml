@@ -1,6 +1,6 @@
 id: add-planner-context-budget-and-task-index
 title: Add planner context budget and task index
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: critical

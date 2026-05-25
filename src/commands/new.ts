@@ -3,8 +3,8 @@ import { stdin as defaultInput, stdout as defaultOutput } from "process";
 import type { Readable, Writable } from "stream";
 import { writeFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
-import { stringify } from "yaml";
 import { slugify } from "../utils/slugify.js";
+import { formatYamlDocument } from "../utils/yamlFormat.js";
 import { TASK_TYPES, PRIORITIES } from "../constants.js";
 import type { TaskType, Priority } from "../constants.js";
 
@@ -107,7 +107,7 @@ function writeTaskFile(title: string, options: NewTaskOptions, values?: NewTaskS
   }
 
   const spec = createTaskSpec(title, id, options, values);
-  const yaml = stringify(spec, { lineWidth: 0 });
+  const yaml = formatYamlDocument(spec);
   writeFileSync(filePath, yaml, "utf-8");
 
   console.log(`Created: ${filePath.replace(cwd + "/", "")}`);

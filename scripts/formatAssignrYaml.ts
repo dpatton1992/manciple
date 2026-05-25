@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "fs";
 import { join } from "path";
-import { parse, stringify } from "yaml";
+import { parse } from "yaml";
+import { formatYamlDocument } from "../src/utils/yamlFormat.js";
 
 const DEFAULT_TARGETS = [".assignr/tasks", ".assignr/specs/tasks"];
 
@@ -24,7 +25,7 @@ function collectYamlFiles(path: string): string[] {
 function formatYaml(path: string): string {
   const raw = readFileSync(path, "utf-8");
   const parsed = parse(raw);
-  return stringify(parsed, { lineWidth: 88 }).trimEnd() + "\n";
+  return formatYamlDocument(parsed);
 }
 
 const args = process.argv.slice(2);

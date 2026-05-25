@@ -26,10 +26,11 @@ If that path does not exist, use the discovered `assignr-mcp-task-runner` skill 
    - Use the detected core count only as the maximum safe worker count, not as the target batch size. If no safe core count can be determined, stop and report the blocker instead of guessing.
 
 2. Discover Assignr tasks.
+   - Before reading task state or spawning workers, normalize Assignr YAML deterministically by running the repo's formatter when available (prefer `pnpm exec tsx scripts/formatAssignrYaml.ts`; fall back to `pnpm run format:yaml` only if needed). Treat formatter failures as blockers. Do not ask the model to reason about YAML formatting drift during task selection.
    - Prefer `assignr_list` filtered to active or actionable tasks when MCP tools are available.
    - If the user names task ids, use those exact ids.
    - Treat unblocked `pending` or `in_progress` active tasks as actionable. Treat `needs_review`, `complete`, `blocked`, `failed`, and other terminal or holding states as non-actionable unless the user explicitly assigns review or recovery work.
-   - Let the coordinator handle cross-task YAML formatting cleanup as housekeeping before or after worker batches. Do not assign separate workers just to rediscover or normalize task YAML formatting unless the user explicitly asks for that task.
+   - Let the coordinator handle cross-task YAML formatting cleanup as deterministic housekeeping before and after worker batches. Do not assign separate workers just to rediscover or normalize task YAML formatting unless the user explicitly asks for that task.
 
 3. Run a dispatch loop until no actionable active tasks remain.
    - At the start of each loop iteration, refresh the active Assignr task list and dependency state.
@@ -63,6 +64,7 @@ If that path does not exist, use the discovered `assignr-mcp-task-runner` skill 
    - Wait for all workers in the current batch before refreshing active tasks unless a worker failure blocks the run.
    - Review each worker's final report and changed files.
    - Resolve conflicts only within the relevant task scope.
+   - Normalize Assignr YAML deterministically after worker results are integrated and before verification (prefer `pnpm exec tsx scripts/formatAssignrYaml.ts`; fall back to `pnpm run format:yaml` only if needed). Formatting should be an automatic before/after step, not a coordinator decision point.
    - Run targeted integration checks first. Escalate to the broadest feasible verification only after targeted checks pass or when the touched surface warrants it. Suppress noisy output where possible while preserving failure details.
    - Return to the dispatch loop if refreshed active tasks still include actionable unblocked work.
    - Run `assignr check-lifecycle` before final reporting. If MCP support is available, `assignr_check_lifecycle` may be used for the same check, but still verify the local CLI surface when feasible.

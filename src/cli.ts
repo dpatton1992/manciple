@@ -24,6 +24,7 @@ import { runLogCommand } from "./commands/runLog.js";
 import { summarizeRunCostCommand } from "./commands/summarizeRunCost.js";
 import { reviewCommand } from "./commands/review.js";
 import { reviewCheckCommand } from "./commands/reviewCheck.js";
+import { reviewQueueCommand } from "./commands/reviewQueue.js";
 import { coordinatorCommand } from "./commands/coordinator.js";
 import { worktreeCommand } from "./commands/worktree.js";
 import { doctorCommand } from "./commands/doctor.js";
@@ -378,6 +379,21 @@ program
   .action((taskId: string | undefined, opts: { deterministic: boolean }) => {
     reviewCheckCommand(p.tasksActive, cwd, taskId, {
       deterministic: opts.deterministic,
+      generatedDir: p.promptsGenerated,
+      activeDir: p.tasksActive,
+      completedDir: p.tasksCompleted,
+      archivedDir: p.tasksArchived,
+    });
+  });
+
+// review-queue
+program
+  .command("review-queue")
+  .description("Triage active needs_review tasks for deeper review.")
+  .option("--mode <mode>", "Review queue mode: triage.", "triage")
+  .action((opts: { mode: string }) => {
+    reviewQueueCommand(p.tasksActive, cwd, {
+      mode: opts.mode as "triage",
       generatedDir: p.promptsGenerated,
       activeDir: p.tasksActive,
       completedDir: p.tasksCompleted,

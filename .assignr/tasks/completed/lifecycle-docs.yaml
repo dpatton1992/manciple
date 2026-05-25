@@ -1,6 +1,6 @@
 id: lifecycle-docs
 title: Update README to document lifecycle directories and commands
-status: partial
+status: complete
 type: docs
 domain: core
 priority: low

@@ -1,8 +1,9 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "fs";
 import { join } from "path";
-import { parse, stringify } from "yaml";
+import { parse } from "yaml";
 import { loadTasks } from "../specs/loadTasks.js";
 import type { LoadedTaskWithTier } from "../specs/loadTasks.js";
+import { formatYamlDocument } from "../utils/yamlFormat.js";
 import { timestamp } from "./runLog.js";
 
 export interface ReviewOutcomeCommandOptions {
@@ -85,7 +86,7 @@ function updateTaskStatus(filePath: string, status: string): void {
   const raw = readFileSync(filePath, "utf-8");
   const parsed = parse(raw) as Record<string, unknown>;
   parsed["status"] = status;
-  writeFileSync(filePath, stringify(parsed, { lineWidth: 0 }), "utf-8");
+  writeFileSync(filePath, formatYamlDocument(parsed), "utf-8");
 }
 
 export function reviewChangesCommand(
