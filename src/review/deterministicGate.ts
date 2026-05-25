@@ -34,6 +34,8 @@ export interface DeterministicReviewBlocker {
 
 export interface DeterministicReviewTaskReport {
   taskId: string;
+  status: string;
+  acceptanceCriteriaCount: number;
   ready: boolean;
   blockers: DeterministicReviewBlocker[];
   readiness?: ReviewReadinessReport;
@@ -327,6 +329,8 @@ export function evaluateDeterministicReviewGate(
 
     return {
       taskId: task.spec.id,
+      status: task.spec.status,
+      acceptanceCriteriaCount: task.spec.acceptance_criteria.length,
       ready: blockers.length === 0,
       blockers,
       readiness,

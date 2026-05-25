@@ -390,10 +390,16 @@ program
 program
   .command("review-queue")
   .description("Triage active needs_review tasks for deeper review.")
-  .option("--mode <mode>", "Review queue mode: triage.", "triage")
-  .action((opts: { mode: string }) => {
+  .option("--mode <mode>", "Review queue mode: triage or deep.", "triage")
+  .option("--all", "In deep mode, include tasks that passed triage.", false)
+  .option("--budget <tokens>", "Positive integer review budget estimate for queued packets.")
+  .option("--deep-only <filter>", "In deep mode, emit only tasks matching the filter: risky.")
+  .action((opts: { mode: string; all: boolean; budget?: string; deepOnly?: string }) => {
     reviewQueueCommand(p.tasksActive, cwd, {
-      mode: opts.mode as "triage",
+      mode: opts.mode as "triage" | "deep",
+      all: opts.all,
+      budget: opts.budget,
+      deepOnly: opts.deepOnly,
       generatedDir: p.promptsGenerated,
       activeDir: p.tasksActive,
       completedDir: p.tasksCompleted,

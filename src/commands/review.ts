@@ -130,12 +130,12 @@ ${formatList(spec.forbidden_paths)}
 `;
 }
 
-export function reviewCommand(
+export function createReviewPrompt(
   taskId: string,
   specsTasksDir: string,
   generatedDir: string,
   cwd: string
-): void {
+): string {
   const { tasks, errors } = loadTasks(specsTasksDir, "all");
 
   if (errors.length > 0) {
@@ -158,6 +158,17 @@ export function reviewCommand(
   const rendered = renderReviewPrompt(found.spec, cwd);
   const outPath = join(generatedDir, reviewPromptFilename(taskId));
   writeFileSync(outPath, rendered, "utf-8");
+
+  return outPath;
+}
+
+export function reviewCommand(
+  taskId: string,
+  specsTasksDir: string,
+  generatedDir: string,
+  cwd: string
+): void {
+  const outPath = createReviewPrompt(taskId, specsTasksDir, generatedDir, cwd);
 
   console.log(`Created review prompt: ${outPath.replace(cwd + "/", "")}`);
   console.log(

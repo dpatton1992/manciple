@@ -42,6 +42,7 @@ export interface ReviewReadinessReport {
   humanReviewReasons: string[];
   hasRunLog: boolean;
   hasChangedFiles: boolean;
+  changedFiles: string[];
   changedFilesSource: ChangedFilesSource;
   overlappingFiles: string[];
   hasVerificationCommands: boolean;
@@ -214,6 +215,9 @@ export function evaluateReviewReadiness(
     : hasGitFiles
       ? "git-status"
       : "missing";
+  const changedFiles = hasRunLogFiles
+    ? changedFilesFromRunLogs(runLogs)
+    : presentValues(evidence.gitChangedFiles);
 
   const recordedCommands = runLogCommands(runLogs);
   const missingVerificationCommands = missingExpectedCommands(
@@ -326,6 +330,7 @@ export function evaluateReviewReadiness(
     humanReviewReasons,
     hasRunLog,
     hasChangedFiles: changedFilesSource !== "missing",
+    changedFiles,
     changedFilesSource,
     overlappingFiles,
     hasVerificationCommands,

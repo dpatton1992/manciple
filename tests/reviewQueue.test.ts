@@ -78,6 +78,19 @@ function runTriage(): void {
   });
 }
 
+function runDeep(options: { all?: boolean; budget?: string | number; deepOnly?: "risky" } = {}): void {
+  reviewQueueCommand(p.tasksActive, cwd, {
+    mode: "deep",
+    all: options.all,
+    budget: options.budget,
+    deepOnly: options.deepOnly,
+    generatedDir: p.promptsGenerated,
+    activeDir: p.tasksActive,
+    completedDir: p.tasksCompleted,
+    archivedDir: p.tasksArchived,
+  });
+}
+
 describe("reviewQueueCommand", () => {
   it("prints pass rows for needs_review tasks with complete deterministic evidence", () => {
     writeTask("ready-review");
@@ -196,6 +209,217 @@ describe("reviewQueueCommand", () => {
       const output = logSpy.mock.calls.flat().join("\n");
       expect(output).toContain("blocked\tinvalid<unknown>\tload-error:");
       expect(output).toContain("Task YAML failed to load");
+    } finally {
+      logSpy.mockRestore();
+      exitSpy.mockRestore();
+    }
+  });
+
+  it("deep mode emits review prompt targets for tasks missing evidence", () => {
+    writeTask("missing-evidence");
+    writeGeneratedPrompts("missing-evidence");
+
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
+      throw new Error(`process.exit(${code})`);
+    }) as never);
+
+    try {
+      expect(() => runDeep()).not.toThrow();
+      expect(exitSpy).not.toHaveBeenCalled();
+      const output = logSpy.mock.calls.flat().join("\n");
+      expect(output).toContain("deep\tmissing-evidence\tprompt=.assignr/prompts/generated/review-missing-evidence.md");
+      expect(output).toContain("reasons=missing-evidence: No run log is available for task missing-evidence.");
+      expect(output).toContain("evidence=score=");
+      expect(output).toContain("missing=No run log is available for task missing-evidence.");
+    } finally {
+      logSpy.mockRestore();
+      exitSpy.mockRestore();
+    }
+  });
+
+  it("deep mode escalates residual risk with the evidence that triggered it", () => {
+    writeTask("risky-review");
+    writeCompleteRunLog("risky-review", {
+      risks: "Manual migration may need production coordination.",
+    });
+    writeGeneratedPrompts("risky-review");
+
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
+      throw new Error(`process.exit(${code})`);
+    }) as never);
+
+    try {
+      expect(() => runDeep()).not.toThrow();
+      const output = logSpy.mock.calls.flat().join("\n");
+      expect(output).toContain("deep\trisky-review");
+      expect(output).toContain("Documented risk(s) need review: Manual migration may need production coordination.");
+      expect(output).toContain("risks=Manual migration may need production coordination.");
+    } finally {
+      logSpy.mockRestore();
+      exitSpy.mockRestore();
+    }
+  });
+
+  it("deep mode escalates failed verification evidence", () => {
+    writeTask("deep-failed-tests");
+    writeCompleteRunLog("deep-failed-tests", {
+      result: "failed",
+      commandsRun: ["pnpm build"],
+      testsRun: ["pnpm build"],
+    });
+    writeGeneratedPrompts("deep-failed-tests");
+
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
+      throw new Error(`process.exit(${code})`);
+    }) as never);
+
+    try {
+      expect(() => runDeep()).not.toThrow();
+      const output = logSpy.mock.calls.flat().join("\n");
+      expect(output).toContain("deep\tdeep-failed-tests");
+      expect(output).toContain("Verification command(s) appear to have failed: pnpm build.");
+      expect(output).toContain("failedVerification=pnpm build");
+      expect(output).toContain("missingVerification=pnpm test");
+    } finally {
+      logSpy.mockRestore();
+      exitSpy.mockRestore();
+    }
+  });
+
+  it("deep mode escalates forbidden path changes", () => {
+    writeTask("deep-path-violation", {
+      allowed_paths: ["src/review/"],
+      forbidden_paths: ["dist/"],
+    });
+    writeCompleteRunLog("deep-path-violation", {
+      filesChanged: ["dist/index.js"],
+    });
+    writeGeneratedPrompts("deep-path-violation");
+
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
+      throw new Error(`process.exit(${code})`);
+    }) as never);
+
+    try {
+      expect(() => runDeep()).not.toThrow();
+      const output = logSpy.mock.calls.flat().join("\n");
+      expect(output).toContain("deep\tdeep-path-violation");
+      expect(output).toContain("Changed file dist/index.js matches forbidden_paths entry dist/.");
+      expect(output).toContain("changedFiles=run-log");
+    } finally {
+      logSpy.mockRestore();
+      exitSpy.mockRestore();
+    }
+  });
+
+  it("deep mode does not escalate passing tasks unless all review tasks are requested", () => {
+    writeTask("ready-deep-review");
+    writeCompleteRunLog("ready-deep-review");
+    writeGeneratedPrompts("ready-deep-review");
+
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
+      throw new Error(`process.exit(${code})`);
+    }) as never);
+
+    try {
+      expect(() => runDeep()).not.toThrow();
+      expect(logSpy.mock.calls.flat().join("\n")).toBe("No tasks escalated for deep review.");
+
+      logSpy.mockClear();
+      expect(() => runDeep({ all: true })).not.toThrow();
+      const output = logSpy.mock.calls.flat().join("\n");
+      expect(output).toContain("deep-all\tready-deep-review");
+      expect(output).toContain("reasons=deterministic=pass");
+    } finally {
+      logSpy.mockRestore();
+      exitSpy.mockRestore();
+    }
+  });
+
+  it("deep mode includes compact packets for escalated tasks", () => {
+    writeTask("packet-review", {
+      acceptance_criteria: [
+        "Review queue triage classifies task evidence.",
+        "Review queue packet stays compact.",
+      ],
+    });
+    writeCompleteRunLog("packet-review", {
+      risks: "Reviewer should confirm rollout order.",
+      acceptanceCriteriaEvidence: ["Review queue triage classifies task evidence.: Complete receipt covers triage."],
+    });
+    writeGeneratedPrompts("packet-review");
+
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
+      throw new Error(`process.exit(${code})`);
+    }) as never);
+
+    try {
+      expect(() => runDeep()).not.toThrow();
+      const output = logSpy.mock.calls.flat().join("\n");
+      expect(output).toContain("deep\tpacket-review");
+      expect(output).toContain("packet=id=packet-review;status=needs_review;changedFiles=2;");
+      expect(output).toContain("path=allowed:0 forbidden:0");
+      expect(output).toContain("tests=yes");
+      expect(output).toContain("criteria=2");
+      expect(output).toContain("evidence=1/2");
+      expect(output).toContain("risks=documented-risk,incomplete-acceptance-evidence");
+      expect(output).toContain("question=Which acceptance criterion still needs evidence?");
+    } finally {
+      logSpy.mockRestore();
+      exitSpy.mockRestore();
+    }
+  });
+
+  it("deep-only risky skips passing tasks even when all review tasks are requested", () => {
+    writeTask("ready-deep-review", {
+      allowed_paths: ["src/ready.ts"],
+    });
+    writeCompleteRunLog("ready-deep-review", {
+      filesChanged: ["src/ready.ts"],
+    });
+    writeGeneratedPrompts("ready-deep-review");
+    writeTask("missing-risky", {
+      allowed_paths: ["src/missing-risky.ts"],
+    });
+    writeGeneratedPrompts("missing-risky");
+
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
+      throw new Error(`process.exit(${code})`);
+    }) as never);
+
+    try {
+      expect(() => runDeep({ all: true, deepOnly: "risky" })).not.toThrow();
+      const output = logSpy.mock.calls.flat().join("\n");
+      expect(output).not.toContain("ready-deep-review");
+      expect(output).toContain("deep\tmissing-risky");
+      expect(output).toContain("risks=incomplete-acceptance-evidence,missing-evidence,missing-receipt");
+    } finally {
+      logSpy.mockRestore();
+      exitSpy.mockRestore();
+    }
+  });
+
+  it("deep mode enforces a packet budget and reports how many fit", () => {
+    writeTask("budgeted-review");
+    writeGeneratedPrompts("budgeted-review");
+
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
+      throw new Error(`process.exit(${code})`);
+    }) as never);
+
+    try {
+      expect(() => runDeep({ budget: 1 })).not.toThrow();
+      const output = logSpy.mock.calls.flat().join("\n");
+      expect(output).not.toContain("deep\tbudgeted-review");
+      expect(output).toContain("budget\tlimit=1\tfit=0/1\testimated=0");
     } finally {
       logSpy.mockRestore();
       exitSpy.mockRestore();

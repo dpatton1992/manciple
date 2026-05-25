@@ -237,6 +237,50 @@ assignr list --all        # show active, completed, and archived tasks
 
 Repos that still have the old flat task layout can run `assignr migrate-tasks` to move task files into the lifecycle directories.
 
+## Evidence-Based Review
+
+`needs_review` means implementation work is finished enough for an independent
+reviewer to judge it from evidence instead of conversation. The task stays in
+the active queue, but it should have a run log that names the agent, commands
+run, files changed, result, and known risks.
+
+The expected flow is:
+
+```bash
+assignr run-log build-login-page \
+  --result complete \
+  --agent Codex \
+  --model gpt-5-codex \
+  --command "pnpm test -- auth" \
+  --file "src/features/auth/LoginPage.tsx" \
+  --risks "No known risks."
+
+assignr set-status build-login-page needs_review
+assignr review build-login-page
+assignr review-check build-login-page
+```
+
+`assignr review` generates a reviewer prompt with the task context, latest run
+log evidence, git diff, checklist items, and a decision section. `assignr
+review-check` is the quick readiness gate: it helps catch missing evidence,
+unrecorded verification, and scope concerns before someone spends attention on a
+deep review.
+
+Reviewer decisions are recorded through the lifecycle commands:
+
+```bash
+assignr approve build-login-page
+assignr request-changes build-login-page --reason "Missing password-reset test evidence."
+assignr block-review build-login-page --reason "Depends on unresolved auth migration."
+```
+
+Implementation review asks whether one task satisfied its acceptance criteria
+inside its allowed paths. Integration review asks whether several accepted
+tasks still work together in the repo. In multi-agent runs, each worker should
+leave implementation evidence on its own task; the coordinator or reviewer can
+then use integration review for cross-task conflicts, shared behavior, and final
+batch confidence.
+
 ## Command Reference
 
 | Command | Purpose |
