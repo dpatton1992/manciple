@@ -1,0 +1,63 @@
+id: add-scoped-task-yaml-formatter
+title: Add scoped task YAML formatter
+status: complete
+type: implementation
+domain: core
+priority: medium
+depends_on:
+  - add-deterministic-verify-profiles
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/commands/formatTask.ts
+  - src/commands/setStatus.ts
+  - src/cli.ts
+  - src/mcp.ts
+  - src/utils/yamlFormat.ts
+  - scripts/formatAssignrYaml.ts
+  - tests/formatTask.test.ts
+  - tests/mcpList.test.ts
+forbidden_paths:
+  - README.md
+  - docs/**
+  - .codex/skills/**
+  - .claude/skills/**
+  - dist/**
+  - pnpm-lock.yaml
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Assignr can check or format one task file deterministically by task id, and
+  task-writing commands keep emitted YAML formatted without whole-repo formatting loops.
+acceptance_criteria:
+  - The CLI exposes assignr format-task <task-id> with a --check option that targets
+    only the requested task YAML file across lifecycle tiers.
+  - The MCP server exposes assignr_format_task with task_id and optional check_only
+    inputs and returns structured JSON indicating checked, changed, file, and errors if
+    any.
+  - assignr_set_status and other task-writing commands continue to write
+    formatYamlDocument output; tests document this invariant for status updates or an
+    equivalent writing path.
+  - The existing scripts/formatAssignrYaml.ts behavior remains available for whole-repo
+    maintenance, but worker completion instructions can rely on scoped checks.
+  - Tests cover formatting an active task, check-only failure, completed or archived
+    task lookup, missing task errors, and MCP response shape.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test -- format
+    - pnpm test -- mcpList
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes:
+  - This task depends on add-deterministic-verify-profiles because it also registers CLI
+    and MCP surfaces in src/cli.ts and src/mcp.ts.
+  - Keep the formatter scoped by task id; avoid adding another default whole-repo YAML
+    check to worker paths.
+  - If scripts/formatAssignrYaml.ts already accepts explicit file targets, preserve that
+    behavior and build the user-facing task-id command on top of shared formatting logic
+    where practical.

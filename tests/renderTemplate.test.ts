@@ -4,7 +4,12 @@ import {
   IMPLEMENTATION_TEMPLATE,
   REVIEW_TEMPLATE,
 } from "../src/templates/renderTemplate.js";
+import { buildTaskPacket } from "../src/commands/taskPacket.js";
 import type { TaskSpec } from "../src/specs/schema.js";
+import { mkdtemp } from "fs/promises";
+import { mkdirSync, rmSync, writeFileSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
 
 const spec: TaskSpec = {
   id: "license-expiration-reminders",
@@ -88,5 +93,77 @@ describe("renderTemplate", () => {
     };
     const out = renderTemplate(IMPLEMENTATION_TEMPLATE, minSpec);
     expect(out).toContain("_None specified._");
+  });
+
+  it("builds a compact task packet without rendered prompt prose", async () => {
+    const root = await mkdtemp(join(tmpdir(), "assignr-task-packet-"));
+    try {
+      const tasksDir = join(root, ".assignr", "tasks", "active");
+      mkdirSync(tasksDir, { recursive: true });
+      writeFileSync(
+        join(tasksDir, "packet-task.yaml"),
+        [
+          "id: packet-task",
+          "title: Packet task",
+          "status: pending",
+          "type: implementation",
+          "domain: core",
+          "priority: high",
+          "depends_on:",
+          "  - setup-task",
+          "goal: Keep packet compact.",
+          "acceptance_criteria:",
+          "  - It returns compact fields.",
+          "allowed_paths:",
+          "  - src/mcp.ts",
+          "forbidden_paths:",
+          "  - README.md",
+          "path_ownership:",
+          "  touched_paths:",
+          "    - src/mcp.ts",
+          "verification:",
+          "  commands:",
+          "    - pnpm typecheck",
+          "outputs_required:",
+          "  - files_changed",
+          "notes:",
+          "  - Skip full prompt prose.",
+          "",
+        ].join("\n"),
+        "utf-8"
+      );
+
+      const packet = buildTaskPacket({
+        taskId: "packet-task",
+        specsTasksDir: join(root, ".assignr", "tasks"),
+        cwd: root,
+      });
+
+      expect(packet).toEqual({
+        task_id: "packet-task",
+        title: "Packet task",
+        status: "pending",
+        type: "implementation",
+        domain: "core",
+        priority: "high",
+        depends_on: ["setup-task"],
+        allowed_paths: ["src/mcp.ts"],
+        forbidden_paths: ["README.md"],
+        path_ownership: {
+          touched_paths: ["src/mcp.ts"],
+          locked_paths: [],
+          unsafe_parallel_areas: [],
+        },
+        acceptance_criteria: ["It returns compact fields."],
+        verification_commands: ["pnpm typecheck"],
+        outputs_required: ["files_changed"],
+        notes: ["Skip full prompt prose."],
+        path_ownership_warnings: [],
+      });
+      expect(JSON.stringify(packet)).not.toContain("Domain Context");
+      expect(JSON.stringify(packet)).not.toContain("# Agent Task");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

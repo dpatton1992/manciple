@@ -1,62 +1,44 @@
 ---
 name: assignr-mcp-task-runner
-description: Complete Assignr task work using the Assignr MCP server, optionally focused on implementation, docs, test, refactor, review, or hardening work; default to any of those task types when no focus is given. Use when the user asks Claude Code to run, complete, pick up, execute, or work through an Assignr task in this repo, especially when MCP tools named assignr_list, assignr_get_task, assignr_compile, assignr_set_status, assignr_run_log, assignr_validate, or assignr_get_compiled_prompt are available.
+description: Complete Assignr task work using the Assignr MCP server, optionally focused on implementation, docs, test, refactor, review, or hardening work; default to any of those task types when no focus is given. Use when the user asks Claude Code to run, complete, pick up, execute, or work through an Assignr task in this repo, especially when MCP tools named assignr_get_task_packet, assignr_verify, assignr_format_task, assignr_set_status, or assignr_run_log are available.
 ---
 
 # Assignr MCP Task Runner
 
-Use Assignr as the source of truth for task scope. Prefer the MCP tools over shelling out to `assignr` commands whenever they are available.
+Use Assignr as the source of truth for task scope. Prefer deterministic MCP tools over model-selected local command sequences whenever they are available.
 
 ## Optional Focus
 
-The caller may provide an optional focus parameter or natural-language focus:
+The caller may provide `focus: implementation`, `docs`, `test`, `refactor`, `review`, `hardening`, or `any`. For a named task id, run that exact task even if its type differs from the focus. For "choose a task" requests, use `assignr_dispatch_plan` or `assignr dispatch-plan` and select only a returned assignment matching the requested focus.
 
-- `focus: implementation`
-- `focus: docs`
-- `focus: test`
-- `focus: refactor`
-- `focus: review`
-- `focus: hardening`
-- `focus: any`
-
-When no focus is provided, treat it as `focus: any`.
-
-The focus constrains task selection, not task execution quality:
-
-- For a named task id, load and run that exact task even if its `type` differs from the focus; briefly note the mismatch before continuing.
-- For "choose a task" requests, prefer tasks whose `type` matches the focus.
-- For `focus: any`, choose from implementation, docs, test, refactor, review, and hardening tasks.
-- If no unblocked task matches a specific focus, report that clearly and list the closest available pending or in-progress tasks instead of silently switching focus.
-- Once a task is selected, obey the task spec exactly. Do not expand or shrink `allowed_paths`, `forbidden_paths`, acceptance criteria, or verification just because of the focus.
+Once a task is selected, obey the task spec exactly. Do not expand or shrink `allowed_paths`, `forbidden_paths`, acceptance criteria, verification, or outputs because of the focus.
 
 ## Workflow
 
-1. Discover the task.
-   - If the user names a task id, call `assignr_get_task` with that id.
-   - If the user asks to choose a task, call `assignr_list` and select a reasonable `pending` or `in_progress` task matching the requested focus. Prefer unblocked, high-priority tasks whose dependencies appear satisfied.
-   - If MCP tools are unavailable, fall back to reading `.assignr/specs/tasks/*.yaml` directly.
+1. Discover compact task context.
+   - If the user names a task id, call `assignr_get_task_packet` first. If MCP is unavailable, run `assignr task-packet <task-id>`.
+   - If asked to choose a task, use `assignr_dispatch_plan` first, then load the packet for one returned assignment.
+   - Use the packet fields as the default worker context: status, dependencies, allowed and forbidden paths, path ownership warnings, acceptance criteria, verification commands, outputs required, and notes.
+   - Call `assignr_get_task` only when you need the full YAML shape. Call `assignr_compile` only when the compact packet is insufficient and explicit domain context or full prompt prose is needed.
 
 2. Start the task.
-   - Call `assignr_set_status` with `in_progress` unless the task is already `in_progress`.
-   - Call `assignr_compile` for implementation/test/refactor/docs/hardening tasks when a compiled prompt would clarify scope.
-   - Read the returned spec and prompt content. Treat `allowed_paths`, `forbidden_paths`, `acceptance_criteria`, `verification.commands`, and `outputs_required` as binding task constraints.
+   - Call `assignr_set_status` with `in_progress` unless the packet already reports `in_progress`.
+   - Treat `allowed_paths`, `forbidden_paths`, `acceptance_criteria`, `verification_commands`, and `outputs_required` as binding constraints.
 
 3. Implement the work.
    - Inspect the repo before editing.
-   - **Do not edit files under `.assignr/specs/tasks/` directly.** Task specs are the source of truth for scope; they are written by humans and read by agents. The only permitted writes to task spec files are status updates via `assignr_set_status`.
-   - `allowed_paths` and `forbidden_paths` in the task spec constrain the *implementation work* (source code, tests, docs). They do not permit editing the `.assignr/` directory.
-   - Stay inside `allowed_paths` when present.
-   - Do not edit `forbidden_paths` unless the user explicitly overrides the task.
-   - Keep changes scoped to the task. If necessary work is outside scope, stop and report it as a follow-up instead of silently expanding the task.
+   - Do not edit files under `.assignr/specs/tasks/` directly. Task status updates must go through `assignr_set_status`.
+   - Stay inside `allowed_paths` when present. Do not edit `forbidden_paths` unless the user explicitly overrides the task.
+   - Keep changes scoped to the task. If required work is outside scope, stop and report it as a follow-up instead of silently expanding the task.
 
 4. Verify.
-   - Run the task's `verification.commands`.
-   - Also run narrow tests or typechecks that are clearly relevant to files changed.
-   - If a verification command is unavailable or fails for a reason outside the task, report the exact command and failure.
+   - Prefer `assignr_verify` with profile `worker` when MCP tools are available, or `assignr verify --profile worker` from the CLI. Report the returned receipt.
+   - Do not replace the worker profile with a hand-picked suite of local tests. Run additional targeted checks only when they are directly relevant to files changed or needed to diagnose a failure.
+   - Use `assignr_format_task` with `check_only: true` or `assignr format-task <task-id> --check` only when scoped task YAML formatting evidence is needed. Do not run routine whole-repo YAML formatting loops during worker completion.
 
 5. Finish.
-   - Call `assignr_run_log` to create the run log stub after implementation and verification.
-   - Call `assignr_validate` before final status updates when task specs may have changed.
+   - Call `assignr_run_log` after implementation and verification. Include files changed, commands or verify receipt, result, notes, and residual risks.
+   - Call `assignr_validate` before final status updates when task specs may have changed or the assignment requests metadata validation.
    - Set status with `assignr_set_status`:
      - `needs_review` when implementation is complete and verification passes.
      - `blocked` when progress is stopped by missing information, failing prerequisites, or scope conflicts.
@@ -67,7 +49,7 @@ The focus constrains task selection, not task execution quality:
 
 Assignr MCP tool responses return JSON as text content. Parse the text before using it. If a tool result has `isError: true`, treat the JSON `error` as an operational error, not as a crashed server.
 
-For `assignr_compile`, use the returned `content` directly. For `assignr_get_compiled_prompt`, only call it when the task may already have been compiled or when the user specifically asks for the compiled prompt.
+Use `assignr_compile` content directly only after deciding full prompt context is necessary. Use `assignr_get_compiled_prompt` only when a generated prompt may already exist or the user specifically asks for it.
 
 ## Reporting
 
@@ -75,8 +57,8 @@ In the final response, include:
 
 - task id and final status
 - files changed
-- verification commands run and whether they passed
-- any risks, blockers, or follow-up tasks requested by `outputs_required`
+- verification receipt or commands run and whether they passed
+- risks, blockers, and follow-up tasks requested by `outputs_required`
 
 Keep the report concise, but preserve concrete command names and failure details.
 

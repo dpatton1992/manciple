@@ -1,0 +1,60 @@
+id: trim-agent-skills-around-deterministic-assignr-commands
+title: Trim agent skills around deterministic Assignr commands
+status: complete
+type: docs
+domain: core
+priority: medium
+depends_on:
+  - add-scoped-task-yaml-formatter
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - .codex/skills/assignr-agents/SKILL.md
+  - .codex/skills/assignr-mcp-task-runner/SKILL.md
+  - .claude/skills/assignr-agents/SKILL.md
+  - .claude/skills/assignr-mcp-task-runner/SKILL.md
+  - docs/agent-skills.md
+  - docs/mcp-server.md
+  - docs/parallel-workflows.md
+forbidden_paths:
+  - src/**
+  - tests/**
+  - README.md
+  - dist/**
+  - pnpm-lock.yaml
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: The Claude and Codex Assignr skills are rewritten to delegate scheduling, worker
+  context, verification, and formatting decisions to deterministic Assignr commands and
+  MCP tools.
+acceptance_criteria:
+  - The coordinator skills instruct agents to call assignr_dispatch_plan first and spawn
+    only the returned assignments.
+  - The task-runner skills instruct workers to use assignr_get_task_packet or compact
+    compile mode by default, reserving full prompt compilation for explicitly needed
+    domain context.
+  - The skills replace hand-picked local and MCP verification sequences with assignr
+    verify --profile worker, coordinator, or review and reporting of the returned
+    receipt.
+  - The skills remove routine whole-repo YAML formatting loops from worker completion
+    and use assignr format-task <task-id> --check only when scoped formatting is needed.
+  - Claude and Codex skill variants remain semantically aligned while preserving their
+    harness-specific worker spawning instructions.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm run check:assignr-yaml
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes:
+  - This task is intentionally last because it documents and adopts the deterministic
+    surfaces created by the implementation tasks.
+  - Keep the skills short and operational; move explanatory background to docs only if
+    users still need it.
+  - Do not edit README.md in this task because active blocked README work already exists
+    and would collide.

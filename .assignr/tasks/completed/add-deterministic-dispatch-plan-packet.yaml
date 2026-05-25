@@ -1,0 +1,65 @@
+id: add-deterministic-dispatch-plan-packet
+title: Add deterministic dispatch plan packet
+status: complete
+type: implementation
+domain: core
+priority: critical
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/coordination/reviewQueue.ts
+  - src/commands/coordinator.ts
+  - src/commands/dispatchPlan.ts
+  - src/cli.ts
+  - src/mcp.ts
+  - tests/coordinator.test.ts
+  - tests/mcpList.test.ts
+forbidden_paths:
+  - README.md
+  - docs/**
+  - .codex/skills/**
+  - .claude/skills/**
+  - dist/**
+  - pnpm-lock.yaml
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Assignr exposes a deterministic dispatch plan through the CLI and MCP so
+  coordinator agents receive ready-to-act assignments, deferrals, stop conditions, and
+  verification commands without reconstructing scheduling decisions.
+acceptance_criteria:
+  - A reusable dispatch-plan builder returns structured JSON with worker_cap,
+    recommended_batch_size, assignments, do_not_dispatch, stop_after_batch, and
+    verification_plan fields.
+  - Assignments are selected from the existing coordinator queue ordering and include
+    task_id, ownership_boundary, and a human-readable reason.
+  - Tasks excluded from the batch include deterministic reasons for dependency waits,
+    explicit conflicts, path collisions, README or shared-doc collisions,
+    non-independent work, blocked status, review/rework placement, or lifecycle
+    completion work as applicable.
+  - The CLI exposes an assignr dispatch-plan command that prints the structured packet
+    as JSON and exits nonzero when task loading fails.
+  - The MCP server exposes assignr_dispatch_plan with the same packet shape and compact
+    error behavior.
+  - Existing assignr coordinator human-table behavior remains available and continues to
+    use the shared queue logic.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test -- coordinator
+    - pnpm test -- mcpList
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes:
+  - This task intentionally owns the first change to src/cli.ts and src/mcp.ts for
+    deterministic coordinator packets; later tasks that also register commands or MCP
+    tools should depend on it.
+  - Reuse the bounded-output style from src/commands/plannerContext.ts where helpful,
+    but prefer structured JSON over prose for the dispatch packet.
+  - Keep the existing coordinator table output stable unless a test needs small wording
+    updates.

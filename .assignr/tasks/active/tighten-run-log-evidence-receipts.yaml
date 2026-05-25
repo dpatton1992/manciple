@@ -1,0 +1,70 @@
+id: tighten-run-log-evidence-receipts
+title: Tighten run log evidence receipts
+status: in_progress
+type: implementation
+domain: core
+priority: high
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/commands/runLog.ts
+  - src/cli.ts
+  - src/mcp.ts
+  - src/commands/verify.ts
+  - tests/runLog.test.ts
+  - tests/verify.test.ts
+  - tests/mcpList.test.ts
+  - .codex/skills/assignr-mcp-task-runner/SKILL.md
+  - .codex/skills/assignr-agents/SKILL.md
+forbidden_paths:
+  - dist/**
+  - node_modules/**
+  - .assignr/tasks/completed/**
+  - .assignr/tasks/archived/**
+  - .assignr/prompts/generated/**
+  - .assignr/runs/**
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Run logs and worker instructions capture audit-ready task evidence with final
+  status, separated test evidence, acceptance evidence, and a single deterministic
+  verify receipt preference.
+acceptance_criteria:
+  - The MCP `assignr_run_log` input schema accepts and passes through final task status,
+    separate `tests_run`, acceptance criteria evidence, and deterministic verify receipt
+    or equivalent receipt text instead of forcing all evidence into `commands_run` or
+    notes.
+  - CLI run-log options stay aligned with the shared run-log model for separated
+    commands, tests, acceptance evidence, and receipt/status fields where applicable.
+  - Generated run logs no longer duplicate all commands into `Tests Run`; tests are
+    recorded only from explicit test evidence or a deterministic verify receipt, with
+    clear fallback text when absent.
+  - The repo-local worker instructions tell agents to record final task status, files
+    changed, non-test commands separately from tests, acceptance evidence, residual
+    risks, and the `assignr_verify` or `assignr verify --profile worker` receipt in
+    `assignr_run_log`.
+  - Worker guidance prefers one deterministic worker verify receipt over stacked manual
+    checklists, while allowing targeted extra checks only when needed to diagnose or
+    cover changed behavior.
+  - Tests cover the updated run-log rendering and MCP/CLI field plumbing; if needed, the
+    worker verify profile is adjusted so a single worker receipt exercises the changed
+    run-log evidence path.
+verification:
+  commands:
+    - pnpm dev verify --profile worker
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+  - acceptance_criteria_evidence
+notes:
+  - No active duplicate task was found. Related completed work includes
+    run-log-auto-capture, add-deterministic-verify-profiles, and
+    trim-agent-skills-around-deterministic-assignr-commands.
+  - Keep CLI and MCP behavior aligned by preserving shared run-log rendering logic and
+    adding thin transport-specific option/schema plumbing only where needed.
+  - Do not broaden the task into review queue scoring; this task is limited to run-log
+    evidence capture and worker operating instructions.

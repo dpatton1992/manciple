@@ -15,6 +15,10 @@ import type { LoadedTaskWithTier } from "./specs/loadTasks.js";
 import { validateTasks } from "./specs/validateTasks.js";
 import { listTasksForMcp } from "./mcpList.js";
 import { buildRunLog, timestamp } from "./commands/runLog.js";
+import { createDispatchPlan } from "./commands/dispatchPlan.js";
+import { formatTaskById } from "./commands/formatTask.js";
+import { buildTaskPacket } from "./commands/taskPacket.js";
+import { VERIFY_PROFILE_NAMES, parseVerifyProfile, runVerifyProfile } from "./commands/verify.js";
 import { checkLifecyclePlacement } from "./lifecycle/placement.js";
 import {
   IMPLEMENTATION_TEMPLATE,
@@ -268,6 +272,34 @@ server.registerTool(
 );
 
 server.registerTool(
+  "assignr_dispatch_plan",
+  {
+    title: "Build Assignr Dispatch Plan",
+    description:
+      "Return a deterministic coordinator packet with assignments, deferrals, stop conditions, and verification commands.",
+  },
+  () =>
+    toolResult(() => {
+      return jsonResult(createDispatchPlan(p.specsTasks, cwd));
+    })
+);
+
+server.registerTool(
+  "assignr_verify",
+  {
+    title: "Run Assignr Verify Profile",
+    description: "Run a deterministic verification profile and return a compact pass/fail receipt.",
+    inputSchema: {
+      profile: z.enum(VERIFY_PROFILE_NAMES),
+    },
+  },
+  ({ profile }) =>
+    toolResult(async () => {
+      return jsonResult(await runVerifyProfile(parseVerifyProfile(profile), { cwd }));
+    })
+);
+
+server.registerTool(
   "assignr_create",
   {
     title: "Create Assignr Task",
@@ -398,6 +430,65 @@ server.registerTool(
 );
 
 server.registerTool(
+  "assignr_format_task",
+  {
+    title: "Format Assignr Task YAML",
+    description: "Check or format one Assignr task YAML file by task id.",
+    inputSchema: {
+      task_id: z.string(),
+      check_only: z.boolean().optional(),
+    },
+  },
+  ({ task_id, check_only }) =>
+    toolResult(() => {
+      try {
+        return jsonResult(
+          formatTaskById(task_id, {
+            specsTasksDir: p.specsTasks,
+            cwd,
+            checkOnly: check_only ?? false,
+          })
+        );
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return jsonResult({
+          checked: false,
+          changed: false,
+          file: null,
+          errors: [message],
+        });
+      }
+    })
+);
+
+server.registerTool(
+  "assignr_get_task_packet",
+  {
+    title: "Get Assignr Task Packet",
+    description: "Return a compact bounded worker packet for one task.",
+    inputSchema: {
+      task_id: z.string(),
+    },
+  },
+  ({ task_id }) =>
+    toolResult(() => {
+      try {
+        return jsonResult(
+          buildTaskPacket({
+            taskId: task_id,
+            specsTasksDir: p.specsTasks,
+            cwd,
+          })
+        );
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (message === `Task not found: ${task_id}`) return errorResult(message);
+        throw err;
+      }
+    })
+);
+
+server.registerTool(
   "assignr_set_status",
   {
     title: "Set Assignr Task Status",
@@ -441,7 +532,17 @@ server.registerTool(
       agent: z.string().optional().describe("The agent harness or tool used (e.g. 'Claude Code', 'Cursor')."),
       model: z.string().optional().describe("The model that performed the work (e.g. 'claude-sonnet-4-5')."),
       files_changed: z.array(z.string()).optional().describe("List of file paths modified during the run."),
-      commands_run: z.array(z.string()).optional().describe("List of shell commands executed during the run."),
+      commands_run: z.array(z.string()).optional().describe("List of non-test shell commands executed during the run."),
+      tests_run: z.array(z.string()).optional().describe("List of test commands or test receipts executed during the run."),
+      task_status: z.enum(STATUSES).optional().describe("Final task status to record in the run log."),
+      acceptance_criteria_evidence: z
+        .array(z.string())
+        .optional()
+        .describe("Evidence lines showing how acceptance criteria were satisfied."),
+      verify_receipt: z
+        .string()
+        .optional()
+        .describe("Deterministic assignr_verify or assignr verify --profile receipt text."),
       result: z
         .enum(["complete", "partial", "blocked", "failed"])
         .optional()
@@ -450,7 +551,20 @@ server.registerTool(
       notes: z.string().optional().describe("Free-form notes about the run."),
     },
   },
-  ({ task_id, agent, model, files_changed, commands_run, result, risks, notes }) =>
+  ({
+    task_id,
+    agent,
+    model,
+    files_changed,
+    commands_run,
+    tests_run,
+    task_status,
+    acceptance_criteria_evidence,
+    verify_receipt,
+    result,
+    risks,
+    notes,
+  }) =>
     toolResult(() => {
       const tasks = loadTasksOrError();
       const found = tasks.find((task) => task.spec.id === task_id);
@@ -468,6 +582,10 @@ server.registerTool(
           model,
           filesChanged: files_changed,
           commandsRun: commands_run,
+          testsRun: tests_run,
+          taskStatus: task_status,
+          acceptanceCriteriaEvidence: acceptance_criteria_evidence,
+          verifyReceipt: verify_receipt,
           result,
           risks,
           notes,

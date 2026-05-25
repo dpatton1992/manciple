@@ -8,6 +8,8 @@ import { initCommand } from "./commands/init.js";
 import { newCommand, newInteractiveCommand } from "./commands/new.js";
 import { validateCommand } from "./commands/validate.js";
 import { compileCommand } from "./commands/compile.js";
+import { formatTaskCommand } from "./commands/formatTask.js";
+import { taskPacketCommand } from "./commands/taskPacket.js";
 import { listCommand } from "./commands/list.js";
 import { plannerContextCommand } from "./commands/plannerContext.js";
 import { statusCommand } from "./commands/status.js";
@@ -26,9 +28,11 @@ import { reviewCommand } from "./commands/review.js";
 import { reviewCheckCommand } from "./commands/reviewCheck.js";
 import { reviewQueueCommand } from "./commands/reviewQueue.js";
 import { coordinatorCommand } from "./commands/coordinator.js";
+import { dispatchPlanCommand } from "./commands/dispatchPlan.js";
 import { worktreeCommand } from "./commands/worktree.js";
 import { doctorCommand } from "./commands/doctor.js";
 import { mcpConfigCommand } from "./commands/mcpConfig.js";
+import { verifyCommand } from "./commands/verify.js";
 import type { Status, TaskType, Priority } from "./constants.js";
 
 function collect(value: string, previous: string[]): string[] {
@@ -126,6 +130,31 @@ program
       taskId,
       status: opts.status as Status | undefined,
       all: opts.all,
+    });
+  });
+
+// format-task
+program
+  .command("format-task <task-id>")
+  .description("Check or format one task YAML file by task id.")
+  .option("--check", "Check formatting without writing changes.", false)
+  .action((taskId: string, opts: { check: boolean }) => {
+    formatTaskCommand(taskId, {
+      specsTasksDir: p.specsTasks,
+      cwd,
+      checkOnly: opts.check,
+    });
+  });
+
+// task-packet
+program
+  .command("task-packet <task-id>")
+  .description("Print a compact bounded worker packet for one task.")
+  .action((taskId: string) => {
+    taskPacketCommand({
+      specsTasksDir: p.specsTasks,
+      cwd,
+      taskId,
     });
   });
 
@@ -305,6 +334,7 @@ program
   .command("run-log <task-id>")
   .description("Create a run log for a task.")
   .option("--result <result>", "Outcome: complete, partial, blocked, or failed.")
+  .option("--task-status <status>", `Final task status to record. Allowed: ${STATUSES.join(", ")}.`)
   .option("--model <model>", "Model that performed the work.")
   .option("--agent <agent>", "Agent harness or tool used.")
   .option("--harness <harness>", "Agent harness or tool used.")
@@ -314,12 +344,19 @@ program
   .option("--cost-usd <amount>", "Run cost in USD recorded by the agent or harness.", parseNumberOption)
   .option("--command <command>", "Command executed during the run. May be repeated.", collect, [])
   .option("--commands-run <command>", "Command executed during the run. May be repeated.", collect, [])
+  .option("--test <command>", "Test command or test receipt executed during the run. May be repeated.", collect, [])
+  .option("--tests-run <command>", "Test command or test receipt executed during the run. May be repeated.", collect, [])
   .option("--file <path>", "Changed file path. May be repeated; otherwise git status is used.", collect, [])
   .option("--files-changed <path>", "Changed file path. May be repeated; otherwise git status is used.", collect, [])
+  .option("--acceptance-evidence <evidence>", "Acceptance criteria evidence line. May be repeated.", collect, [])
+  .option("--verify-receipt <receipt>", "Deterministic verify receipt text or compact JSON.")
+  .option("--decision <decision>", "Decision made during the run. May be repeated.", collect, [])
+  .option("--follow-up <followUp>", "Follow-up task or note. May be repeated.", collect, [])
   .option("--risks <risks>", "Risks or residual concerns.")
   .option("--notes <notes>", "Free-form notes.")
   .action((taskId: string, opts: {
     result?: string;
+    taskStatus?: string;
     model?: string;
     agent?: string;
     harness?: string;
@@ -329,8 +366,14 @@ program
     costUsd?: number;
     command: string[];
     commandsRun: string[];
+    test: string[];
+    testsRun: string[];
     file: string[];
     filesChanged: string[];
+    acceptanceEvidence: string[];
+    verifyReceipt?: string;
+    decision: string[];
+    followUp: string[];
     risks?: string;
     notes?: string;
   }) => {
@@ -338,9 +381,14 @@ program
       console.error(`Invalid result: "${opts.result}". Allowed: ${RUN_LOG_RESULTS.join(", ")}`);
       process.exit(1);
     }
+    if (opts.taskStatus && !STATUSES.includes(opts.taskStatus as Status)) {
+      console.error(`Invalid task status: "${opts.taskStatus}". Allowed: ${STATUSES.join(", ")}`);
+      process.exit(1);
+    }
 
     runLogCommand(taskId, p.specsTasks, p.runs, p.promptsGenerated, cwd, {
       result: opts.result,
+      taskStatus: opts.taskStatus,
       model: opts.model,
       agent: opts.agent,
       harness: opts.harness,
@@ -349,7 +397,12 @@ program
       totalTokens: opts.totalTokens,
       costUsd: opts.costUsd,
       commandsRun: [...opts.command, ...opts.commandsRun],
+      testsRun: [...opts.test, ...opts.testsRun],
       filesChanged: [...opts.file, ...opts.filesChanged],
+      decisionsMade: opts.decision,
+      followUps: opts.followUp,
+      acceptanceCriteriaEvidence: opts.acceptanceEvidence,
+      verifyReceipt: opts.verifyReceipt,
       risks: opts.risks,
       notes: opts.notes,
     });
@@ -413,6 +466,23 @@ program
   .description("Show the owner queue for runnable, waiting, review, complete-ready, blocked, and rework tasks.")
   .action(() => {
     coordinatorCommand(p.specsTasks, cwd);
+  });
+
+// dispatch-plan
+program
+  .command("dispatch-plan")
+  .description("Print a deterministic coordinator dispatch packet as JSON.")
+  .action(() => {
+    dispatchPlanCommand(p.specsTasks, cwd);
+  });
+
+// verify
+program
+  .command("verify")
+  .description("Run a deterministic verification profile.")
+  .requiredOption("--profile <profile>", "Verification profile: coordinator, worker, or review.")
+  .action(async (opts: { profile?: string }) => {
+    await verifyCommand(opts.profile, cwd);
   });
 
 // worktree

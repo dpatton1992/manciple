@@ -68,6 +68,7 @@ describe("runLogCommand", () => {
     try {
       runLogCommand("run-log-capture", p.specsTasks, p.runs, p.promptsGenerated, cwd, {
         result: "partial",
+        taskStatus: "needs_review",
         model: "gpt-5-codex",
         agent: "Codex",
         commandsRun: ["pnpm typecheck", "pnpm test"],
@@ -77,16 +78,20 @@ describe("runLogCommand", () => {
         risks: "No known runtime risks.",
         followUps: ["none"],
         acceptanceCriteriaEvidence: ["Run logs expose receipt fields.: Added first-class receipt sections."],
+        verifyReceipt: '{"ok":true,"profile":"worker"}',
         notes: "Implemented run-log metadata capture.",
       });
 
       const content = latestRunLog();
       expect(content).toContain("- Agent/Harness (provided by user): Codex");
       expect(content).toContain("- Model (provided by user): gpt-5-codex");
+      expect(content).toContain("- Status: needs_review");
       expect(content).toContain("- src/commands/runLog.ts");
       expect(content).toContain("- pnpm typecheck");
       expect(content).toContain("- pnpm test");
       expect(content).toContain("## Tests Run");
+      expect(content).toContain("## Verification Receipt");
+      expect(content).toContain('{"ok":true,"profile":"worker"}');
       expect(content).toContain("## Decisions Made");
       expect(content).toContain("Kept the run-log format markdown-compatible.");
       expect(content).toContain("partial");
@@ -122,6 +127,64 @@ describe("runLogCommand", () => {
     } finally {
       logSpy.mockRestore();
     }
+  });
+
+  it("keeps test evidence separate from non-test commands", () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    try {
+      runLogCommand("run-log-capture", p.specsTasks, p.runs, p.promptsGenerated, cwd, {
+        commandsRun: ["pnpm build"],
+      });
+
+      const content = latestRunLog();
+      expect(content).toContain("## Commands Run");
+      expect(content).toContain("- pnpm build");
+      expect(content).toContain("## Tests Run");
+      expect(content).toContain(
+        "Unknown: no tests were provided. Pass test commands in tests_run or provide a deterministic verify receipt."
+      );
+      expect(content).toContain("Unknown: no deterministic verify receipt was provided.");
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
+
+  it("records CLI-provided task status, tests, acceptance evidence, and verify receipt", () => {
+    const tsxBin = join(
+      process.cwd(),
+      "node_modules",
+      ".bin",
+      process.platform === "win32" ? "tsx.cmd" : "tsx"
+    );
+
+    const result = spawnSync(
+      tsxBin,
+      [
+        join(process.cwd(), "src", "cli.ts"),
+        "run-log",
+        "run-log-capture",
+        "--task-status",
+        "needs_review",
+        "--command",
+        "pnpm build",
+        "--test",
+        "pnpm test -- runLog",
+        "--acceptance-evidence",
+        "Acceptance evidence recorded.",
+        "--verify-receipt",
+        '{"ok":true,"profile":"worker"}',
+      ],
+      { cwd, encoding: "utf-8" }
+    );
+
+    expect(result.status).toBe(0);
+    const content = latestRunLog();
+    expect(content).toContain("- Status: needs_review");
+    expect(content).toContain("- pnpm build");
+    expect(content).toContain("- pnpm test -- runLog");
+    expect(content).toContain("Acceptance evidence recorded.");
+    expect(content).toContain('{"ok":true,"profile":"worker"}');
   });
 
   it("succeeds with clear fallback text outside a git repository", () => {

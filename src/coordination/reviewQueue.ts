@@ -26,6 +26,48 @@ export interface CoordinatorQueue {
   reworkNeeded: CoordinatorQueueRow[];
 }
 
+export interface DispatchPlanOwnershipBoundary {
+  allowed_paths: string[];
+  forbidden_paths: string[];
+  touched_paths: string[];
+  locked_paths: string[];
+  unsafe_parallel_areas: string[];
+}
+
+export interface DispatchPlanAssignment {
+  task_id: string;
+  ownership_boundary: DispatchPlanOwnershipBoundary;
+  reason: string;
+}
+
+export interface DispatchPlanDeferral {
+  task_id: string;
+  section: Exclude<CoordinatorSection, "runnable">;
+  reason: string;
+}
+
+export interface DispatchPlanStopAfterBatch {
+  required: boolean;
+  reason: string;
+}
+
+export interface DispatchPlanVerificationEntry {
+  task_id: string;
+  commands: string[];
+}
+
+export interface DispatchPlan {
+  worker_cap: number;
+  recommended_batch_size: number;
+  assignments: DispatchPlanAssignment[];
+  do_not_dispatch: DispatchPlanDeferral[];
+  stop_after_batch: DispatchPlanStopAfterBatch;
+  verification_plan: {
+    batch_commands: string[];
+    assignments: DispatchPlanVerificationEntry[];
+  };
+}
+
 const PRIORITY_ORDER: Record<string, number> = {
   critical: 4,
   high: 3,
@@ -79,6 +121,16 @@ function pathPatternsMayOverlap(first: string, second: string): boolean {
   return false;
 }
 
+function isSharedDocPath(pattern: string): boolean {
+  const normalized = normalizePathPattern(pattern);
+  return (
+    normalized === "README.md" ||
+    normalized.startsWith("README.") ||
+    normalized === "docs" ||
+    normalized.startsWith("docs/")
+  );
+}
+
 function sortTasks(tasks: LoadedTaskWithTier[]): LoadedTaskWithTier[] {
   return [...tasks].sort((a, b) => {
     const statusDiff = Number(b.spec.status === "in_progress") - Number(a.spec.status === "in_progress");
@@ -100,6 +152,17 @@ function row(task: LoadedTaskWithTier, section: CoordinatorSection, reason: stri
     priority: task.spec.priority ?? "medium",
     section,
     reason,
+  };
+}
+
+function ownershipBoundary(task: LoadedTaskWithTier): DispatchPlanOwnershipBoundary {
+  const ownership = task.spec.path_ownership;
+  return {
+    allowed_paths: task.spec.allowed_paths ?? [],
+    forbidden_paths: task.spec.forbidden_paths ?? [],
+    touched_paths: ownership.touched_paths ?? [],
+    locked_paths: ownership.locked_paths ?? [],
+    unsafe_parallel_areas: ownership.unsafe_parallel_areas ?? [],
   };
 }
 
@@ -126,6 +189,9 @@ function overlapReason(task: LoadedTaskWithTier, others: LoadedTaskWithTier[]): 
     for (const path of paths) {
       for (const otherPath of otherPaths) {
         if (pathPatternsMayOverlap(path, otherPath)) {
+          if (isSharedDocPath(path) || isSharedDocPath(otherPath)) {
+            return `README or shared-doc overlap with ${other.spec.id}: ${path} <-> ${otherPath}`;
+          }
           return `path overlap with ${other.spec.id}: ${path} <-> ${otherPath}`;
         }
       }
@@ -284,4 +350,70 @@ export function buildCoordinatorQueue(tasks: LoadedTaskWithTier[]): CoordinatorQ
   }
 
   return queue;
+}
+
+export function buildDispatchPlan(tasks: LoadedTaskWithTier[]): DispatchPlan {
+  const queue = buildCoordinatorQueue(tasks);
+  const activeTaskById = new Map(
+    tasks.filter((task) => task.tier === "active").map((task) => [task.spec.id, task])
+  );
+
+  const assignments = queue.runnable.map((item) => {
+    const task = activeTaskById.get(item.id);
+    if (!task) {
+      throw new Error(`Runnable task missing from active task index: ${item.id}`);
+    }
+
+    return {
+      task_id: item.id,
+      ownership_boundary: ownershipBoundary(task),
+      reason: item.reason,
+    };
+  });
+
+  const deferredRows: Array<[Exclude<CoordinatorSection, "runnable">, CoordinatorQueueRow[]]> = [
+    ["waiting", queue.waiting],
+    ["needs_review", queue.needsReview],
+    ["complete_ready", queue.completeReady],
+    ["blocked", queue.blocked],
+    ["rework_needed", queue.reworkNeeded],
+  ];
+
+  const doNotDispatch = deferredRows.flatMap(([section, rows]) =>
+    rows.map((item) => ({
+      task_id: item.id,
+      section,
+      reason: item.reason,
+    }))
+  );
+
+  const verificationEntries = assignments.map((assignment) => {
+    const task = activeTaskById.get(assignment.task_id);
+    return {
+      task_id: assignment.task_id,
+      commands: task?.spec.verification.commands ?? [],
+    };
+  });
+
+  const batchCommands = Array.from(
+    new Set(verificationEntries.flatMap((entry) => entry.commands))
+  );
+
+  return {
+    worker_cap: assignments.length,
+    recommended_batch_size: assignments.length,
+    assignments,
+    do_not_dispatch: doNotDispatch,
+    stop_after_batch: {
+      required: true,
+      reason:
+        assignments.length > 0
+          ? "Recompute the dispatch plan after this batch settles; later tasks may unblock or conflict state may change."
+          : "No runnable assignments are available; wait for review, rework, dependency, or lifecycle movement before dispatching.",
+    },
+    verification_plan: {
+      batch_commands: batchCommands,
+      assignments: verificationEntries,
+    },
+  };
 }

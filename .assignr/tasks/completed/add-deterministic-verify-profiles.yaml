@@ -1,0 +1,60 @@
+id: add-deterministic-verify-profiles
+title: Add deterministic verify profiles
+status: complete
+type: implementation
+domain: core
+priority: high
+depends_on:
+  - add-compact-task-packet-contract
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/commands/verify.ts
+  - src/cli.ts
+  - src/mcp.ts
+  - tests/verify.test.ts
+  - tests/mcpList.test.ts
+forbidden_paths:
+  - README.md
+  - docs/**
+  - .codex/skills/**
+  - .claude/skills/**
+  - dist/**
+  - pnpm-lock.yaml
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Assignr has one deterministic verification command and MCP tool that run named
+  coordinator, worker, or review profiles and return compact pass/fail receipts.
+acceptance_criteria:
+  - The CLI exposes assignr verify --profile coordinator|worker|review and validates
+    unknown profiles with a clear error.
+  - The MCP server exposes assignr_verify with the same supported profiles and returns
+    structured JSON containing ok, profile, commands_run, failures, and compact output
+    details.
+  - Coordinator, worker, and review profiles are defined in code with deterministic
+    command lists that cover the current redundant local/MCP verification needs without
+    requiring the model to choose a verification set.
+  - The implementation captures command exit codes and compact stdout/stderr snippets
+    for failures while avoiding unbounded output in success receipts.
+  - Tests cover each profile's command selection, failure receipt shape, unknown profile
+    handling, and MCP response shape without requiring slow real full-suite execution in
+    unit tests.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test -- verify
+    - pnpm test -- mcpList
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes:
+  - This task depends on add-compact-task-packet-contract because it must also edit
+    src/cli.ts and src/mcp.ts.
+  - Use child_process APIs or an injectable runner so unit tests can exercise profile
+    behavior without invoking real pnpm commands.
+  - Keep receipts compact and deterministic; do not stream raw full command output
+    through MCP unless a failure snippet is bounded.

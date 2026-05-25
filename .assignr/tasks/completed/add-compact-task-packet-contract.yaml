@@ -1,0 +1,62 @@
+id: add-compact-task-packet-contract
+title: Add compact task packet contract
+status: complete
+type: implementation
+domain: core
+priority: high
+depends_on:
+  - add-deterministic-dispatch-plan-packet
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/commands/compile.ts
+  - src/commands/taskPacket.ts
+  - src/cli.ts
+  - src/mcp.ts
+  - src/templates/renderTemplate.ts
+  - tests/mcpList.test.ts
+  - tests/renderTemplate.test.ts
+forbidden_paths:
+  - README.md
+  - docs/**
+  - .codex/skills/**
+  - .claude/skills/**
+  - dist/**
+  - pnpm-lock.yaml
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Assignr provides a bounded worker contract for one task so agents can act from
+  compact task facts instead of reading full generated prompts by default.
+acceptance_criteria:
+  - A reusable task-packet builder returns task_id, title, status, type, domain,
+    priority, depends_on, allowed_paths, forbidden_paths, path_ownership,
+    acceptance_criteria, verification_commands, outputs_required, notes, and path
+    ownership warnings for a requested task.
+  - The packet is compact and bounded by omitting full rendered prompt prose and domain
+    context unless explicitly requested by a future full compile path.
+  - MCP exposes assignr_get_task_packet or assignr_compile with a compact mode; if
+    assignr_compile is extended, the existing full compile behavior remains backward
+    compatible when mode is omitted.
+  - The CLI exposes an equivalent compact worker packet path, either through assignr
+    compile --mode compact or a dedicated assignr task-packet command.
+  - Tests cover missing task errors, packet shape, ownership warnings, and preservation
+    of existing full compile output.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test -- mcpList
+    - pnpm test -- renderTemplate
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes:
+  - This task depends on add-deterministic-dispatch-plan-packet because it must also
+    register CLI and MCP surfaces in src/cli.ts and src/mcp.ts.
+  - Prefer adding a small shared builder instead of making MCP and CLI assemble packet
+    fields separately.
+  - The generated full prompt file behavior of assignr_compile is part of the current
+    MCP contract and must not be broken.

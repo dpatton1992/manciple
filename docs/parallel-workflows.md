@@ -51,19 +51,29 @@ to merge.
 
 ## Coordinator Owner Loop
 
-1. Pick runnable tasks whose dependencies are satisfied and whose paths do not
-   collide.
-2. Leave waiting work in the queue when dependencies, locks, or unsafe areas
-   make parallel execution risky.
-3. Review run logs and queue output for completed slices.
-4. Merge useful slices quickly when verification and receipts are strong.
-5. Send overlapping or under-evidenced work back as rework instead of stacking
+1. Run `assignr dispatch-plan` or call `assignr_dispatch_plan`.
+2. Spawn only the returned assignments, capped by available worker capacity.
+3. Leave deferred work in the queue when the plan reports dependencies, locks,
+   unsafe areas, or stop conditions.
+4. Review run logs, changed files, and verification receipts for completed
+   slices.
+5. Verify integration with `assignr verify --profile coordinator` or
+   `assignr_verify` profile `coordinator`.
+6. Merge useful slices quickly when verification and receipts are strong.
+7. Send overlapping or under-evidenced work back as rework instead of stacking
    more branches on top.
 
-Every worker receipt should include files changed, tests run, decisions made,
-risks, and follow-ups. Merge-readiness scoring and review queue packets are aids
-for that owner loop: they summarize evidence and risk, but they do not replace a
-human review of the task contract, diff, and integration behavior.
+Workers should start from `assignr task-packet <task-id>` or
+`assignr_get_task_packet` and verify with `assignr verify --profile worker` or
+`assignr_verify` profile `worker`. Use `assignr format-task <task-id> --check`
+or `assignr_format_task` only when scoped task YAML formatting evidence is part
+of the work.
+
+Every worker receipt should include files changed, verification receipt,
+decisions made, risks, and follow-ups. Merge-readiness scoring and review queue
+packets are aids for that owner loop: they summarize evidence and risk, but they
+do not replace a human review of the task contract, diff, and integration
+behavior.
 
 Prefer merging a verified small slice promptly over keeping many broad branches
 open.

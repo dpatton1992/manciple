@@ -5,6 +5,7 @@ import { loadTasks } from "../specs/loadTasks.js";
 
 export interface RunLogOptions {
   result?: string;
+  taskStatus?: string;
   model?: string;
   agent?: string;
   harness?: string;
@@ -19,6 +20,7 @@ export interface RunLogOptions {
   risks?: string;
   followUps?: string[];
   acceptanceCriteriaEvidence?: string[];
+  verifyReceipt?: string;
   notes?: string;
 }
 
@@ -120,6 +122,7 @@ export function buildRunLog(
 ): string {
   const promptPath = `${generatedDir}/${id}.md`;
   const branch = currentBranch(cwd);
+  const finalStatus = options.taskStatus ?? status;
   const detected = detectChangedFiles(cwd);
   const filesChanged = options.filesChanged?.length
     ? renderList(unique(options.filesChanged), "provided by user", "Unknown: no changed files were provided.")
@@ -130,9 +133,9 @@ export function buildRunLog(
     "Unknown: no commands were provided. Pass repeated --command flags or MCP commands_run values."
   );
   const testsRun = renderList(
-    options.testsRun?.length ? options.testsRun : options.commandsRun,
-    options.testsRun?.length ? "provided by user" : options.commandsRun?.length ? "provided by commands run" : "unknown",
-    "Unknown: no tests were provided. Pass test commands in tests_run or commands_run receipt values."
+    options.testsRun,
+    "provided by user",
+    "Unknown: no tests were provided. Pass test commands in tests_run or provide a deterministic verify receipt."
   );
   const decisionsMade = renderList(
     options.decisionsMade,
@@ -149,6 +152,9 @@ export function buildRunLog(
     "provided by user",
     "Unknown: not provided."
   );
+  const verifyReceipt = options.verifyReceipt
+    ? `_Source: provided by user_\n\n${options.verifyReceipt}`
+    : "_Source: unknown_\n\nUnknown: no deterministic verify receipt was provided.";
   const agent = options.agent ?? options.harness;
   const agentSource = agent ? "provided by user" : "unknown";
   const modelSource = options.model ? "provided by user" : "unknown";
@@ -167,7 +173,7 @@ export function buildRunLog(
 ## Metadata
 
 - Task ID: ${id}
-- Status: ${status}
+- Status: ${finalStatus}
 - Started: ${new Date().toISOString()}
 - Agent/Harness (${agentSource}): ${agent ?? "Unknown: not provided."}
 - Model (${modelSource}): ${options.model ?? "Unknown: not provided."}
@@ -197,6 +203,10 @@ ${commandsRun}
 ## Tests Run
 
 ${testsRun}
+
+## Verification Receipt
+
+${verifyReceipt}
 
 ## Decisions Made
 

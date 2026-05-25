@@ -5,6 +5,7 @@ import { tmpdir } from "os";
 import { stringify } from "yaml";
 
 import { coordinatorCommand } from "../src/commands/coordinator.js";
+import { createDispatchPlan } from "../src/commands/dispatchPlan.js";
 import { buildCoordinatorQueue } from "../src/coordination/reviewQueue.js";
 import { initCommand } from "../src/commands/init.js";
 import { loadTasks } from "../src/specs/loadTasks.js";
@@ -144,6 +145,93 @@ describe("coordinator queue", () => {
         reason: expect.stringContaining("path overlap with owner"),
       }),
     ]);
+  });
+
+  it("explains shared doc collisions separately from ordinary path overlaps", () => {
+    writeTask("docs-owner", {
+      priority: "high",
+      allowed_paths: ["README.md"],
+    });
+    writeTask("docs-waiter", {
+      allowed_paths: ["README.md"],
+    });
+
+    const queue = buildQueue();
+
+    expect(queue.runnable.map((item) => item.id)).toEqual(["docs-owner"]);
+    expect(queue.waiting).toEqual([
+      expect.objectContaining({
+        id: "docs-waiter",
+        reason: expect.stringContaining("README or shared-doc overlap with docs-owner"),
+      }),
+    ]);
+  });
+
+  it("builds a deterministic dispatch plan packet from the coordinator queue", () => {
+    writeTask("runner", {
+      priority: "high",
+      allowed_paths: ["src/runner.ts"],
+      forbidden_paths: ["dist/**"],
+      path_ownership: {
+        touched_paths: ["src/runner.ts"],
+        locked_paths: ["src/runner.ts"],
+        unsafe_parallel_areas: [],
+      },
+      verification: {
+        commands: ["pnpm typecheck", "pnpm test -- runner"],
+      },
+    });
+    writeTask("waiter", {
+      depends_on: ["runner"],
+      verification: {
+        commands: ["pnpm test -- waiter"],
+      },
+    });
+    writeTask("review", {
+      status: "needs_review",
+    });
+
+    const plan = createDispatchPlan(p.specsTasks, cwd);
+
+    expect(plan.worker_cap).toBe(1);
+    expect(plan.recommended_batch_size).toBe(1);
+    expect(plan.assignments).toEqual([
+      {
+        task_id: "runner",
+        ownership_boundary: {
+          allowed_paths: ["src/runner.ts"],
+          forbidden_paths: ["dist/**"],
+          touched_paths: ["src/runner.ts"],
+          locked_paths: ["src/runner.ts"],
+          unsafe_parallel_areas: [],
+        },
+        reason: "dependencies usable; parallel-safe",
+      },
+    ]);
+    expect(plan.do_not_dispatch).toEqual(
+      expect.arrayContaining([
+        {
+          task_id: "waiter",
+          section: "waiting",
+          reason: expect.stringContaining("waiting on dependencies: runner"),
+        },
+        {
+          task_id: "review",
+          section: "needs_review",
+          reason: "ready for owner review",
+        },
+      ])
+    );
+    expect(plan.stop_after_batch.required).toBe(true);
+    expect(plan.verification_plan).toEqual({
+      batch_commands: ["pnpm typecheck", "pnpm test -- runner"],
+      assignments: [
+        {
+          task_id: "runner",
+          commands: ["pnpm typecheck", "pnpm test -- runner"],
+        },
+      ],
+    });
   });
 
   it("keeps non-independent tasks as exclusive runnable slices", () => {

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { mkdtemp } from "fs/promises";
 import { join } from "path";
 import { tmpdir } from "os";
@@ -228,6 +228,8 @@ describe("listTasksForMcp", () => {
     const payload = JSON.parse(text!);
     const warnings = payload.path_ownership_warnings;
 
+    expect(payload.content).toContain("## Domain Context");
+    expect(payload.content).toContain("# Agent Task: target-task");
     expect(warnings).toEqual(
       expect.arrayContaining([
         {
@@ -251,5 +253,335 @@ describe("listTasksForMcp", () => {
       ])
     );
     expect(existsSync(join(paths.promptsGenerated, "target-task.md"))).toBe(true);
+  });
+
+  it("returns compact task packets over MCP without writing compiled prompts", async () => {
+    const root = await mkdtemp(join(tmpdir(), "assignr-mcp-packet-"));
+    tempDirs.push(root);
+    const paths = getPaths(root, ".assignr");
+    mkdirSync(paths.tasksActive, { recursive: true });
+    writeTask(root, "active", "target-task");
+    writeFileSync(
+      join(paths.tasksActive, "owner-task.yaml"),
+      [
+        "id: owner-task",
+        "title: owner-task",
+        "status: in_progress",
+        "type: implementation",
+        "domain: core",
+        "priority: medium",
+        "depends_on: []",
+        "goal: Test owner.",
+        "acceptance_criteria:",
+        "  - It works.",
+        "allowed_paths:",
+        "  - src/**",
+        "forbidden_paths: []",
+        "path_ownership:",
+        "  locked_paths:",
+        "    - src/**",
+        "verification:",
+        "  commands:",
+        "    - pnpm test",
+        "outputs_required:",
+        "  - files_changed",
+        "notes: []",
+        "",
+      ].join("\n"),
+      "utf-8"
+    );
+
+    const tsxBin = join(
+      process.cwd(),
+      "node_modules",
+      ".bin",
+      process.platform === "win32" ? "tsx.cmd" : "tsx"
+    );
+    const transport = new StdioClientTransport({
+      command: tsxBin,
+      args: [join(process.cwd(), "src", "mcp.ts")],
+      cwd: root,
+    });
+    const client = new Client({ name: "assignr-test", version: "0.0.0" });
+
+    await client.connect(transport);
+    const result = await client.callTool({
+      name: "assignr_get_task_packet",
+      arguments: { task_id: "target-task" },
+    });
+    await client.close();
+
+    const text = result.content.find((part) => part.type === "text")?.text;
+    expect(text).toBeDefined();
+    const payload = JSON.parse(text!);
+
+    expect(payload).toMatchObject({
+      task_id: "target-task",
+      title: "target-task",
+      status: "pending",
+      type: "implementation",
+      domain: "core",
+      priority: "medium",
+      depends_on: [],
+      allowed_paths: ["src/**"],
+      forbidden_paths: [],
+      path_ownership: {
+        touched_paths: [],
+        locked_paths: [],
+        unsafe_parallel_areas: [],
+      },
+      acceptance_criteria: ["It works."],
+      verification_commands: ["pnpm test"],
+      outputs_required: ["files_changed"],
+      notes: [],
+      path_ownership_warnings: [
+        {
+          kind: "touched",
+          owner_task_id: "owner-task",
+          affected_path: "src/**",
+          owner_path: "src/**",
+        },
+        {
+          kind: "locked",
+          owner_task_id: "owner-task",
+          affected_path: "src/**",
+          owner_path: "src/**",
+        },
+      ],
+    });
+    expect(payload).not.toHaveProperty("content");
+    expect(payload).not.toHaveProperty("output_path");
+    expect(existsSync(join(paths.promptsGenerated, "target-task.md"))).toBe(false);
+    expect(JSON.stringify(payload)).not.toContain("# Agent Task");
+  });
+
+  it("returns missing task errors for MCP task packets", async () => {
+    const root = await mkdtemp(join(tmpdir(), "assignr-mcp-packet-missing-"));
+    tempDirs.push(root);
+    writeTask(root, "active", "present-task");
+
+    const tsxBin = join(
+      process.cwd(),
+      "node_modules",
+      ".bin",
+      process.platform === "win32" ? "tsx.cmd" : "tsx"
+    );
+    const transport = new StdioClientTransport({
+      command: tsxBin,
+      args: [join(process.cwd(), "src", "mcp.ts")],
+      cwd: root,
+    });
+    const client = new Client({ name: "assignr-test", version: "0.0.0" });
+
+    await client.connect(transport);
+    const result = await client.callTool({
+      name: "assignr_get_task_packet",
+      arguments: { task_id: "missing-task" },
+    });
+    await client.close();
+
+    const text = result.content.find((part) => part.type === "text")?.text;
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(text!)).toEqual({ error: "Task not found: missing-task" });
+  });
+
+  it("formats one task over MCP with a structured response", async () => {
+    const root = await mkdtemp(join(tmpdir(), "assignr-mcp-format-task-"));
+    tempDirs.push(root);
+    writeTask(root, "active", "format-task");
+
+    const tsxBin = join(
+      process.cwd(),
+      "node_modules",
+      ".bin",
+      process.platform === "win32" ? "tsx.cmd" : "tsx"
+    );
+    const transport = new StdioClientTransport({
+      command: tsxBin,
+      args: [join(process.cwd(), "src", "mcp.ts")],
+      cwd: root,
+    });
+    const client = new Client({ name: "assignr-test", version: "0.0.0" });
+
+    await client.connect(transport);
+    const result = await client.callTool({
+      name: "assignr_format_task",
+      arguments: { task_id: "format-task", check_only: true },
+    });
+    await client.close();
+
+    const text = result.content.find((part) => part.type === "text")?.text;
+    expect(text).toBeDefined();
+    expect(JSON.parse(text!)).toEqual({
+      checked: true,
+      changed: false,
+      file: ".assignr/tasks/active/format-task.yaml",
+      errors: [],
+    });
+  });
+
+  it("creates run logs over MCP with separated audit evidence", async () => {
+    const root = await mkdtemp(join(tmpdir(), "assignr-mcp-run-log-"));
+    tempDirs.push(root);
+    const paths = getPaths(root, ".assignr");
+    writeTask(root, "active", "run-log-task");
+
+    const tsxBin = join(
+      process.cwd(),
+      "node_modules",
+      ".bin",
+      process.platform === "win32" ? "tsx.cmd" : "tsx"
+    );
+    const transport = new StdioClientTransport({
+      command: tsxBin,
+      args: [join(process.cwd(), "src", "mcp.ts")],
+      cwd: root,
+    });
+    const client = new Client({ name: "assignr-test", version: "0.0.0" });
+
+    await client.connect(transport);
+    const result = await client.callTool({
+      name: "assignr_run_log",
+      arguments: {
+        task_id: "run-log-task",
+        task_status: "needs_review",
+        files_changed: ["src/commands/runLog.ts"],
+        commands_run: ["pnpm build"],
+        tests_run: ["pnpm test -- runLog"],
+        acceptance_criteria_evidence: ["Acceptance evidence recorded."],
+        verify_receipt: '{"ok":true,"profile":"worker"}',
+        result: "complete",
+        risks: "No known risks.",
+      },
+    });
+    await client.close();
+
+    const text = result.content.find((part) => part.type === "text")?.text;
+    expect(text).toBeDefined();
+    const payload = JSON.parse(text!);
+    expect(existsSync(payload.path)).toBe(true);
+
+    const files = readdirSync(paths.runs).filter((file) => file.endsWith(".md")).sort();
+    const content = readFileSync(join(paths.runs, files.at(-1) ?? ""), "utf-8");
+
+    expect(content).toContain("- Status: needs_review");
+    expect(content).toContain("- src/commands/runLog.ts");
+    expect(content).toContain("- pnpm build");
+    expect(content).toContain("- pnpm test -- runLog");
+    expect(content).toContain("Acceptance evidence recorded.");
+    expect(content).toContain('{"ok":true,"profile":"worker"}');
+    expect(content).toContain("No known risks.");
+  });
+
+  it("exposes the deterministic dispatch plan over MCP", async () => {
+    const root = await mkdtemp(join(tmpdir(), "assignr-mcp-dispatch-"));
+    tempDirs.push(root);
+    const paths = getPaths(root, ".assignr");
+    writeTask(root, "active", "ready-task");
+    writeTask(root, "active", "blocked-task", "blocked");
+
+    const tsxBin = join(
+      process.cwd(),
+      "node_modules",
+      ".bin",
+      process.platform === "win32" ? "tsx.cmd" : "tsx"
+    );
+    const transport = new StdioClientTransport({
+      command: tsxBin,
+      args: [join(process.cwd(), "src", "mcp.ts")],
+      cwd: root,
+    });
+    const client = new Client({ name: "assignr-test", version: "0.0.0" });
+
+    await client.connect(transport);
+    const result = await client.callTool({
+      name: "assignr_dispatch_plan",
+      arguments: {},
+    });
+    await client.close();
+
+    const text = result.content.find((part) => part.type === "text")?.text;
+    expect(text).toBeDefined();
+    const payload = JSON.parse(text!);
+
+    expect(payload).toMatchObject({
+      worker_cap: 1,
+      recommended_batch_size: 1,
+      assignments: [
+        {
+          task_id: "ready-task",
+          ownership_boundary: {
+            allowed_paths: ["src/**"],
+            forbidden_paths: [],
+          },
+        },
+      ],
+      do_not_dispatch: [
+        {
+          task_id: "blocked-task",
+          section: "blocked",
+          reason: "blocked status",
+        },
+      ],
+      stop_after_batch: {
+        required: true,
+      },
+      verification_plan: {
+        batch_commands: ["pnpm test"],
+      },
+    });
+  });
+
+  it("returns compact deterministic verify receipts over MCP", async () => {
+    const root = await mkdtemp(join(tmpdir(), "assignr-mcp-verify-"));
+    tempDirs.push(root);
+
+    const tsxBin = join(
+      process.cwd(),
+      "node_modules",
+      ".bin",
+      process.platform === "win32" ? "tsx.cmd" : "tsx"
+    );
+    const transport = new StdioClientTransport({
+      command: tsxBin,
+      args: [join(process.cwd(), "src", "mcp.ts")],
+      cwd: root,
+    });
+    const client = new Client({ name: "assignr-test", version: "0.0.0" });
+
+    await client.connect(transport);
+    const result = await client.callTool({
+      name: "assignr_verify",
+      arguments: { profile: "coordinator" },
+    });
+    await client.close();
+
+    const text = result.content.find((part) => part.type === "text")?.text;
+    expect(text).toBeDefined();
+    const payload = JSON.parse(text!);
+
+    expect(payload).toMatchObject({
+      ok: false,
+      profile: "coordinator",
+      commands_run: [
+        { command: "pnpm typecheck", ok: false },
+        { command: "pnpm test -- coordinator", ok: false },
+        { command: "pnpm test -- mcpList", ok: false },
+      ],
+      output: {
+        included: "failures_only",
+        max_chars_per_stream: 2000,
+      },
+    });
+    expect(payload.failures).toHaveLength(3);
+    expect(payload.failures[0]).toMatchObject({
+      command: "pnpm typecheck",
+      ok: false,
+      output: {
+        stdout_truncated: false,
+        stderr_truncated: false,
+      },
+    });
+    expect(payload.failures[0].output.stdout ?? payload.failures[0].output.stderr).toBeTruthy();
   });
 });
