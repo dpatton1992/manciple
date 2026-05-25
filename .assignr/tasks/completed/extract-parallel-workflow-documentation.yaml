@@ -1,0 +1,55 @@
+id: extract-parallel-workflow-documentation
+title: Extract parallel workflow documentation
+status: complete
+type: docs
+domain: core
+priority: medium
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - docs/parallel-workflows.md
+forbidden_paths:
+  - README.md
+  - src/**
+  - tests/**
+  - bin/**
+  - dist/**
+  - .assignr/tasks/**
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Move parallel small-slice and coordinator workflow material from README.md into
+  docs/parallel-workflows.md.
+acceptance_criteria:
+  - docs/parallel-workflows.md explains depends_on, blocks, conflicts_with,
+    can_run_independently, and path_ownership with a compact YAML example.
+  - docs/parallel-workflows.md documents the .assignr/worktrees/<task-id> guidance for
+    worker isolation.
+  - docs/parallel-workflows.md describes the coordinator owner loop for selecting
+    runnable work, waiting on conflicts, reviewing evidence, merging verified slices,
+    and sending weak work back for rework.
+  - docs/parallel-workflows.md explains that path locks and unsafe parallel areas are
+    review and scheduling signals rather than filesystem locks.
+  - docs/parallel-workflows.md preserves the small-slice merge guidance without making
+    the README carry the advanced workflow detail.
+verification:
+  commands:
+    - test -f docs/parallel-workflows.md
+    - rg -n
+      "depends_on|blocks|conflicts_with|can_run_independently|path_ownership|worktrees|coordinator"
+      docs/parallel-workflows.md
+    - pnpm typecheck
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes:
+  - Overlaps conceptually with active task document-parallel-small-slice-workflow, which
+    is currently needs_review and allowed to edit README.md. This extraction should
+    preserve that task's reviewed content in a dedicated docs page rather than expanding
+    the README.
+  - This task intentionally does not edit README.md; link and deletion work belongs to
+    restructure-readme-as-assignr-landing-page.

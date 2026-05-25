@@ -20,6 +20,7 @@
 	"files": [
 		"bin/",
 		"dist/",
+		"docs/",
 		"README.md",
 		".codex/skills/",
 		".claude/skills/"

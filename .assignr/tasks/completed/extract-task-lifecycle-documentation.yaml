@@ -1,0 +1,49 @@
+id: extract-task-lifecycle-documentation
+title: Extract task lifecycle documentation
+status: complete
+type: docs
+domain: core
+priority: medium
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - docs/task-lifecycle.md
+forbidden_paths:
+  - README.md
+  - src/**
+  - tests/**
+  - bin/**
+  - dist/**
+  - .assignr/tasks/**
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Move task lifecycle reference material from README.md into docs/task-lifecycle.md.
+acceptance_criteria:
+  - docs/task-lifecycle.md documents active, completed, and archived task directories
+    and what each lifecycle tier is for.
+  - docs/task-lifecycle.md explains complete, archive, reopen, check-lifecycle, and
+    migrate-tasks commands with compact examples.
+  - docs/task-lifecycle.md describes lifecycle and status semantics clearly enough for
+    an agent or maintainer to decide where a task file belongs.
+  - The document links back to README.md or the getting-started guide for first-run
+    setup instead of repeating the full quickstart.
+verification:
+  commands:
+    - test -f docs/task-lifecycle.md
+    - rg -n
+      "active|completed|archived|complete|archive|reopen|migrate-tasks|check-lifecycle"
+      docs/task-lifecycle.md
+    - pnpm typecheck
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes:
+  - Source material currently lives under the README Task Lifecycle section.
+  - This task intentionally does not edit README.md; pair it with
+    restructure-readme-as-assignr-landing-page for link placement and deletion from the
+    landing page.

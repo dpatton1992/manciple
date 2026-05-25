@@ -1,0 +1,59 @@
+id: restructure-readme-as-assignr-landing-page
+title: Restructure README as Assignr landing page
+status: complete
+type: docs
+domain: core
+priority: high
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - README.md
+  - docs/getting-started.md
+  - package.json
+forbidden_paths:
+  - src/**
+  - tests/**
+  - bin/**
+  - dist/**
+  - .assignr/tasks/**
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Keep README.md focused on first-read value, quickstart, a trimmed command
+  reference, and links to deeper docs.
+acceptance_criteria:
+  - README.md keeps the title, one-line description, demo, install, quickstart, what
+    Assignr creates, a trimmed core command reference, and links to deeper docs.
+  - README.md removes operational deep-dive sections that now belong in
+    docs/task-lifecycle.md, docs/parallel-workflows.md, docs/evidence-and-review.md,
+    docs/review-queue.md, docs/mcp-server.md, and docs/agent-skills.md.
+  - README.md includes a concise link list to docs/getting-started.md,
+    docs/task-lifecycle.md, docs/parallel-workflows.md, docs/evidence-and-review.md,
+    docs/review-queue.md, docs/mcp-server.md, and docs/agent-skills.md.
+  - docs/getting-started.md exists and carries any quickstart detail that is useful but
+    too dense for the landing README.
+  - package.json includes docs in the published package files when relative README links
+    depend on docs content.
+verification:
+  commands:
+    - rg -n
+      "getting-started|task-lifecycle|parallel-workflows|evidence-and-review|review-queue|mcp-server|agent-skills"
+      README.md
+    - test -f docs/getting-started.md
+    - rg -n '"docs/"|"docs/\*\*"|"docs"' package.json
+    - pnpm typecheck
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes:
+  - Existing active tasks readme-thirty-second-value-demo and
+    document-parallel-small-slice-workflow also touch README.md. Treat their accepted
+    content as source material and coordinate status before editing README heavily.
+  - "Keep README as the landing page: what Assignr is, why it matters, and how to try it
+    quickly."
+  - Do not delete useful workflow material; move it to the matching docs page and link
+    it.

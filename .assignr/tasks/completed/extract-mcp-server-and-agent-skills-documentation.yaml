@@ -1,0 +1,53 @@
+id: extract-mcp-server-and-agent-skills-documentation
+title: Extract MCP server and agent skills documentation
+status: complete
+type: docs
+domain: core
+priority: medium
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - docs/mcp-server.md
+  - docs/agent-skills.md
+forbidden_paths:
+  - README.md
+  - src/**
+  - tests/**
+  - bin/**
+  - dist/**
+  - .assignr/tasks/**
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Move MCP server setup and agent skill usage material from README.md into
+  docs/mcp-server.md and docs/agent-skills.md.
+acceptance_criteria:
+  - docs/mcp-server.md documents assignr mcp-config, restart expectations for MCP
+    clients, assignr-mcp, and the available MCP tools table.
+  - docs/agent-skills.md documents where Claude Code and Codex skills live and when to
+    copy assignr-mcp-task-runner or assignr-agents into another repo.
+  - README.md can keep only a short mention of MCP and skills with links to the
+    dedicated docs.
+  - The two docs avoid duplicating the full getting-started flow and instead link back
+    to README.md or docs/getting-started.md where appropriate.
+verification:
+  commands:
+    - test -f docs/mcp-server.md
+    - test -f docs/agent-skills.md
+    - rg -n "mcp-config|assignr-mcp|assignr_list|assignr_compile|assignr_run_log"
+      docs/mcp-server.md
+    - rg -n "Claude Code|Codex|assignr-mcp-task-runner|assignr-agents"
+      docs/agent-skills.md
+    - pnpm typecheck
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes:
+  - Source material currently lives under the README MCP Server and Agent Skills
+    sections.
+  - This task is grouped because both docs are agent-integration references and can be
+    reviewed together without touching the other workflow guides.

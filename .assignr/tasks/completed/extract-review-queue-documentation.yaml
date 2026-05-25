@@ -1,0 +1,51 @@
+id: extract-review-queue-documentation
+title: Extract review queue documentation
+status: complete
+type: docs
+domain: core
+priority: medium
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - docs/review-queue.md
+forbidden_paths:
+  - README.md
+  - src/**
+  - tests/**
+  - bin/**
+  - dist/**
+  - .assignr/tasks/**
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Move review queue triage and deep-review workflow material from README.md into
+  docs/review-queue.md.
+acceptance_criteria:
+  - docs/review-queue.md explains the review-queue workflow as a review-spend control
+    mechanism for batches of needs_review tasks.
+  - docs/review-queue.md documents triage mode, deep mode, --deep-only risky, and
+    --budget usage with runnable command examples.
+  - docs/review-queue.md defines pass, escalate, and blocked outcomes narrowly and
+    includes the evidence or dependency reasons reviewers should expect.
+  - docs/review-queue.md preserves the cost, coordination risk, evidence durability, and
+    manual tracking comparison table.
+  - docs/review-queue.md explains how review-queue composes with review-check and
+    coordinator rather than replacing them.
+verification:
+  commands:
+    - test -f docs/review-queue.md
+    - rg -n
+      "review-queue|triage|deep|deep-only|budget|pass|escalate|blocked|review-check|coordinator"
+      docs/review-queue.md
+    - pnpm typecheck
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes:
+  - Source material currently lives under the README Review Queue Mode Contract section.
+  - Keep this as a workflow guide rather than a command dump; command reference details
+    can stay compact.

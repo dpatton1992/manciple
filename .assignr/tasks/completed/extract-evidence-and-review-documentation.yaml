@@ -1,0 +1,51 @@
+id: extract-evidence-and-review-documentation
+title: Extract evidence and review documentation
+status: complete
+type: docs
+domain: core
+priority: medium
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - docs/evidence-and-review.md
+forbidden_paths:
+  - README.md
+  - src/**
+  - tests/**
+  - bin/**
+  - dist/**
+  - .assignr/tasks/**
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Move needs-review, run-log, reviewer prompt, and review decision workflow material
+  from README.md into docs/evidence-and-review.md.
+acceptance_criteria:
+  - docs/evidence-and-review.md explains needs_review as the lifecycle state for
+    evidence-backed review.
+  - docs/evidence-and-review.md documents run log evidence requirements, including
+    agent, model, commands run, files changed, result, and risks.
+  - docs/evidence-and-review.md explains assignr review and assignr review-check and how
+    they support reviewer readiness.
+  - docs/evidence-and-review.md documents approve, request-changes, and block-review
+    reviewer decisions with concise examples.
+  - docs/evidence-and-review.md distinguishes implementation review from integration
+    review for multi-agent or batched work.
+verification:
+  commands:
+    - test -f docs/evidence-and-review.md
+    - rg -n
+      "needs_review|run-log|review-check|approve|request-changes|block-review|integration
+      review" docs/evidence-and-review.md
+    - pnpm typecheck
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes:
+  - Source material currently lives under the README Evidence-Based Review section.
+  - This extraction should avoid duplicating the separate review queue guide; link to
+    docs/review-queue.md for batch triage and deep review.
