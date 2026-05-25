@@ -1,6 +1,6 @@
 id: add-review-queue-deep-escalation-mode
 title: Add review queue deep escalation mode
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: medium

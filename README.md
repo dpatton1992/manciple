@@ -308,50 +308,58 @@ batch confidence.
 
 ## Review Queue Mode Contract
 
-`assignr review-queue` is a planned review-spend control workflow for batches of
-`needs_review` tasks. It should make reviews repeatable, auditable, resumable,
-and safer by preserving durable evidence and escalating only the tasks that need
-deeper review. This mode is not a promise to be cheaper than a direct single
-prompt; it is a way to avoid spending deep-review effort when recorded evidence
-is already complete enough for a reliable routing decision.
+`assignr review-queue` is a review-spend control workflow for batches of
+`needs_review` tasks. Its value is not lowest raw token cost; it buys
+repeatability, auditability, resumability, and safer coordination by preserving
+the evidence behind every routing decision. Cheap review means spending the
+lightweight deterministic pass first, then reserving deeper review for tasks
+whose evidence is risky or incomplete.
 
-Triage mode is the default lightweight pass. For each task, it reads the task
-status, task spec, latest run-log evidence, files changed from the run log or git
-status, verification commands and recorded results, and any obvious scope
-violations such as files outside `allowed_paths` or changes touching
-`forbidden_paths`. Its output is a durable queue receipt: task id, triage
-decision, readiness score from `review-check`, missing or failed evidence,
-changed-file source, scope warnings, documented risks, and the recommended next
-action (`approve-ready`, `deep-review`, `request-changes`, or `blocked`).
-
-Deep mode is the expensive confidence pass. It is entered explicitly or by
-escalation from triage when any of these signals appear: missing run-log evidence,
-failed or unrecorded verification, changed files outside `allowed_paths`,
-documented residual risks, path conflicts with active work, incomplete acceptance
-criteria evidence, missing required output fields, or a queue placement that the
-coordinator marks as rework-needed rather than ready for owner review. Deep mode
-uses the full task spec, run log, diff, acceptance criteria, risks, and generated
-review prompt to produce a review recommendation with cited evidence.
-
-The review queue should compose existing commands rather than duplicate them.
-`assignr review-check` remains the source of readiness scoring and evidence
-checklist semantics. `assignr coordinator` remains the source of owner queue
-grouping, dependency usability, and path-conflict placement. Review queue mode
-joins those signals with durable triage/deep review receipts so a reviewer can
-resume a batch and audit why each task did or did not receive deep review.
-
-Planned CLI examples:
+Start with triage:
 
 ```bash
-# Triage every active needs_review task and write durable queue receipts.
 assignr review-queue --mode triage
-
-# Run a deep review for one task, regardless of triage state.
-assignr review-queue --mode deep build-login-page
-
-# Triage the queue first, then run deep review only for escalated tasks.
-assignr review-queue --mode triage --escalate deep
 ```
+
+Triage reads each active `needs_review` task, its latest run log, verification
+evidence, changed files, readiness score, dependency state, and obvious scope
+problems such as files outside `allowed_paths` or inside `forbidden_paths`. It
+prints one row per task:
+
+```text
+pass      build-login-page   deterministic=pass
+escalate  auth-migration     missing-evidence: Run log is missing expected verification command(s): pnpm test.
+blocked   billing-worker     blocked-dependency: Dependency add-billing-schema is not complete.
+```
+
+Interpret those outcomes narrowly. `pass` means the recorded evidence is complete
+enough for normal reviewer approval flow. `escalate` means a human or deeper
+model review should inspect the unresolved evidence before approval. `blocked`
+means review would be wasteful until lifecycle, dependency, or loading problems
+are fixed.
+
+Then escalate only the risky work:
+
+```bash
+assignr review-queue --mode deep --deep-only risky
+```
+
+Deep mode generates review prompts for escalated tasks and includes a compact
+packet with the task id, status, changed-file count, path summary, test evidence,
+acceptance coverage, risk flags, and one reviewer question. Add `--budget
+<tokens>` to cap the estimated packet budget for a queue run. The budget is a
+simple planning estimate, not provider-specific token accounting.
+
+| Approach | Cost | Coordination Risk | Evidence Durability | Manual Tracking |
+|---|---|---|---|---|
+| Direct prompt review | Highest per task when used for everything | Easy to lose context across several tasks | Depends on the chat transcript | Reviewer must remember queue state |
+| Triage review queue | Low first pass; spends attention on evidence gaps | Safer for batches because every row has a reason | Durable run logs and queue output | Queue output shows pass, escalate, and blocked work |
+| Deep review queue | Higher, reserved for risky ambiguity | Focused on the tasks that need judgment | Review prompt plus compact packet | Reviewer follows the packet question and evidence |
+
+The review queue composes existing commands rather than replacing them.
+`assignr review-check` remains the source of readiness scoring and evidence
+checklist semantics. `assignr coordinator` remains the source of owner queue
+grouping, dependency usability, and path-conflict placement.
 
 ## MCP Server
 
