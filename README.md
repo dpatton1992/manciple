@@ -6,6 +6,37 @@ Assignr stores scoped YAML task specs, generated agent prompts, run logs, and re
 
 ## Demo
 
+Before Assignr, agent handoffs often start as a useful but risky blob:
+
+> Can you clean up login? The errors are confusing, the tests are flaky, and
+> support says password reset broke after the session refactor. Please fix what
+> you find and make sure auth still works.
+
+After Assignr, that work becomes one scoped task an agent can run and a reviewer
+can check in about 30 seconds:
+
+```bash
+assignr new "Fix password reset session handling" --type implementation --domain auth --priority high
+assignr compile fix-password-reset-session-handling
+```
+
+```yaml
+goal: Fix password reset failures caused by the session refactor.
+acceptance_criteria:
+  - Expired reset links show a clear error.
+  - Valid reset links create a fresh session.
+allowed_paths:
+  - src/features/auth/**
+  - tests/auth/**
+verification:
+  commands:
+    - pnpm test -- auth
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+```
+
 Install the CLI, initialize a repo, create a task, validate the task files, check the queue, and compile an agent prompt:
 
 ```bash
@@ -90,7 +121,7 @@ outputs_required:
 | `assignr init` | Initialize `.assignr/` in a repo. |
 | `assignr new <title>` | Create a task spec. Add `--interactive` to collect common fields through prompts. |
 | `assignr validate` | Validate task specs. |
-| `assignr compile [task-id]` | Compile task specs into markdown prompts. Supports `--all` and `--status <status>`. |
+| `assignr compile [task-id]` | Compile implementation prompts to `.assignr/prompts/generated/<task-id>.md`. Supports `--all` and `--status <status>`. |
 | `assignr list` | List task specs. Supports lifecycle and status/domain filters. |
 | `assignr status` | Show status counts and a suggested next task. |
 | `assignr set-status <task-id> <status>` | Update task status. |
@@ -103,10 +134,57 @@ outputs_required:
 | `assignr check-lifecycle` | Validate that task files are in the directory matching their status. |
 | `assignr migrate-tasks` | Migrate legacy flat task files into lifecycle directories. |
 | `assignr run-log <task-id>` | Create a run log with commands, files, result, model, agent, and risks. |
-| `assignr review <task-id>` | Generate a review prompt for a task. |
+| `assignr review <task-id>` | Generate a separate review prompt at `.assignr/prompts/generated/review-<task-id>.md`. |
 | `assignr review-check [task-id]` | Check review readiness evidence for active `needs_review` tasks. |
 | `assignr doctor` | Check repo configuration. |
 | `assignr mcp-config` | Create or update `.mcp.json` for the Assignr MCP server. |
+
+## Review Queue Mode Contract
+
+`assignr review-queue` is a planned review-spend control workflow for batches of
+`needs_review` tasks. It should make reviews repeatable, auditable, resumable,
+and safer by preserving durable evidence and escalating only the tasks that need
+deeper review. This mode is not a promise to be cheaper than a direct single
+prompt; it is a way to avoid spending deep-review effort when recorded evidence
+is already complete enough for a reliable routing decision.
+
+Triage mode is the default lightweight pass. For each task, it reads the task
+status, task spec, latest run-log evidence, files changed from the run log or git
+status, verification commands and recorded results, and any obvious scope
+violations such as files outside `allowed_paths` or changes touching
+`forbidden_paths`. Its output is a durable queue receipt: task id, triage
+decision, readiness score from `review-check`, missing or failed evidence,
+changed-file source, scope warnings, documented risks, and the recommended next
+action (`approve-ready`, `deep-review`, `request-changes`, or `blocked`).
+
+Deep mode is the expensive confidence pass. It is entered explicitly or by
+escalation from triage when any of these signals appear: missing run-log evidence,
+failed or unrecorded verification, changed files outside `allowed_paths`,
+documented residual risks, path conflicts with active work, incomplete acceptance
+criteria evidence, missing required output fields, or a queue placement that the
+coordinator marks as rework-needed rather than ready for owner review. Deep mode
+uses the full task spec, run log, diff, acceptance criteria, risks, and generated
+review prompt to produce a review recommendation with cited evidence.
+
+The review queue should compose existing commands rather than duplicate them.
+`assignr review-check` remains the source of readiness scoring and evidence
+checklist semantics. `assignr coordinator` remains the source of owner queue
+grouping, dependency usability, and path-conflict placement. Review queue mode
+joins those signals with durable triage/deep review receipts so a reviewer can
+resume a batch and audit why each task did or did not receive deep review.
+
+Planned CLI examples:
+
+```bash
+# Triage every active needs_review task and write durable queue receipts.
+assignr review-queue --mode triage
+
+# Run a deep review for one task, regardless of triage state.
+assignr review-queue --mode deep build-login-page
+
+# Triage the queue first, then run deep review only for escalated tasks.
+assignr review-queue --mode triage --escalate deep
+```
 
 ## MCP Server
 

@@ -147,6 +147,21 @@ function explicitConflictReason(task: LoadedTaskWithTier, others: LoadedTaskWith
   return "";
 }
 
+function independenceConflictReason(task: LoadedTaskWithTier, others: LoadedTaskWithTier[]): string {
+  if (others.length === 0) return "";
+
+  if (!task.spec.can_run_independently) {
+    return "not marked can_run_independently";
+  }
+
+  const exclusiveTask = others.find((other) => !other.spec.can_run_independently);
+  if (exclusiveTask) {
+    return `cannot run with non-independent task ${exclusiveTask.spec.id}`;
+  }
+
+  return "";
+}
+
 function dependencyWaitReasons(
   task: LoadedTaskWithTier,
   taskById: Map<string, LoadedTaskWithTier>
@@ -252,8 +267,9 @@ export function buildCoordinatorQueue(tasks: LoadedTaskWithTier[]): CoordinatorQ
       continue;
     }
 
-    if (selectedRunnable.length > 0 && !task.spec.can_run_independently) {
-      queue.waiting.push(row(task, "waiting", "not marked can_run_independently"));
+    const independenceConflict = independenceConflictReason(task, selectedRunnable);
+    if (independenceConflict) {
+      queue.waiting.push(row(task, "waiting", independenceConflict));
       continue;
     }
 

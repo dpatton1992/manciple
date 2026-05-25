@@ -146,6 +146,27 @@ describe("coordinator queue", () => {
     ]);
   });
 
+  it("keeps non-independent tasks as exclusive runnable slices", () => {
+    writeTask("exclusive", {
+      priority: "high",
+      can_run_independently: false,
+    });
+    writeTask("parallel-safe", {
+      priority: "medium",
+    });
+
+    const queue = buildQueue();
+
+    expect(queue.runnable.map((item) => item.id)).toEqual(["exclusive"]);
+    expect(queue.runnable[0].reason).toBe("dependencies usable; run as a single slice");
+    expect(queue.waiting).toEqual([
+      expect.objectContaining({
+        id: "parallel-safe",
+        reason: "cannot run with non-independent task exclusive",
+      }),
+    ]);
+  });
+
   it("groups review, complete-ready, blocked, and rework-needed tasks", () => {
     writeTask("active-work", {
       status: "in_progress",

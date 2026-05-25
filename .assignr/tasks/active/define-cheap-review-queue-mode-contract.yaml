@@ -1,6 +1,6 @@
 id: define-cheap-review-queue-mode-contract
 title: Define cheap review queue mode contract
-status: pending
+status: needs_review
 type: planning
 domain: core
 priority: high

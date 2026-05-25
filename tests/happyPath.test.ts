@@ -426,6 +426,8 @@ describe("assignr compile", () => {
   });
 
   it("compiles a task to prompts/generated/<id>.md", () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
     writeFileSync(
       join(p.specsDomains, "credentialing.yaml"),
       "id: credentialing\ndescription: Provider credentialing workflows.\n",
@@ -441,19 +443,26 @@ describe("assignr compile", () => {
       activeDir: p.tasksActive,
     });
 
-    compileCommand({
-      specsTasksDir: p.specsTasks,
-      generatedDir: p.promptsGenerated,
-      cwd,
-      taskId: "license-expiration-reminders",
-    });
+    try {
+      compileCommand({
+        specsTasksDir: p.specsTasks,
+        generatedDir: p.promptsGenerated,
+        cwd,
+        taskId: "license-expiration-reminders",
+      });
 
-    const promptFile = join(p.promptsGenerated, "license-expiration-reminders.md");
-    expect(existsSync(promptFile)).toBe(true);
+      const promptFile = join(p.promptsGenerated, "license-expiration-reminders.md");
+      expect(existsSync(promptFile)).toBe(true);
+      expect(logSpy).toHaveBeenCalledWith(
+        "  ✓ Compiled: .assignr/prompts/generated/license-expiration-reminders.md"
+      );
 
-    const content = readFileSync(promptFile, "utf-8");
-    expect(content).toContain("License expiration reminders");
-    expect(content).toContain("Add expiration reminder support for provider licenses.");
+      const content = readFileSync(promptFile, "utf-8");
+      expect(content).toContain("License expiration reminders");
+      expect(content).toContain("Add expiration reminder support for provider licenses.");
+    } finally {
+      logSpy.mockRestore();
+    }
   });
 
   it("warns about active path ownership conflicts before compiling", () => {
