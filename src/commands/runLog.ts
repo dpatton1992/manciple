@@ -9,8 +9,12 @@ export interface RunLogOptions {
   agent?: string;
   harness?: string;
   commandsRun?: string[];
+  testsRun?: string[];
   filesChanged?: string[];
+  decisionsMade?: string[];
   risks?: string;
+  followUps?: string[];
+  acceptanceCriteriaEvidence?: string[];
   notes?: string;
 }
 
@@ -121,6 +125,26 @@ export function buildRunLog(
     "provided by user",
     "Unknown: no commands were provided. Pass repeated --command flags or MCP commands_run values."
   );
+  const testsRun = renderList(
+    options.testsRun?.length ? options.testsRun : options.commandsRun,
+    options.testsRun?.length ? "provided by user" : options.commandsRun?.length ? "provided by commands run" : "unknown",
+    "Unknown: no tests were provided. Pass test commands in tests_run or commands_run receipt values."
+  );
+  const decisionsMade = renderList(
+    options.decisionsMade,
+    "provided by user",
+    "Unknown: no decisions were provided. Record key implementation or review decisions."
+  );
+  const followUps = renderList(
+    options.followUps,
+    "provided by user",
+    "Unknown: not provided."
+  );
+  const acceptanceCriteriaEvidence = renderList(
+    options.acceptanceCriteriaEvidence,
+    "provided by user",
+    "Unknown: not provided."
+  );
   const agent = options.agent ?? options.harness;
   const agentSource = agent ? "provided by user" : "unknown";
   const modelSource = options.model ? "provided by user" : "unknown";
@@ -151,6 +175,14 @@ ${filesChanged}
 
 ${commandsRun}
 
+## Tests Run
+
+${testsRun}
+
+## Decisions Made
+
+${decisionsMade}
+
 ## Result
 
 <!-- complete | partial | blocked | failed -->
@@ -166,7 +198,11 @@ ${options.risks ?? "Unknown: not provided."}
 
 ## Follow-Up Tasks
 
-Unknown: not provided.
+${followUps}
+
+## Acceptance Criteria Evidence
+
+${acceptanceCriteriaEvidence}
 
 ## Notes
 

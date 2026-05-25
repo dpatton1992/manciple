@@ -13,6 +13,15 @@ export interface LoadResult {
   errors: Array<{ filePath: string; error: string }>;
 }
 
+export type PathOwnershipWarningKind = "touched" | "locked" | "unsafe_parallel_area";
+
+export interface PathOwnershipWarning {
+  kind: PathOwnershipWarningKind;
+  owner_task_id: string;
+  affected_path: string;
+  owner_path: string;
+}
+
 const TASK_TIERS: TaskTier[] = ["active", "completed", "archived"];
 
 function getTasksRoot(tasksDir: string): string {
@@ -97,4 +106,104 @@ export function loadTasks(tasksDir: string, tier: LoadTaskTier = "active"): Load
   }
 
   return { tasks, errors };
+}
+
+function normalizePathPattern(pattern: string): string {
+  return pattern.trim().replace(/^\.\//, "").replace(/\\/g, "/");
+}
+
+function fixedPrefix(pattern: string): string {
+  const normalized = normalizePathPattern(pattern);
+  const wildcardIndex = normalized.search(/[*?[\]{}]/);
+  if (wildcardIndex === -1) {
+    return normalized.endsWith("/") ? normalized : normalized;
+  }
+
+  const prefix = normalized.slice(0, wildcardIndex);
+  const lastSlash = prefix.lastIndexOf("/");
+  return lastSlash === -1 ? "" : prefix.slice(0, lastSlash + 1);
+}
+
+function isDirectoryPattern(pattern: string): boolean {
+  const normalized = normalizePathPattern(pattern);
+  return normalized.endsWith("/") || normalized.endsWith("/**") || normalized.endsWith("/*");
+}
+
+function pathPatternsMayOverlap(first: string, second: string): boolean {
+  const a = normalizePathPattern(first);
+  const b = normalizePathPattern(second);
+
+  if (!a || !b) return false;
+  if (a === b || a === "**" || b === "**") return true;
+
+  const aPrefix = fixedPrefix(a);
+  const bPrefix = fixedPrefix(b);
+  if (!aPrefix || !bPrefix) return true;
+
+  if (a.includes("*") || a.includes("?") || b.includes("*") || b.includes("?")) {
+    return aPrefix.startsWith(bPrefix) || bPrefix.startsWith(aPrefix);
+  }
+
+  if (isDirectoryPattern(a) || isDirectoryPattern(b)) {
+    return a.startsWith(b) || b.startsWith(a);
+  }
+
+  return false;
+}
+
+function addWarningsForPatterns(
+  warnings: PathOwnershipWarning[],
+  targetAllowedPaths: string[],
+  ownerTaskId: string,
+  kind: PathOwnershipWarningKind,
+  ownerPaths: string[]
+): void {
+  for (const affectedPath of targetAllowedPaths) {
+    for (const ownerPath of ownerPaths) {
+      if (pathPatternsMayOverlap(affectedPath, ownerPath)) {
+        warnings.push({
+          kind,
+          owner_task_id: ownerTaskId,
+          affected_path: affectedPath,
+          owner_path: ownerPath,
+        });
+      }
+    }
+  }
+}
+
+export function pathOwnershipWarningsForTask(
+  target: LoadedTaskWithTier,
+  tasks: LoadedTaskWithTier[]
+): PathOwnershipWarning[] {
+  const allowedPaths = target.spec.allowed_paths ?? [];
+  if (allowedPaths.length === 0) return [];
+
+  const warnings: PathOwnershipWarning[] = [];
+
+  for (const task of tasks) {
+    if (task.spec.id === target.spec.id || task.tier !== "active") continue;
+
+    const ownership = task.spec.path_ownership;
+    const touchedPaths =
+      ownership.touched_paths.length > 0 ? ownership.touched_paths : task.spec.allowed_paths ?? [];
+
+    addWarningsForPatterns(warnings, allowedPaths, task.spec.id, "touched", touchedPaths);
+    addWarningsForPatterns(
+      warnings,
+      allowedPaths,
+      task.spec.id,
+      "locked",
+      ownership.locked_paths
+    );
+    addWarningsForPatterns(
+      warnings,
+      allowedPaths,
+      task.spec.id,
+      "unsafe_parallel_area",
+      ownership.unsafe_parallel_areas
+    );
+  }
+
+  return warnings;
 }

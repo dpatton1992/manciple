@@ -1,6 +1,6 @@
 id: add-worktree-first-task-checkout
 title: Add worktree first task checkout
-status: pending
+status: needs_review
 type: implementation
 domain: core
 priority: high
@@ -21,13 +21,18 @@ forbidden_paths:
   - src/templates/renderTemplate.ts
   - README.md
   - .assignr/tasks/
-goal: Agents can create an isolated git worktree and branch for a task using the default .assignr/worktrees/task-slug location.
+goal: Agents can create an isolated git worktree and branch for a task using the default
+  .assignr/worktrees/task-slug location.
 acceptance_criteria:
-  - A command creates or reports a per-task git worktree at .assignr/worktrees/<task-id> by default.
-  - The command creates a task-specific branch name deterministically and reports the branch and path.
-  - The command refuses to overwrite a non-empty unrelated worktree directory without an explicit force option.
+  - A command creates or reports a per-task git worktree at .assignr/worktrees/<task-id>
+    by default.
+  - The command creates a task-specific branch name deterministically and reports the
+    branch and path.
+  - The command refuses to overwrite a non-empty unrelated worktree directory without an
+    explicit force option.
   - The command handles missing git repositories with a clear error.
-  - Tests cover successful worktree creation command construction, existing worktree handling, and non-git failure behavior.
+  - Tests cover successful worktree creation command construction, existing worktree
+    handling, and non-git failure behavior.
 verification:
   commands:
     - pnpm test -- worktree
@@ -41,4 +46,5 @@ outputs_required:
 notes:
   - Default path must be .assignr/worktrees/<task-id>.
   - Keep this as a small command slice; do not build the full coordinator loop here.
-  - Because existing active tasks touch src/cli.ts and src/utils/paths.ts, this waits behind those reviews before starting.
+  - Because existing active tasks touch src/cli.ts and src/utils/paths.ts, this waits
+    behind those reviews before starting.

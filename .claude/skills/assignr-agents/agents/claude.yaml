@@ -1,0 +1,4 @@
+interface:
+  display_name: "Assignr Agents"
+  short_description: "Coordinate Assignr MCP task-runner workers across available CPU cores."
+  default_prompt: "Use Assignr Agents to split active Assignr task work across workers scaled to available CPU cores, each using assignr-mcp-task-runner."

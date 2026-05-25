@@ -14,6 +14,7 @@ export interface AssignrPaths {
   promptsTemplates: string;
   promptsGenerated: string;
   runs: string;
+  worktrees: string;
   state: string;
   stateFile: string;
   commands: string;
@@ -35,6 +36,7 @@ export function getPaths(cwd: string, root: string): AssignrPaths {
     promptsTemplates: join(r, "prompts", "templates"),
     promptsGenerated: join(r, "prompts", "generated"),
     runs: join(r, "runs"),
+    worktrees: join(r, "worktrees"),
     state: join(r, "state"),
     stateFile: join(r, "state", "tasks.json"),
     commands: join(r, "commands"),

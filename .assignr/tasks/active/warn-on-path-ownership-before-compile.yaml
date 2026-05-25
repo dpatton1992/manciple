@@ -1,6 +1,6 @@
 id: warn-on-path-ownership-before-compile
 title: Warn on path ownership before compile
-status: pending
+status: needs_review
 type: implementation
 domain: core
 priority: high
@@ -23,10 +23,13 @@ forbidden_paths:
   - src/templates/renderTemplate.ts
   - README.md
   - .assignr/tasks/
-goal: Compiling a task reports actionable warnings when its paths are already touched, locked, or unsafe for parallel work.
+goal: Compiling a task reports actionable warnings when its paths are already touched,
+  locked, or unsafe for parallel work.
 acceptance_criteria:
-  - The CLI compile command inspects active task graph and ownership metadata before generating a prompt for a task.
-  - Compile output warns when an allowed path is already touched by another active task, locked by another task, or under an unsafe parallel-work area.
+  - The CLI compile command inspects active task graph and ownership metadata before
+    generating a prompt for a task.
+  - Compile output warns when an allowed path is already touched by another active task,
+    locked by another task, or under an unsafe parallel-work area.
   - Warnings include the owning task id and the affected path or glob.
   - The MCP compile tool returns the same warning information in its structured result.
   - Prompt generation still succeeds unless the task spec is invalid or missing.
@@ -43,6 +46,8 @@ outputs_required:
   - risks
   - follow_ups
 notes:
-  - This task intentionally waits behind existing compile-related review work to avoid overlapping edits.
-  - Prefer a shared helper for ownership warning calculation if both CLI and MCP need the same behavior.
+  - This task intentionally waits behind existing compile-related review work to avoid
+    overlapping edits.
+  - Prefer a shared helper for ownership warning calculation if both CLI and MCP need
+    the same behavior.
   - Warnings should encourage small safe slices rather than blocking all parallel work.

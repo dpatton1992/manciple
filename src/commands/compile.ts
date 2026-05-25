@@ -2,7 +2,8 @@ import { writeFileSync, mkdirSync, existsSync, readFileSync } from "fs";
 import { dirname, join, relative } from "path";
 import { parse } from "yaml";
 import { loadTasks } from "../specs/loadTasks.js";
-import type { LoadTaskTier } from "../specs/loadTasks.js";
+import { pathOwnershipWarningsForTask } from "../specs/loadTasks.js";
+import type { LoadTaskTier, PathOwnershipWarning } from "../specs/loadTasks.js";
 import {
   renderTemplate,
   renderDomainContext,
@@ -44,6 +45,28 @@ function loadDomainContext(specsTasksDir: string, domain: string, cwd: string): 
   }
 
   return renderDomainContext(parsed as Record<string, unknown>);
+}
+
+function formatOwnershipKind(kind: PathOwnershipWarning["kind"]): string {
+  switch (kind) {
+    case "locked":
+      return "locked";
+    case "unsafe_parallel_area":
+      return "unsafe parallel-work area";
+    case "touched":
+      return "already touched";
+  }
+}
+
+function printOwnershipWarnings(warnings: PathOwnershipWarning[]): void {
+  if (warnings.length === 0) return;
+
+  console.error("  ⚠ Path ownership warnings:");
+  for (const warning of warnings) {
+    console.error(
+      `    - ${warning.affected_path} is ${formatOwnershipKind(warning.kind)} by ${warning.owner_task_id} (${warning.owner_path}). Keep this compile to a small safe slice.`
+    );
+  }
 }
 
 export interface CompileOptions {
@@ -94,7 +117,11 @@ export function compileCommand(options: CompileOptions): void {
     mkdirSync(generatedDir, { recursive: true });
   }
 
-  for (const { spec } of targets) {
+  for (const target of targets) {
+    const { spec } = target;
+    const warnings = pathOwnershipWarningsForTask(target, tasks);
+    printOwnershipWarnings(warnings);
+
     const template = getTemplate(spec.type);
     const domainContext = loadDomainContext(specsTasksDir, spec.domain, cwd);
     const rendered = renderTemplate(template, spec, domainContext);

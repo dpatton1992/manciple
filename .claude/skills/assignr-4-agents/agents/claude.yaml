@@ -1,4 +1,0 @@
-interface:
-  display_name: "Assignr 4 Agents"
-  short_description: "Coordinate four Assignr MCP task-runner workers."
-  default_prompt: "Use Assignr 4 Agents to split active Assignr task work across four sub-agents, each using assignr-mcp-task-runner."

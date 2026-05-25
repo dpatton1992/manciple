@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from "fs";
 import { spawnSync } from "child_process";
 import { join } from "path";
-import type { ReviewReadinessRunLog } from "./readiness.js";
+import type { ReviewReadinessAcceptanceEvidence, ReviewReadinessRunLog } from "./readiness.js";
 
 export function readLatestRunLogContent(cwd: string, taskId: string): string | undefined {
   const runLogDir = join(cwd, ".assignr", "runs", taskId);
@@ -91,6 +91,17 @@ function parseValueSection(section: string): string | undefined {
   return value;
 }
 
+function parseAcceptanceEvidence(section: string): ReviewReadinessAcceptanceEvidence[] {
+  return parseListSection(section).map((line) => {
+    const separator = line.includes("=>") ? "=>" : ":";
+    const [criterion, ...evidenceParts] = line.split(separator);
+    return {
+      criterion: criterion.trim(),
+      evidence: evidenceParts.join(separator).trim() || undefined,
+    };
+  }).filter((entry) => entry.criterion);
+}
+
 export function parseRunLogEvidence(content: string | undefined): ReviewReadinessRunLog[] {
   if (!content) {
     return [];
@@ -98,8 +109,13 @@ export function parseRunLogEvidence(content: string | undefined): ReviewReadines
 
   return [{
     filesChanged: parseListSection(extractSection(content, "Files Changed")),
+    testsRun: parseListSection(extractSection(content, "Tests Run")),
     commandsRun: parseListSection(extractSection(content, "Commands Run")),
+    decisionsMade: parseListSection(extractSection(content, "Decisions Made")),
     result: parseValueSection(extractSection(content, "Result")),
     risks: parseValueSection(extractSection(content, "Risks")),
+    followUps: parseListSection(extractSection(content, "Follow-Up Tasks")),
+    acceptanceCriteriaEvidence: parseAcceptanceEvidence(extractSection(content, "Acceptance Criteria Evidence")),
+    notes: parseValueSection(extractSection(content, "Notes")),
   }];
 }

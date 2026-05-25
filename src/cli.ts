@@ -22,6 +22,8 @@ import { migrateTasksCommand } from "./commands/migrateTasks.js";
 import { runLogCommand } from "./commands/runLog.js";
 import { reviewCommand } from "./commands/review.js";
 import { reviewCheckCommand } from "./commands/reviewCheck.js";
+import { coordinatorCommand } from "./commands/coordinator.js";
+import { worktreeCommand } from "./commands/worktree.js";
 import { doctorCommand } from "./commands/doctor.js";
 import { mcpConfigCommand } from "./commands/mcpConfig.js";
 import type { Status, TaskType, Priority } from "./constants.js";
@@ -310,6 +312,27 @@ program
   .description("Check review readiness evidence for active needs_review tasks.")
   .action((taskId: string | undefined) => {
     reviewCheckCommand(p.tasksActive, cwd, taskId);
+  });
+
+// coordinator
+program
+  .command("coordinator")
+  .description("Show the owner queue for runnable, waiting, review, complete-ready, blocked, and rework tasks.")
+  .action(() => {
+    coordinatorCommand(p.specsTasks, cwd);
+  });
+
+// worktree
+program
+  .command("worktree <task-id>")
+  .description("Create or report a task-specific git worktree under .assignr/worktrees/.")
+  .option("--force", "Remove a non-empty existing path before creating the task worktree.", false)
+  .action((taskId: string, opts: { force: boolean }) => {
+    worktreeCommand(taskId, {
+      cwd,
+      worktreesDir: p.worktrees,
+      force: opts.force,
+    });
   });
 
 // doctor

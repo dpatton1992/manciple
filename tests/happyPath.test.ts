@@ -455,6 +455,91 @@ describe("assignr compile", () => {
     expect(content).toContain("License expiration reminders");
     expect(content).toContain("Add expiration reminder support for provider licenses.");
   });
+
+  it("warns about active path ownership conflicts before compiling", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    try {
+      writeFileSync(
+        join(p.tasksActive, "owner-task.yaml"),
+        [
+          "id: owner-task",
+          "title: Owner Task",
+          "status: in_progress",
+          "type: implementation",
+          "domain: core",
+          "priority: high",
+          "goal: Own shared compile files.",
+          "acceptance_criteria:",
+          "  - It owns paths.",
+          "allowed_paths:",
+          "  - src/commands/compile.ts",
+          "forbidden_paths: []",
+          "path_ownership:",
+          "  touched_paths:",
+          "    - src/commands/compile.ts",
+          "  locked_paths:",
+          "    - src/mcp.ts",
+          "  unsafe_parallel_areas:",
+          "    - tests/",
+          "verification:",
+          "  commands:",
+          "    - pnpm test",
+          "outputs_required:",
+          "  - files_changed",
+          "notes: []",
+          "",
+        ].join("\n"),
+        "utf-8"
+      );
+      writeFileSync(
+        join(p.tasksActive, "target-task.yaml"),
+        [
+          "id: target-task",
+          "title: Target Task",
+          "status: pending",
+          "type: implementation",
+          "domain: core",
+          "priority: high",
+          "goal: Compile with warnings.",
+          "acceptance_criteria:",
+          "  - It compiles.",
+          "allowed_paths:",
+          "  - src/commands/compile.ts",
+          "  - src/mcp.ts",
+          "  - tests/happyPath.test.ts",
+          "forbidden_paths: []",
+          "verification:",
+          "  commands:",
+          "    - pnpm test",
+          "outputs_required:",
+          "  - files_changed",
+          "notes: []",
+          "",
+        ].join("\n"),
+        "utf-8"
+      );
+
+      compileCommand({
+        specsTasksDir: p.specsTasks,
+        generatedDir: p.promptsGenerated,
+        cwd,
+        taskId: "target-task",
+      });
+
+      expect(existsSync(join(p.promptsGenerated, "target-task.md"))).toBe(true);
+      const warnings = errorSpy.mock.calls.flat().join("\n");
+      expect(warnings).toContain("Path ownership warnings");
+      expect(warnings).toContain("owner-task");
+      expect(warnings).toContain("src/commands/compile.ts");
+      expect(warnings).toContain("src/mcp.ts");
+      expect(warnings).toContain("tests/happyPath.test.ts");
+    } finally {
+      errorSpy.mockRestore();
+      logSpy.mockRestore();
+    }
+  });
 });
 
 describe("assignr review", () => {

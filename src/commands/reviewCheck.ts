@@ -51,9 +51,9 @@ export function reviewCheckCommand(
 
     const status = report.ready ? "ready" : "missing";
     const detail = report.ready
-      ? "-"
+      ? report.humanReviewNeeded ? report.humanReviewReasons.join(" ") : "human review not required by evidence checklist"
       : report.missingEvidence.join(" ");
-    console.log(`${status}\t${task.spec.id}\t${detail}`);
+    console.log(`${status}\t${task.spec.id}\tscore=${report.score}\thuman_review=${report.humanReviewNeeded ? "yes" : "no"}\t${detail}`);
   }
 
   if (hasMissingEvidence) {

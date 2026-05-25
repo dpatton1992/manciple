@@ -1,6 +1,6 @@
 id: score-merge-readiness-from-receipts
 title: Score merge readiness from receipts
-status: pending
+status: needs_review
 type: implementation
 domain: core
 priority: high
@@ -22,13 +22,19 @@ forbidden_paths:
   - src/cli.ts
   - README.md
   - .assignr/tasks/
-goal: Review readiness reports a merge-readiness score based on tests, overlap, receipts, acceptance coverage, risks, and human-review needs.
+goal: Review readiness reports a merge-readiness score based on tests, overlap,
+  receipts, acceptance coverage, risks, and human-review needs.
 acceptance_criteria:
-  - Run logs expose first-class receipt fields for files changed, tests run, decisions made, risks, and follow-ups.
-  - Review readiness distinguishes missing receipt fields from failed tests or documented risks.
-  - A merge-readiness score or checklist is computed for needs_review tasks using receipt evidence, git changed files, path overlap, acceptance criteria evidence, and documented risks.
+  - Run logs expose first-class receipt fields for files changed, tests run, decisions
+    made, risks, and follow-ups.
+  - Review readiness distinguishes missing receipt fields from failed tests or
+    documented risks.
+  - A merge-readiness score or checklist is computed for needs_review tasks using
+    receipt evidence, git changed files, path overlap, acceptance criteria evidence, and
+    documented risks.
   - The readiness output identifies whether human review is needed and why.
-  - Tests cover complete receipts, missing receipts, overlapping files, uncovered acceptance criteria, documented risks, and failing or absent tests.
+  - Tests cover complete receipts, missing receipts, overlapping files, uncovered
+    acceptance criteria, documented risks, and failing or absent tests.
 verification:
   commands:
     - pnpm test -- runLog

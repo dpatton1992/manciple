@@ -39,7 +39,7 @@ function writeTask(id: string, overrides: Partial<TaskSpec> = {}): void {
     verification: {
       commands: ["pnpm build", "pnpm test"],
     },
-    outputs_required: ["files_changed", "risks"],
+    outputs_required: ["files_changed", "tests_run", "decisions_made", "risks", "follow_ups"],
     notes: [],
     ...overrides,
   };
@@ -52,8 +52,12 @@ function writeCompleteRunLog(taskId: string): void {
   runLogCommand(taskId, p.specsTasks, p.runs, p.promptsGenerated, cwd, {
     result: "complete",
     commandsRun: ["pnpm build", "pnpm test"],
+    testsRun: ["pnpm build", "pnpm test"],
     filesChanged: ["src/commands/reviewCheck.ts", "tests/reviewCheck.test.ts"],
+    decisionsMade: ["Review evidence is checked before approval."],
     risks: "none",
+    followUps: ["none"],
+    acceptanceCriteriaEvidence: ["Review evidence is checked.: Complete receipt covers review check."],
   });
 }
 
@@ -74,8 +78,8 @@ describe("reviewCheckCommand", () => {
       expect(exitSpy).not.toHaveBeenCalled();
 
       const output = logSpy.mock.calls.flat().join("\n");
-      expect(output).toContain("ready\tready-one\t-");
-      expect(output).toContain("ready\tready-two\t-");
+      expect(output).toContain("ready\tready-one\tscore=100\thuman_review=no");
+      expect(output).toContain("ready\tready-two\tscore=100\thuman_review=no");
       expect(output).not.toContain("missing");
     } finally {
       logSpy.mockRestore();
@@ -96,7 +100,8 @@ describe("reviewCheckCommand", () => {
       expect(exitSpy).toHaveBeenCalledWith(1);
 
       const output = logSpy.mock.calls.flat().join("\n");
-      expect(output).toContain("missing\tmissing-evidence\t");
+      expect(output).toContain("missing\tmissing-evidence\tscore=");
+      expect(output).toContain("human_review=yes");
       expect(output).toContain("No run log is available for task missing-evidence.");
       expect(output).toContain("No verification commands are recorded in the run log.");
       expect(output).toContain("No risks entry is recorded in the run log");
@@ -121,7 +126,7 @@ describe("reviewCheckCommand", () => {
       expect(exitSpy).not.toHaveBeenCalled();
 
       const output = logSpy.mock.calls.flat().join("\n");
-      expect(output).toContain("ready\tselected-ready\t-");
+      expect(output).toContain("ready\tselected-ready\tscore=100\thuman_review=no");
       expect(output).not.toContain("unselected-missing");
     } finally {
       logSpy.mockRestore();

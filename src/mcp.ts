@@ -10,6 +10,7 @@ import { STATUSES, TASK_TYPES, PRIORITIES } from "./constants.js";
 import type { Status } from "./constants.js";
 import { slugify } from "./utils/slugify.js";
 import { loadTasks } from "./specs/loadTasks.js";
+import { pathOwnershipWarningsForTask } from "./specs/loadTasks.js";
 import type { LoadedTaskWithTier } from "./specs/loadTasks.js";
 import { validateTasks } from "./specs/validateTasks.js";
 import { listTasksForMcp } from "./mcpList.js";
@@ -85,7 +86,7 @@ function findTask(taskId: string): LoadedTask | undefined {
   return loadTasks(p.specsTasks, "all").tasks.find((task) => task.spec.id === taskId);
 }
 
-function loadTasksOrError(): LoadedTask[] {
+function loadTasksOrError(): LoadedTaskWithTier[] {
   const { tasks, errors } = loadTasks(p.specsTasks, "all");
   if (errors.length > 0) {
     const message = errors
@@ -331,6 +332,7 @@ server.registerTool(
       const tasks = loadTasksOrError();
       const found = tasks.find((task) => task.spec.id === task_id);
       if (!found) return errorResult(`Task not found: ${task_id}`);
+      const pathOwnershipWarnings = pathOwnershipWarningsForTask(found, tasks);
 
       if (!existsSync(p.promptsGenerated)) {
         mkdirSync(p.promptsGenerated, { recursive: true });
@@ -348,6 +350,7 @@ server.registerTool(
       return jsonResult({
         output_path: outputPath,
         content,
+        path_ownership_warnings: pathOwnershipWarnings,
         ...(domainContext.warning ? { warning: domainContext.warning } : {}),
       });
     })

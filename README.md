@@ -40,6 +40,124 @@ outputs_required:
 
 The compiled prompt gives the agent the scope, success criteria, files it may touch, commands to run, and the handoff details reviewers need.
 
+## What it looks like
+
+Here is a complete worked example for a realistic task: extracting rate limiting into shared API middleware.
+
+### Task spec YAML
+
+The task spec YAML lives in `.assignr/tasks/active/extract-api-rate-limit-middleware.yaml` and defines the work before any agent starts coding.
+
+```yaml
+id: extract-api-rate-limit-middleware
+title: Extract API rate limit middleware
+status: pending
+type: refactor
+domain: api
+priority: high
+goal: Move duplicated request rate limiting into shared middleware.
+acceptance_criteria:
+  - Login and password reset routes use the shared middleware.
+  - Rate limit responses keep the existing 429 JSON shape.
+allowed_paths:
+  - src/api/**
+  - tests/api/**
+forbidden_paths:
+  - src/billing/**
+verification:
+  commands:
+    - pnpm test -- api-rate-limit
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+```
+
+### Compiled prompt output
+
+The compiled prompt is written to `.assignr/prompts/generated/extract-api-rate-limit-middleware.md` and is what the implementation agent receives.
+
+```markdown
+## Domain Context
+
+### Id
+
+api
+
+### Description
+
+HTTP handlers, middleware, request validation, and API route tests.
+
+### Key Files
+
+- src/api/
+- tests/api/
+
+# Agent Task: Extract API rate limit middleware
+
+## Goal
+
+Move duplicated request rate limiting into shared middleware.
+
+## Scope
+
+### Allowed Paths
+
+- src/api/**
+- tests/api/**
+
+...
+```
+
+### Run log stub
+
+The run log lives in `.assignr/runs/extract-api-rate-limit-middleware-<timestamp>.md` and records what the developer fills in after the agent run.
+
+```markdown
+# Run Log: extract-api-rate-limit-middleware
+
+- Result: complete
+- Agent: Codex
+- Model: gpt-5-codex
+- Commands run:
+  - pnpm test -- api-rate-limit
+- Files changed:
+  - src/api/middleware/rateLimit.ts
+  - src/api/routes/login.ts
+  - tests/api/rateLimit.test.ts
+- Risks:
+  - Production limit values still need config review.
+```
+
+### Review prompt output
+
+The review prompt is written to `.assignr/prompts/generated/review-extract-api-rate-limit-middleware.md` and gives a reviewer the task, run evidence, diff summary, and decision checklist.
+
+```markdown
+# Review Task: Extract API rate limit middleware
+
+## Review Inputs
+
+- Task: `.assignr/tasks/active/extract-api-rate-limit-middleware.yaml`
+- Run log: `.assignr/runs/extract-api-rate-limit-middleware-2026-05-24.md`
+- Diff: current git changes for allowed paths
+
+## Checklist
+
+- Acceptance criteria are satisfied.
+- Verification commands passed or failures are explained.
+- Files changed stay within task scope.
+- Risks are clear enough for a reviewer to act on.
+
+## Decision
+
+- approve
+- request-changes
+- block-review
+
+...
+```
+
 ## Why
 
 The "paste a description into chat" workflow works for one-off tasks. It breaks down across long-running software work.
@@ -116,6 +234,51 @@ outputs_required:
   - tests_run
   - risks
 ```
+
+## Parallel Small Slices
+
+Assignr works best when agents take small, reviewable slices and merge useful work quickly. Avoid building up many long-lived branches that all touch the same files; use task metadata to decide what can run now, what should wait, and what needs a coordinator.
+
+Use dependency and ownership fields to make that decision explicit:
+
+```yaml
+id: extract-login-form
+depends_on:
+  - auth-session-contract
+blocks:
+  - polish-login-copy
+conflicts_with:
+  - redesign-auth-shell
+can_run_independently: false
+allowed_paths:
+  - src/features/auth/**
+path_ownership:
+  touched_paths:
+    - src/features/auth/LoginForm.tsx
+  locked_paths:
+    - src/features/auth/session.ts
+  unsafe_parallel_areas:
+    - src/features/auth/**
+outputs_required:
+  - files_changed
+  - tests_run
+  - decisions_made
+  - risks
+  - follow_ups
+```
+
+`depends_on` says what must be usable first. `blocks` advertises work that should wait for this slice. `conflicts_with` marks tasks that should not run at the same time. `can_run_independently` is only true for work that can land without its dependencies. `path_ownership.touched_paths` documents expected edits, `locked_paths` claims files that should have one owner, and `unsafe_parallel_areas` calls out directories where overlapping agents are likely to create merge or design conflicts.
+
+By default, agents should do implementation work in `.assignr/worktrees/<task-id>` so each task has an isolated checkout. The coordinator or task runner creates the worktree, starts from the current base branch, runs the task there, and brings back only the reviewed slice. If a task cannot use the default worktree path, record that decision in the run log.
+
+In parallel runs, one coordinator owns the loop:
+
+1. Pick work that is unblocked, has non-overlapping path ownership, and is small enough to review.
+2. Hold waiting work when dependencies, locks, conflicts, or unsafe parallel areas make the next step risky.
+3. Review and merge ready slices promptly, then refresh the queue from the new base.
+4. Send rework back with a specific reason instead of letting uncertain branches linger.
+
+Run logs are the receipt for each slice. Required receipt fields are files changed, tests run, decisions made, risks, and follow-ups. `assignr review-check` uses those receipts, git changes, acceptance evidence, risks, and path overlap to produce a merge-readiness score. Treat that score as a review aid: it helps reviewers spot complete, small slices quickly, but it does not replace human judgment about correctness, product fit, or integration risk.
 
 ## Task Lifecycle
 
@@ -213,7 +376,7 @@ For agents that support MCP tools, run `assignr mcp-config` to write a repo-loca
 Pre-built skill files for Claude Code and Codex live in `.claude/skills/` and `.codex/skills/` in this repo. Copy the relevant skill into your own repo to have agents follow the Assignr workflow automatically.
 
 - `assignr-mcp-task-runner` — single agent: pick up, implement, verify, log, and close one task.
-- `assignr-4-agents` — coordinator: run four task workers in parallel.
+- `assignr-agents` — coordinator: run task workers in parallel, scaled to available CPU cores.
 
 ## Package
 

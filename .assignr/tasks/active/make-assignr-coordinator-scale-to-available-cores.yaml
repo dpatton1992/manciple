@@ -1,0 +1,65 @@
+id: make-assignr-coordinator-scale-to-available-cores
+title: Make Assignr coordinator scale to available cores
+status: needs_review
+type: implementation
+domain: core
+priority: high
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - .codex/skills/assignr-agents/**
+  - .claude/skills/assignr-agents/**
+forbidden_paths:
+  - README.md
+  - .assignr/tasks/**
+  - .assignr/prompts/generated/**
+  - src/**
+  - dist/**
+  - node_modules/**
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: The Assignr multi-agent coordinator skills choose worker count from available CPU
+  cores and continue dispatching active tasks until all actionable tasks reach
+  needs_review.
+acceptance_criteria:
+  - The Codex assignr-agents skill no longer says to coordinate a fixed worker count and
+    instead instructs the coordinator to detect available CPU cores before spawning
+    workers.
+  - The Claude assignr-agents skill mirrors the same dynamic worker-count behavior using
+    its Task-tool terminology.
+  - Both skill variants define a dispatch loop that repeatedly refreshes active Assignr
+    tasks, assigns unblocked pending or in_progress work to available workers, and stops
+    only when no actionable active tasks remain or all active tasks are in needs_review,
+    complete, blocked, failed, or another non-actionable terminal/holding state.
+  - Both skill variants explain how to cap concurrency when fewer actionable tasks are
+    available than cores, and how to avoid overlapping ownership boundaries when
+    multiple workers are active.
+  - Worker prompt templates in both skill variants use dynamic worker numbering instead
+    of fixed [1-4] or four-agent wording.
+  - The Codex plugin metadata for assignr-agents no longer promises a fixed number of
+    workers.
+verification:
+  commands:
+    - rg -n "available cores|available CPU|core count|needs_review|actionable"
+      .codex/skills/assignr-agents .claude/skills/assignr-agents
+    - '! rg -n "exactly four|Spawn exactly four|four-agent|four agents|four
+      workers|Worker \\[1-4\\]|up to four|assignr-4-agents|Assignr 4 Agents"
+      .codex/skills/assignr-agents/SKILL.md .claude/skills/assignr-agents/SKILL.md'
+    - pnpm check:assignr-yaml
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes:
+  - README.md now contains a short description of assignr-agents, replacing the old
+    fixed-worker skill name.
+  - The skill directory name is assignr-agents; use that path for future coordinator
+    skill references.
+  - For core detection, the skill can instruct coordinators to prefer reliable local
+    mechanisms available to their runtime, such as Node os.availableParallelism(),
+    nproc, or sysctl -n hw.ncpu, and to report a blocker if the coordinator cannot
+    determine any safe worker count.

@@ -71,8 +71,12 @@ describe("runLogCommand", () => {
         model: "gpt-5-codex",
         agent: "Codex",
         commandsRun: ["pnpm typecheck", "pnpm test"],
+        testsRun: ["pnpm test"],
         filesChanged: ["src/commands/runLog.ts"],
+        decisionsMade: ["Kept the run-log format markdown-compatible."],
         risks: "No known runtime risks.",
+        followUps: ["none"],
+        acceptanceCriteriaEvidence: ["Run logs expose receipt fields.: Added first-class receipt sections."],
         notes: "Implemented run-log metadata capture.",
       });
 
@@ -82,8 +86,15 @@ describe("runLogCommand", () => {
       expect(content).toContain("- src/commands/runLog.ts");
       expect(content).toContain("- pnpm typecheck");
       expect(content).toContain("- pnpm test");
+      expect(content).toContain("## Tests Run");
+      expect(content).toContain("## Decisions Made");
+      expect(content).toContain("Kept the run-log format markdown-compatible.");
       expect(content).toContain("partial");
       expect(content).toContain("No known runtime risks.");
+      expect(content).toContain("## Follow-Up Tasks");
+      expect(content).toContain("- none");
+      expect(content).toContain("## Acceptance Criteria Evidence");
+      expect(content).toContain("Added first-class receipt sections.");
       expect(content).toContain("Implemented run-log metadata capture.");
     } finally {
       logSpy.mockRestore();
