@@ -91,6 +91,24 @@ describe("loadTasks", () => {
     }
   });
 
+  it("loads archived tasks only when the archived tier is requested", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "assignr-load-tasks-"));
+    const paths = getPaths(cwd, ".assignr");
+
+    try {
+      writeTask(paths, "active", "active-task");
+      writeTask(paths, "archived", "archived-task");
+
+      const { tasks, errors } = loadTasks(paths.specsTasks, "archived");
+
+      expect(errors).toEqual([]);
+      expect(tasks.map((task) => task.spec.id)).toEqual(["archived-task"]);
+      expect(tasks[0].tier).toBe("archived");
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("loads all task tiers and skips missing directories", () => {
     const cwd = mkdtempSync(join(tmpdir(), "assignr-load-tasks-"));
     const paths = getPaths(cwd, ".assignr");

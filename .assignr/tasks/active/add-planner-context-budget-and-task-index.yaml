@@ -1,0 +1,74 @@
+id: add-planner-context-budget-and-task-index
+title: Add planner context budget and task index
+status: needs_review
+type: implementation
+domain: core
+priority: critical
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/cli.ts
+  - src/commands/list.ts
+  - src/commands/plannerContext.ts
+  - src/specs/loadTasks.ts
+  - src/utils/
+  - tests/list.test.ts
+  - tests/loadTasks.test.ts
+  - tests/plannerContext.test.ts
+forbidden_paths:
+  - src/coordination/
+  - src/commands/coordinator.ts
+  - src/commands/reviewQueue.ts
+  - src/commands/review.ts
+  - src/commands/runLog.ts
+  - src/review/
+  - src/templates/renderTemplate.ts
+  - README.md
+  - .assignr/tasks/
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Assignr provides compact planner context commands and budget guardrails so
+  planning agents summarize first and read full task state only when necessary.
+acceptance_criteria:
+  - A compact task index command or mode reports active tasks by default with id,
+    status, type, domain, priority, dependency/conflict counts, allowed path summary,
+    and one-line goal without printing full task YAML bodies.
+  - Completed and archived tasks are excluded from planner context by default, with an
+    explicit option required to include non-active lifecycle tiers.
+  - A planner queue/context command accepts a maximum token or character budget and
+    emits bounded context suitable for planning agents, including warnings when relevant
+    context is omitted or truncated.
+  - The planner context output highlights likely overlaps by id and allowed path summary
+    so agents can decide which specific full specs need escalation reads.
+  - The CLI reports an estimated context size for generated planner context and exits or
+    warns when the requested budget is exceeded, according to documented command
+    behavior.
+  - Tests cover active-only defaults, explicit inclusion of completed or archived tasks,
+    compact index fields, budget truncation or warning behavior, overlap summaries, and
+    avoiding full acceptance criteria/run-log bodies in default planner context.
+verification:
+  commands:
+    - pnpm test -- list
+    - pnpm test -- loadTasks
+    - pnpm test -- plannerContext
+    - pnpm typecheck
+outputs_required:
+  - files_changed
+  - tests_run
+  - decisions_made
+  - risks
+  - follow_ups
+notes:
+  - "This is a core product-quality task: context selection is a first-class feature,
+    not an agent discipline wish."
+  - The task intentionally overlaps `src/cli.ts` with several active review queue tasks;
+    do not run this in parallel with those tasks without coordinating the CLI command
+    wiring.
+  - Prefer summary-first APIs and small deterministic helpers over model-facing prompt
+    logic.
+  - Do not require exact tokenizer dependencies for the first version; a documented
+    character-to-token estimate is acceptable if tests lock the behavior.

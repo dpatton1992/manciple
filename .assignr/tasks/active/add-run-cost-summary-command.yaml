@@ -1,0 +1,60 @@
+id: add-run-cost-summary-command
+title: Add run cost summary command
+status: needs_review
+type: implementation
+domain: core
+priority: medium
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/cli.ts
+  - src/commands/runLog.ts
+  - src/commands/summarizeRunCost.ts
+  - src/review/evidence.ts
+  - tests/runLog.test.ts
+  - tests/summarizeRunCost.test.ts
+forbidden_paths:
+  - src/coordination/
+  - src/commands/coordinator.ts
+  - src/commands/reviewQueue.ts
+  - src/specs/schema.ts
+  - src/specs/validateTasks.ts
+  - src/templates/renderTemplate.ts
+  - README.md
+  - .assignr/tasks/
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: "`assignr summarize-run-cost` summarizes recorded agent/model/token/cost evidence
+  across run logs without invoking model review."
+acceptance_criteria:
+  - The CLI exposes `assignr summarize-run-cost` with optional task id filtering and a
+    default summary across known run logs.
+  - Run log creation supports recording token or cost fields when provided, while
+    remaining backward-compatible with existing run logs that only include model and
+    agent metadata.
+  - The summary reports task count, run count, agent or harness usage, model usage,
+    commands/tests recorded, and token or cost totals when evidence exists.
+  - When token or cost evidence is absent, the command clearly reports unknown coverage
+    instead of inventing estimates.
+  - Tests cover summaries with no cost evidence, mixed model/token evidence, filtering
+    to one task, and backward compatibility with existing run log files.
+verification:
+  commands:
+    - pnpm test -- runLog
+    - pnpm test -- summarizeRunCost
+    - pnpm typecheck
+outputs_required:
+  - files_changed
+  - tests_run
+  - decisions_made
+  - risks
+notes:
+  - This is deterministic reporting only; it should read local run logs and never call a
+    model or pricing API.
+  - If exact provider pricing is desired later, create a separate task for configurable
+    pricing tables rather than baking mutable rates into this command.
+  - The command name follows the user's proposed `assignr summarize-run-cost` spelling.

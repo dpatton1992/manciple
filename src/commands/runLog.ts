@@ -8,6 +8,10 @@ export interface RunLogOptions {
   model?: string;
   agent?: string;
   harness?: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  totalTokens?: number;
+  costUsd?: number;
   commandsRun?: string[];
   testsRun?: string[];
   filesChanged?: string[];
@@ -151,6 +155,12 @@ export function buildRunLog(
   const resultSource = options.result ? "provided by user" : "unknown";
   const risksSource = options.risks ? "provided by user" : "unknown";
   const notesSource = options.notes ? "provided by user" : "unknown";
+  const tokenEvidence = [
+    options.inputTokens !== undefined ? `- Input tokens: ${options.inputTokens}` : undefined,
+    options.outputTokens !== undefined ? `- Output tokens: ${options.outputTokens}` : undefined,
+    options.totalTokens !== undefined ? `- Total tokens: ${options.totalTokens}` : undefined,
+  ].filter(Boolean).join("\n");
+  const costEvidence = options.costUsd !== undefined ? `- Cost USD: ${options.costUsd}` : "";
 
   return `# Run Log: ${title}
 
@@ -162,6 +172,15 @@ export function buildRunLog(
 - Agent/Harness (${agentSource}): ${agent ?? "Unknown: not provided."}
 - Model (${modelSource}): ${options.model ?? "Unknown: not provided."}
 - Branch: ${branch}
+${tokenEvidence || costEvidence ? `
+## Usage Evidence
+
+${tokenEvidence || "_Source: unknown_\n\nUnknown: no token evidence was provided."}
+
+## Cost Evidence
+
+${costEvidence || "_Source: unknown_\n\nUnknown: no cost evidence was provided."}
+` : ""}
 
 ## Prompt Used
 

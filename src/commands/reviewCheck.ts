@@ -5,12 +5,76 @@ import {
   readGitChangedFiles,
   readLatestRunLogContent,
 } from "../review/evidence.js";
+import { evaluateDeterministicReviewGate } from "../review/deterministicGate.js";
+
+export interface ReviewCheckCommandOptions {
+  deterministic?: boolean;
+  generatedDir?: string;
+  activeDir?: string;
+  completedDir?: string;
+  archivedDir?: string;
+}
 
 export function reviewCheckCommand(
   specsTasksDir: string,
   cwd: string,
-  taskId?: string
+  taskId?: string,
+  options: ReviewCheckCommandOptions = {}
 ): void {
+  if (options.deterministic) {
+    const report = evaluateDeterministicReviewGate({
+      specsTasksDir,
+      cwd,
+      taskId,
+      generatedDir: options.generatedDir,
+      activeDir: options.activeDir,
+      completedDir: options.completedDir,
+      archivedDir: options.archivedDir,
+    });
+
+    const blockers = [
+      ...report.loadBlockers,
+      ...report.taskReports.flatMap((taskReport) => taskReport.blockers),
+    ];
+
+    if (taskId && report.taskReports.length === 0) {
+      console.error(
+        `Task not found: ${taskId}\nRun "assignr list --status needs_review" to see review tasks.`
+      );
+      process.exit(1);
+    }
+
+    if (blockers.length === 0) {
+      if (report.taskReports.length === 0) {
+        console.log(taskId
+          ? `No needs_review task matched ${taskId}.`
+          : "No active needs_review tasks found.");
+        return;
+      }
+
+      for (const taskReport of report.taskReports) {
+        console.log(`ready\t${taskReport.taskId}\tdeterministic=pass`);
+      }
+      return;
+    }
+
+    for (const taskReport of report.taskReports) {
+      if (taskReport.blockers.length === 0) {
+        console.log(`ready\t${taskReport.taskId}\tdeterministic=pass`);
+        continue;
+      }
+
+      for (const blocker of taskReport.blockers) {
+        console.log(`blocked\t${blocker.taskId}\t${blocker.kind}\t${blocker.reason}`);
+      }
+    }
+    for (const blocker of report.loadBlockers) {
+      console.log(`blocked\t${blocker.taskId}\t${blocker.kind}\t${blocker.reason}`);
+    }
+
+    process.exit(1);
+  }
+
   const { tasks, errors } = loadTasks(specsTasksDir);
 
   if (errors.length > 0) {

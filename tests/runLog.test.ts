@@ -101,6 +101,29 @@ describe("runLogCommand", () => {
     }
   });
 
+  it("records optional token and cost evidence when provided", () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    try {
+      runLogCommand("run-log-capture", p.specsTasks, p.runs, p.promptsGenerated, cwd, {
+        inputTokens: 120,
+        outputTokens: 80,
+        totalTokens: 200,
+        costUsd: 0.0123,
+      });
+
+      const content = latestRunLog();
+      expect(content).toContain("## Usage Evidence");
+      expect(content).toContain("- Input tokens: 120");
+      expect(content).toContain("- Output tokens: 80");
+      expect(content).toContain("- Total tokens: 200");
+      expect(content).toContain("## Cost Evidence");
+      expect(content).toContain("- Cost USD: 0.0123");
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
+
   it("succeeds with clear fallback text outside a git repository", () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
 

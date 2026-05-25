@@ -9,6 +9,7 @@ import { newCommand, newInteractiveCommand } from "./commands/new.js";
 import { validateCommand } from "./commands/validate.js";
 import { compileCommand } from "./commands/compile.js";
 import { listCommand } from "./commands/list.js";
+import { plannerContextCommand } from "./commands/plannerContext.js";
 import { statusCommand } from "./commands/status.js";
 import { setStatusCommand } from "./commands/setStatus.js";
 import { completeCommand } from "./commands/complete.js";
@@ -20,6 +21,7 @@ import { reopenCommand } from "./commands/reopen.js";
 import { checkLifecycleCommand } from "./commands/checkLifecycle.js";
 import { migrateTasksCommand } from "./commands/migrateTasks.js";
 import { runLogCommand } from "./commands/runLog.js";
+import { summarizeRunCostCommand } from "./commands/summarizeRunCost.js";
 import { reviewCommand } from "./commands/review.js";
 import { reviewCheckCommand } from "./commands/reviewCheck.js";
 import { coordinatorCommand } from "./commands/coordinator.js";
@@ -31,6 +33,14 @@ import type { Status, TaskType, Priority } from "./constants.js";
 function collect(value: string, previous: string[]): string[] {
   previous.push(value);
   return previous;
+}
+
+function parseNumberOption(value: string): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error(`Expected a non-negative number, got "${value}".`);
+  }
+  return parsed;
 }
 
 const RUN_LOG_RESULTS = ["complete", "partial", "blocked", "failed"];
@@ -134,6 +144,40 @@ program
       completed: opts.completed,
       archived: opts.archived,
       all: opts.all,
+    });
+  });
+
+// planner-context
+program
+  .command("planner-context")
+  .description("Print a compact bounded task index for planning agents.")
+  .option("--status <status>", "Show only tasks with this exact status (case-sensitive).")
+  .option("--domain <domain>", "Show only tasks in this exact domain (case-sensitive).")
+  .option("--completed", "Include completed lifecycle tasks instead of active tasks.")
+  .option("--archived", "Include archived lifecycle tasks instead of active tasks.")
+  .option("--all", "Include active, completed, and archived lifecycle tasks.")
+  .option("--max-chars <count>", "Warn and truncate generated context above this character budget.", parseNumberOption)
+  .option("--max-tokens <count>", "Warn and truncate generated context above this estimated token budget.", parseNumberOption)
+  .option("--strict", "Exit with status 1 when the requested budget truncates planner context.", false)
+  .action((opts: {
+    status?: string;
+    domain?: string;
+    completed?: boolean;
+    archived?: boolean;
+    all?: boolean;
+    maxChars?: number;
+    maxTokens?: number;
+    strict?: boolean;
+  }) => {
+    plannerContextCommand(p.specsTasks, cwd, {
+      status: opts.status,
+      domain: opts.domain,
+      completed: opts.completed,
+      archived: opts.archived,
+      all: opts.all,
+      maxChars: opts.maxChars,
+      maxTokens: opts.maxTokens,
+      strict: opts.strict,
     });
   });
 
@@ -263,6 +307,10 @@ program
   .option("--model <model>", "Model that performed the work.")
   .option("--agent <agent>", "Agent harness or tool used.")
   .option("--harness <harness>", "Agent harness or tool used.")
+  .option("--input-tokens <count>", "Input token count recorded by the agent or harness.", parseNumberOption)
+  .option("--output-tokens <count>", "Output token count recorded by the agent or harness.", parseNumberOption)
+  .option("--total-tokens <count>", "Total token count recorded by the agent or harness.", parseNumberOption)
+  .option("--cost-usd <amount>", "Run cost in USD recorded by the agent or harness.", parseNumberOption)
   .option("--command <command>", "Command executed during the run. May be repeated.", collect, [])
   .option("--commands-run <command>", "Command executed during the run. May be repeated.", collect, [])
   .option("--file <path>", "Changed file path. May be repeated; otherwise git status is used.", collect, [])
@@ -274,6 +322,10 @@ program
     model?: string;
     agent?: string;
     harness?: string;
+    inputTokens?: number;
+    outputTokens?: number;
+    totalTokens?: number;
+    costUsd?: number;
     command: string[];
     commandsRun: string[];
     file: string[];
@@ -291,11 +343,23 @@ program
       model: opts.model,
       agent: opts.agent,
       harness: opts.harness,
+      inputTokens: opts.inputTokens,
+      outputTokens: opts.outputTokens,
+      totalTokens: opts.totalTokens,
+      costUsd: opts.costUsd,
       commandsRun: [...opts.command, ...opts.commandsRun],
       filesChanged: [...opts.file, ...opts.filesChanged],
       risks: opts.risks,
       notes: opts.notes,
     });
+  });
+
+// summarize-run-cost
+program
+  .command("summarize-run-cost [task-id]")
+  .description("Summarize recorded run-log model, token, and cost evidence.")
+  .action((taskId: string | undefined) => {
+    summarizeRunCostCommand(p.runs, taskId);
   });
 
 // review
@@ -310,8 +374,15 @@ program
 program
   .command("review-check [task-id]")
   .description("Check review readiness evidence for active needs_review tasks.")
-  .action((taskId: string | undefined) => {
-    reviewCheckCommand(p.tasksActive, cwd, taskId);
+  .option("--deterministic", "Run local deterministic review gate checks.", false)
+  .action((taskId: string | undefined, opts: { deterministic: boolean }) => {
+    reviewCheckCommand(p.tasksActive, cwd, taskId, {
+      deterministic: opts.deterministic,
+      generatedDir: p.promptsGenerated,
+      activeDir: p.tasksActive,
+      completedDir: p.tasksCompleted,
+      archivedDir: p.tasksArchived,
+    });
   });
 
 // coordinator

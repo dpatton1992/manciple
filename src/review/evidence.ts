@@ -56,7 +56,7 @@ export function readGitChangedFiles(cwd: string): string[] {
     .filter(Boolean);
 }
 
-function extractSection(content: string, heading: string): string {
+export function extractRunLogSection(content: string, heading: string): string {
   const pattern = new RegExp(`^## ${heading}\\s*$`, "m");
   const match = pattern.exec(content);
   if (!match) return "";
@@ -67,7 +67,7 @@ function extractSection(content: string, heading: string): string {
   return (nextHeading === -1 ? rest : rest.slice(0, nextHeading)).trim();
 }
 
-function parseListSection(section: string): string[] {
+export function parseRunLogListSection(section: string): string[] {
   return section
     .split("\n")
     .map((line) => line.trim())
@@ -92,7 +92,7 @@ function parseValueSection(section: string): string | undefined {
 }
 
 function parseAcceptanceEvidence(section: string): ReviewReadinessAcceptanceEvidence[] {
-  return parseListSection(section).map((line) => {
+  return parseRunLogListSection(section).map((line) => {
     const separator = line.includes("=>") ? "=>" : ":";
     const [criterion, ...evidenceParts] = line.split(separator);
     return {
@@ -108,14 +108,14 @@ export function parseRunLogEvidence(content: string | undefined): ReviewReadines
   }
 
   return [{
-    filesChanged: parseListSection(extractSection(content, "Files Changed")),
-    testsRun: parseListSection(extractSection(content, "Tests Run")),
-    commandsRun: parseListSection(extractSection(content, "Commands Run")),
-    decisionsMade: parseListSection(extractSection(content, "Decisions Made")),
-    result: parseValueSection(extractSection(content, "Result")),
-    risks: parseValueSection(extractSection(content, "Risks")),
-    followUps: parseListSection(extractSection(content, "Follow-Up Tasks")),
-    acceptanceCriteriaEvidence: parseAcceptanceEvidence(extractSection(content, "Acceptance Criteria Evidence")),
-    notes: parseValueSection(extractSection(content, "Notes")),
+    filesChanged: parseRunLogListSection(extractRunLogSection(content, "Files Changed")),
+    testsRun: parseRunLogListSection(extractRunLogSection(content, "Tests Run")),
+    commandsRun: parseRunLogListSection(extractRunLogSection(content, "Commands Run")),
+    decisionsMade: parseRunLogListSection(extractRunLogSection(content, "Decisions Made")),
+    result: parseValueSection(extractRunLogSection(content, "Result")),
+    risks: parseValueSection(extractRunLogSection(content, "Risks")),
+    followUps: parseRunLogListSection(extractRunLogSection(content, "Follow-Up Tasks")),
+    acceptanceCriteriaEvidence: parseAcceptanceEvidence(extractRunLogSection(content, "Acceptance Criteria Evidence")),
+    notes: parseValueSection(extractRunLogSection(content, "Notes")),
   }];
 }

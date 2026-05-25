@@ -1,0 +1,66 @@
+id: add-budgeted-compressed-review-queue-packets
+title: Add budgeted compressed review queue packets
+status: pending
+type: implementation
+domain: core
+priority: high
+depends_on:
+  - add-review-queue-triage-mode
+  - add-review-queue-deep-escalation-mode
+  - promote-deterministic-review-checks-to-a-reusable-gate
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/cli.ts
+  - src/commands/reviewQueue.ts
+  - src/review/
+  - tests/reviewQueue.test.ts
+  - tests/reviewCheck.test.ts
+forbidden_paths:
+  - src/coordination/
+  - src/commands/coordinator.ts
+  - src/specs/schema.ts
+  - src/specs/validateTasks.ts
+  - src/templates/renderTemplate.ts
+  - README.md
+  - .assignr/tasks/
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Review queue commands can enforce a review budget and emit compact task packets so
+  expensive review is reserved for risky ambiguity.
+acceptance_criteria:
+  - "`assignr review-queue --budget <tokens>` accepts a positive integer budget and
+    reports how many queued tasks fit within the configured budget estimate."
+  - "`assignr review-queue --deep-only risky` escalates only tasks with deterministic
+    risk flags such as missing evidence, failed verification, scope violations,
+    dependency conflicts, coordinator rework placement, documented risks, or incomplete
+    acceptance evidence."
+  - Queue output includes a compressed packet per escalated task with task id, status,
+    changed file count, allowed path violation summary, tests reported yes/no,
+    acceptance criteria count, evidence coverage, risk flags, and one reviewer question
+    derived from the unresolved evidence.
+  - The implementation avoids passing full task specs, full diffs, or full run logs into
+    queue output unless an explicit verbose option requests them.
+  - Tests cover budget exhaustion, risky-only escalation, non-risky tasks being skipped
+    for deep review, and packet content staying compact and task-scoped.
+verification:
+  commands:
+    - pnpm test -- reviewQueue
+    - pnpm test -- reviewCheck
+    - pnpm typecheck
+outputs_required:
+  - files_changed
+  - tests_run
+  - decisions_made
+  - risks
+  - follow_ups
+notes:
+  - This intentionally extends the existing triage/deep review queue work instead of
+    duplicating it.
+  - The budget can be an estimate based on packet size or a documented heuristic; do not
+    require provider-specific token accounting for this task.
+  - "Keep the product principle visible in behavior: never spend frontier-review context
+    on facts deterministic checks already know."

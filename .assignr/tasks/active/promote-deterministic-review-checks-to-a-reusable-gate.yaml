@@ -1,0 +1,72 @@
+id: promote-deterministic-review-checks-to-a-reusable-gate
+title: Promote deterministic review checks to a reusable gate
+status: needs_review
+type: implementation
+domain: core
+priority: high
+depends_on:
+  - define-cheap-review-queue-mode-contract
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/cli.ts
+  - src/commands/reviewCheck.ts
+  - src/review/
+  - src/specs/loadTasks.ts
+  - src/lifecycle/
+  - tests/reviewCheck.test.ts
+  - tests/reviewReadiness.test.ts
+  - tests/loadTasks.test.ts
+forbidden_paths:
+  - src/coordination/
+  - src/commands/coordinator.ts
+  - src/commands/reviewQueue.ts
+  - src/commands/review.ts
+  - src/specs/schema.ts
+  - src/templates/renderTemplate.ts
+  - README.md
+  - .assignr/tasks/
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: "`assignr review-check --deterministic` reports first-class local review blockers
+  before any model review is needed."
+acceptance_criteria:
+  - "`assignr review-check --deterministic` runs without model calls and can target one
+    task or all active `needs_review` tasks."
+  - The deterministic report covers YAML load errors, lifecycle placement mismatches,
+    task status mismatch, missing required evidence, missing run log, missing generated
+    prompt, missing verification commands, verification commands not reported, absent
+    review log for needs_review tasks, blocked dependencies, completed tasks still in
+    active, and active task files in the wrong lifecycle directory.
+  - The deterministic report checks changed files from run logs and git status against
+    `allowed_paths` and `forbidden_paths`, and flags touched paths claimed by another
+    active task through `path_ownership` or overlapping allowed paths.
+  - The command exits non-zero when deterministic blockers are found and prints concise
+    task-scoped reasons suitable for review queue consumption.
+  - The implementation reuses existing `loadTasks`, lifecycle, review readiness,
+    evidence, and path ownership helpers where practical instead of introducing a
+    parallel parser.
+  - Tests cover a clean task, missing evidence, missing or unreported verification,
+    generated prompt absence, lifecycle/status mismatch, allowed path violation,
+    forbidden path violation, and claimed-path overlap.
+verification:
+  commands:
+    - pnpm test -- reviewCheck
+    - pnpm test -- reviewReadiness
+    - pnpm test -- loadTasks
+    - pnpm typecheck
+outputs_required:
+  - files_changed
+  - tests_run
+  - decisions_made
+  - risks
+  - follow_ups
+notes:
+  - This overlaps `src/cli.ts` and `src/review/` with review queue tasks; run in
+    sequence with `add-review-queue-triage-mode`, not in parallel.
+  - Bias the command toward deterministic local checks. It must not invoke agents,
+    generate full review prompts, or require external model credentials.
+  - Use this as the reusable Tier 0 gate that later queue modes can consume.
