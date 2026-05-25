@@ -1,6 +1,6 @@
 {
 	"name": "@dpatt/assignr",
-	"version": "0.3.1",
+	"version": "0.3.2",
 	"description": "A repo-native workflow layer for existing coding agents.",
 	"license": "MIT",
 	"author": "Daniel Patton",
