@@ -12,8 +12,23 @@ export const TaskSpecSchema = z.object({
   domain: z.string().min(1, "domain is required"),
   priority: z.enum(PRIORITIES).optional().default("medium"),
   depends_on: z.array(z.string()).optional().default([]),
+  blocks: z.array(z.string()).optional().default([]),
+  conflicts_with: z.array(z.string()).optional().default([]),
+  can_run_independently: z.boolean().optional().default(false),
   allowed_paths: z.array(z.string()).optional().default([]),
   forbidden_paths: z.array(z.string()).optional().default([]),
+  path_ownership: z
+    .object({
+      touched_paths: z.array(z.string()).optional().default([]),
+      locked_paths: z.array(z.string()).optional().default([]),
+      unsafe_parallel_areas: z.array(z.string()).optional().default([]),
+    })
+    .optional()
+    .default({
+      touched_paths: [],
+      locked_paths: [],
+      unsafe_parallel_areas: [],
+    }),
   goal: z.string().min(1, "goal is required"),
   acceptance_criteria: z
     .array(z.string())

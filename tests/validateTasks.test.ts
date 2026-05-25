@@ -16,8 +16,16 @@ function makeTask(overrides: Partial<LoadedTask["spec"]> = {}): LoadedTask {
       domain: "core",
       priority: "medium",
       depends_on: [],
+      blocks: [],
+      conflicts_with: [],
+      can_run_independently: false,
       allowed_paths: ["src/**"],
       forbidden_paths: ["src/auth/**"],
+      path_ownership: {
+        touched_paths: [],
+        locked_paths: [],
+        unsafe_parallel_areas: [],
+      },
       goal: "Do something.",
       acceptance_criteria: ["It works."],
       verification: { commands: ["pnpm test"] },
@@ -68,6 +76,97 @@ describe("validateTasks", () => {
     const { valid, invalid } = validateTasks(tasks);
     expect(invalid).toHaveLength(0);
     expect(valid).toHaveLength(2);
+  });
+
+  it("passes valid graph declarations and independent tasks", () => {
+    const tasks = [
+      makeTask({ id: "setup" }),
+      makeTask({ id: "deploy" }),
+      makeTask({
+        id: "graph-task",
+        depends_on: ["setup"],
+        blocks: ["deploy"],
+        conflicts_with: ["deploy"],
+        can_run_independently: true,
+      }),
+      makeTask({
+        id: "solo-task",
+        can_run_independently: true,
+      }),
+    ];
+
+    const { valid, invalid, warnings } = validateTasks(tasks);
+
+    expect(invalid).toHaveLength(0);
+    expect(valid).toHaveLength(4);
+    expect(warnings.map((warning) => warning.field)).not.toContain("depends_on");
+  });
+
+  it("reports missing graph references on field-specific errors", () => {
+    const tasks = [
+      makeTask({
+        id: "graph-task",
+        blocks: ["missing-blocked-task"],
+        conflicts_with: ["missing-conflict-task"],
+      }),
+    ];
+
+    const { invalid } = validateTasks(tasks);
+
+    expect(invalid).toHaveLength(1);
+    expect(invalid[0].errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          field: "blocks",
+          message: expect.stringContaining("missing-blocked-task"),
+        }),
+        expect.objectContaining({
+          field: "conflicts_with",
+          message: expect.stringContaining("missing-conflict-task"),
+        }),
+      ])
+    );
+  });
+
+  it("reports self-conflicts on conflicts_with", () => {
+    const tasks = [
+      makeTask({
+        id: "graph-task",
+        conflicts_with: ["graph-task"],
+      }),
+    ];
+
+    const { invalid } = validateTasks(tasks);
+
+    expect(invalid).toHaveLength(1);
+    expect(invalid[0].errors).toEqual([
+      expect.objectContaining({
+        field: "conflicts_with",
+        message: expect.stringContaining("cannot conflict with itself"),
+      }),
+    ]);
+  });
+
+  it("accepts path ownership metadata", () => {
+    const tasks = [
+      makeTask({
+        id: "owner-task",
+        path_ownership: {
+          touched_paths: ["src/specs/schema.ts"],
+          locked_paths: ["src/specs/validateTasks.ts"],
+          unsafe_parallel_areas: ["tests/validateTasks.test.ts"],
+        },
+      }),
+    ];
+
+    const { valid, invalid } = validateTasks(tasks);
+
+    expect(invalid).toHaveLength(0);
+    expect(valid[0].spec.path_ownership).toEqual({
+      touched_paths: ["src/specs/schema.ts"],
+      locked_paths: ["src/specs/validateTasks.ts"],
+      unsafe_parallel_areas: ["tests/validateTasks.test.ts"],
+    });
   });
 
   it("reports missing domain references when a domains directory is provided", () => {

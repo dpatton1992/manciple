@@ -1,6 +1,6 @@
 id: add-task-dependency-graph-contract
 title: Add task dependency graph contract
-status: pending
+status: needs_review
 type: implementation
 domain: core
 priority: high

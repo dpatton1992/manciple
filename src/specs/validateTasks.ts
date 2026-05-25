@@ -27,7 +27,7 @@ export interface ValidateTasksOptions {
   countFilePaths?: ReadonlySet<string>;
 }
 
-// depends_on is intentionally excluded — an empty dependency list is valid.
+// Graph fields are intentionally excluded — empty graph declarations are valid.
 const OPTIONAL_FIELDS = [
   "allowed_paths",
   "forbidden_paths",
@@ -84,19 +84,46 @@ export function validateTasks(
       });
     }
 
-    // Check dependency references
-    for (const dep of spec.depends_on ?? []) {
-      if (countTask) counts.contractsChecked++;
-      if (!allIds.has(dep)) {
-        hasMissingDependencyError = true;
-        addError(filePath, {
-          filePath,
-          field: "depends_on",
-          message: `Task "${spec.id}" depends on missing task "${dep}"`,
-          severity: "error",
-        });
-      }
-    }
+    hasMissingDependencyError =
+      validateTaskReferences({
+        specId: spec.id,
+        filePath,
+        field: "depends_on",
+        references: spec.depends_on ?? [],
+        allIds,
+        countTask,
+        counts,
+        missingMessage: (reference) =>
+          `Task "${spec.id}" depends on missing task "${reference}"`,
+        addError,
+      }) || hasMissingDependencyError;
+
+    validateTaskReferences({
+      specId: spec.id,
+      filePath,
+      field: "blocks",
+      references: spec.blocks ?? [],
+      allIds,
+      countTask,
+      counts,
+      missingMessage: (reference) =>
+        `Task "${spec.id}" blocks missing task "${reference}"`,
+      addError,
+    });
+
+    validateTaskReferences({
+      specId: spec.id,
+      filePath,
+      field: "conflicts_with",
+      references: spec.conflicts_with ?? [],
+      allIds,
+      countTask,
+      counts,
+      missingMessage: (reference) =>
+        `Task "${spec.id}" conflicts with missing task "${reference}"`,
+      selfMessage: () => `Task "${spec.id}" cannot conflict with itself`,
+      addError,
+    });
 
     // Warn about missing optional fields
     for (const field of OPTIONAL_FIELDS) {
@@ -216,6 +243,57 @@ function validateDomainReferences(
     domainsChecked: domains.size,
     contractsChecked,
   };
+}
+
+function validateTaskReferences({
+  specId,
+  filePath,
+  field,
+  references,
+  allIds,
+  countTask,
+  counts,
+  missingMessage,
+  selfMessage,
+  addError,
+}: {
+  specId: string;
+  filePath: string;
+  field: "depends_on" | "blocks" | "conflicts_with";
+  references: string[];
+  allIds: Set<string>;
+  countTask: boolean;
+  counts: ValidationCounts;
+  missingMessage: (reference: string) => string;
+  selfMessage?: (reference: string) => string;
+  addError: (filePath: string, issue: ValidationIssue) => void;
+}): boolean {
+  let hasMissingReference = false;
+
+  for (const reference of references) {
+    if (countTask) counts.contractsChecked++;
+    if (!allIds.has(reference)) {
+      hasMissingReference = true;
+      addError(filePath, {
+        filePath,
+        field,
+        message: missingMessage(reference),
+        severity: "error",
+      });
+      continue;
+    }
+
+    if (reference === specId && selfMessage) {
+      addError(filePath, {
+        filePath,
+        field,
+        message: selfMessage(reference),
+        severity: "error",
+      });
+    }
+  }
+
+  return hasMissingReference;
 }
 
 function findDependencyCycles(
