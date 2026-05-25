@@ -1,11 +1,12 @@
-import { mkdirSync, rmSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs";
 import { mkdtemp } from "fs/promises";
 import { join } from "path";
 import { tmpdir } from "os";
 import { afterEach, describe, expect, it } from "vitest";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { listTasksForMcp } from "../src/mcpList.js";
 import { getPaths } from "../src/utils/paths.js";
-import { loadTasks, pathOwnershipWarningsForTask } from "../src/specs/loadTasks.js";
 import type { TaskTier } from "../src/specs/loadTasks.js";
 
 const tempDirs: string[] = [];
@@ -131,11 +132,13 @@ describe("listTasksForMcp", () => {
     ]);
   });
 
-  it("builds structured path ownership warnings for MCP compile results", async () => {
+  it("returns structured path ownership warnings in MCP compile results", async () => {
     const root = await mkdtemp(join(tmpdir(), "assignr-mcp-list-"));
     tempDirs.push(root);
     const paths = getPaths(root, ".assignr");
     mkdirSync(paths.tasksActive, { recursive: true });
+    mkdirSync(paths.specsDomains, { recursive: true });
+    writeFileSync(join(paths.specsDomains, "core.yaml"), "id: core\nname: Core\n", "utf-8");
 
     writeTask(root, "active", "target-task");
     writeFileSync(
@@ -200,12 +203,30 @@ describe("listTasksForMcp", () => {
       "utf-8"
     );
 
-    const { tasks, errors } = loadTasks(paths.specsTasks, "all");
-    expect(errors).toEqual([]);
-    const target = tasks.find((task) => task.spec.id === "target-task");
-    expect(target).toBeDefined();
+    const tsxBin = join(
+      process.cwd(),
+      "node_modules",
+      ".bin",
+      process.platform === "win32" ? "tsx.cmd" : "tsx"
+    );
+    const transport = new StdioClientTransport({
+      command: tsxBin,
+      args: [join(process.cwd(), "src", "mcp.ts")],
+      cwd: root,
+    });
+    const client = new Client({ name: "assignr-test", version: "0.0.0" });
 
-    const warnings = pathOwnershipWarningsForTask(target!, tasks);
+    await client.connect(transport);
+    const result = await client.callTool({
+      name: "assignr_compile",
+      arguments: { task_id: "target-task" },
+    });
+    await client.close();
+
+    const text = result.content.find((part) => part.type === "text")?.text;
+    expect(text).toBeDefined();
+    const payload = JSON.parse(text!);
+    const warnings = payload.path_ownership_warnings;
 
     expect(warnings).toEqual(
       expect.arrayContaining([
@@ -229,5 +250,6 @@ describe("listTasksForMcp", () => {
         },
       ])
     );
+    expect(existsSync(join(paths.promptsGenerated, "target-task.md"))).toBe(true);
   });
 });

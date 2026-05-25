@@ -1,6 +1,6 @@
 id: score-merge-readiness-from-receipts
 title: Score merge readiness from receipts
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: high

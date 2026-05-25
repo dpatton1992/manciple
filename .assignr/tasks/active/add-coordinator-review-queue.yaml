@@ -1,6 +1,6 @@
 id: add-coordinator-review-queue
 title: Add coordinator review queue
-status: needs_review
+status: partial
 type: implementation
 domain: core
 priority: high

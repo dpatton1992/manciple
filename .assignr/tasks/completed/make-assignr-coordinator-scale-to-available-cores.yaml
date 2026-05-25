@@ -1,6 +1,6 @@
 id: make-assignr-coordinator-scale-to-available-cores
 title: Make Assignr coordinator scale to available cores
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: high

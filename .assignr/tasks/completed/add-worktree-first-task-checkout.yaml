@@ -1,6 +1,6 @@
 id: add-worktree-first-task-checkout
 title: Add worktree first task checkout
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: high

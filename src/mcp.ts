@@ -64,12 +64,16 @@ function getTemplate(type: TaskSpec["type"]): string {
   }
 }
 
-function loadDomainContext(domain: string): { content?: string; warning?: string } {
-  const domainPath = join(p.specsDomains, `${domain}.yaml`);
+function loadDomainContextForPaths(
+  domain: string,
+  specsDomainsDir: string,
+  cwdForRelativePaths: string
+): { content?: string; warning?: string } {
+  const domainPath = join(specsDomainsDir, `${domain}.yaml`);
 
   if (!existsSync(domainPath)) {
     return {
-      warning: `Optional domain context not found for "${domain}" at ${relative(cwd, domainPath)}; compiled without domain context.`,
+      warning: `Optional domain context not found for "${domain}" at ${relative(cwdForRelativePaths, domainPath)}; compiled without domain context.`,
     };
   }
 
@@ -95,6 +99,51 @@ function loadTasksOrError(): LoadedTaskWithTier[] {
     throw new Error(`Cannot load tasks: ${message}`);
   }
   return tasks;
+}
+
+export interface CompileTaskForMcpOptions {
+  taskId: string;
+  specsTasksDir: string;
+  specsDomainsDir: string;
+  promptsGeneratedDir: string;
+  cwd: string;
+}
+
+export function compileTaskForMcp(options: CompileTaskForMcpOptions): {
+  output_path: string;
+  content: string;
+  path_ownership_warnings: ReturnType<typeof pathOwnershipWarningsForTask>;
+  warning?: string;
+} {
+  const { taskId, specsTasksDir, specsDomainsDir, promptsGeneratedDir, cwd } = options;
+  const { tasks, errors } = loadTasks(specsTasksDir, "all");
+  if (errors.length > 0) {
+    const message = errors
+      .map((error) => `${relative(cwd, error.filePath)}: ${error.error}`)
+      .join("; ");
+    throw new Error(`Cannot load tasks: ${message}`);
+  }
+
+  const found = tasks.find((task) => task.spec.id === taskId);
+  if (!found) throw new Error(`Task not found: ${taskId}`);
+
+  const pathOwnershipWarnings = pathOwnershipWarningsForTask(found, tasks);
+
+  if (!existsSync(promptsGeneratedDir)) {
+    mkdirSync(promptsGeneratedDir, { recursive: true });
+  }
+
+  const domainContext = loadDomainContextForPaths(found.spec.domain, specsDomainsDir, cwd);
+  const content = renderTemplate(getTemplate(found.spec.type), found.spec, domainContext.content);
+  const outputPath = join(promptsGeneratedDir, `${found.spec.id}.md`);
+  writeFileSync(outputPath, content, "utf-8");
+
+  return {
+    output_path: outputPath,
+    content,
+    path_ownership_warnings: pathOwnershipWarnings,
+    ...(domainContext.warning ? { warning: domainContext.warning } : {}),
+  };
 }
 
 function dependencyContextTask(task: LoadedTaskWithTier): LoadedTaskWithTier {
@@ -329,30 +378,21 @@ server.registerTool(
   },
   ({ task_id }) =>
     toolResult(() => {
-      const tasks = loadTasksOrError();
-      const found = tasks.find((task) => task.spec.id === task_id);
-      if (!found) return errorResult(`Task not found: ${task_id}`);
-      const pathOwnershipWarnings = pathOwnershipWarningsForTask(found, tasks);
-
-      if (!existsSync(p.promptsGenerated)) {
-        mkdirSync(p.promptsGenerated, { recursive: true });
+      try {
+        return jsonResult({
+          ...compileTaskForMcp({
+            taskId: task_id,
+            specsTasksDir: p.specsTasks,
+            specsDomainsDir: p.specsDomains,
+            promptsGeneratedDir: p.promptsGenerated,
+            cwd,
+          }),
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (message === `Task not found: ${task_id}`) return errorResult(message);
+        throw err;
       }
-
-      const domainContext = loadDomainContext(found.spec.domain);
-      const content = renderTemplate(
-        getTemplate(found.spec.type),
-        found.spec,
-        domainContext.content
-      );
-      const outputPath = join(p.promptsGenerated, `${found.spec.id}.md`);
-      writeFileSync(outputPath, content, "utf-8");
-
-      return jsonResult({
-        output_path: outputPath,
-        content,
-        path_ownership_warnings: pathOwnershipWarnings,
-        ...(domainContext.warning ? { warning: domainContext.warning } : {}),
-      });
     })
 );
 

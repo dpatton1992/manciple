@@ -1,6 +1,6 @@
 id: readme-demo-trim
 title: Make npm README shorter and more demo-driven
-status: needs_review
+status: complete
 type: docs
 domain: core
 priority: medium
