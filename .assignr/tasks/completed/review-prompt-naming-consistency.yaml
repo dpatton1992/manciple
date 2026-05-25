@@ -1,6 +1,6 @@
 id: review-prompt-naming-consistency
 title: Make review prompt filenames consistent and discoverable
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: medium

@@ -1,6 +1,6 @@
 id: promote-deterministic-review-checks-to-a-reusable-gate
 title: Promote deterministic review checks to a reusable gate
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: high

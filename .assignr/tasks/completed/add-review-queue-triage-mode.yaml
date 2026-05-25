@@ -1,6 +1,6 @@
 id: add-review-queue-triage-mode
 title: Add review queue triage mode
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: high

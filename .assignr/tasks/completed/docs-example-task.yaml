@@ -1,6 +1,6 @@
 id: docs-example-task
 title: Add concrete worked example to README showing full workflow
-status: needs_review
+status: complete
 type: docs
 domain: core
 priority: low
