@@ -1,0 +1,61 @@
+id: add-review-queue-triage-mode
+title: Add review queue triage mode
+status: pending
+type: implementation
+domain: core
+priority: high
+depends_on:
+  - define-cheap-review-queue-mode-contract
+  - add-coordinator-review-queue
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/cli.ts
+  - src/commands/reviewQueue.ts
+  - src/review/
+  - tests/reviewQueue.test.ts
+  - tests/reviewCheck.test.ts
+forbidden_paths:
+  - src/coordination/
+  - src/commands/coordinator.ts
+  - src/specs/schema.ts
+  - src/specs/validateTasks.ts
+  - src/templates/renderTemplate.ts
+  - README.md
+  - .assignr/tasks/
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: The CLI can run a cheap review queue triage that inspects review evidence and
+  surfaces only tasks that need deeper review.
+acceptance_criteria:
+  - "`assignr review-queue --mode triage` lists active needs_review tasks with a concise
+    triage decision for each task."
+  - Triage checks task status, task spec load validity, latest run log evidence, files
+    changed, verification commands and results, and changed files outside allowed_paths
+    or inside forbidden_paths.
+  - Triage output marks tasks as pass, escalate, or blocked, with concise reasons that
+    can be audited later.
+  - The implementation reuses existing review evidence/readiness helpers where practical
+    instead of creating a second incompatible evidence parser.
+  - Tests cover passing evidence, missing run log evidence, failed or missing
+    verification, and obvious scope violations.
+verification:
+  commands:
+    - pnpm test -- reviewQueue
+    - pnpm test -- reviewCheck
+    - pnpm typecheck
+outputs_required:
+  - files_changed
+  - tests_run
+  - decisions_made
+  - risks
+notes:
+  - This intentionally overlaps `src/cli.ts` with `add-coordinator-review-queue`; do not
+    run this task in parallel with that task.
+  - "Keep this mode cheap and deterministic: it should inspect existing local evidence,
+    not generate full review prompts or invoke external agents."
+  - If the contract task changes the command name or mode names, follow the contract and
+    document the deviation in the run log.

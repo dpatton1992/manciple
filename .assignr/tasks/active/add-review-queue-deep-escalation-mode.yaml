@@ -1,0 +1,62 @@
+id: add-review-queue-deep-escalation-mode
+title: Add review queue deep escalation mode
+status: pending
+type: implementation
+domain: core
+priority: medium
+depends_on:
+  - add-review-queue-triage-mode
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/cli.ts
+  - src/commands/reviewQueue.ts
+  - src/commands/review.ts
+  - src/review/
+  - tests/reviewQueue.test.ts
+  - tests/happyPath.test.ts
+forbidden_paths:
+  - src/coordination/
+  - src/commands/coordinator.ts
+  - src/specs/schema.ts
+  - src/specs/validateTasks.ts
+  - src/templates/renderTemplate.ts
+  - README.md
+  - .assignr/tasks/
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: The CLI can generate deeper review work only for tasks that triage identifies as
+  risky or uncertain.
+acceptance_criteria:
+  - "`assignr review-queue --mode deep` operates on needs_review tasks and emits the
+    deeper review action or prompt target for each escalated task."
+  - Deep mode can consume triage decisions or recompute equivalent escalation criteria
+    without requiring a manual task list.
+  - Tasks that pass triage are not escalated by default unless an explicit option
+    requests all review tasks.
+  - Deep mode output includes the reason each task was escalated and the existing
+    evidence that triggered escalation.
+  - Tests cover escalation from missing evidence, residual risk, failed verification,
+    forbidden path changes, and no-op behavior when every task passes triage.
+verification:
+  commands:
+    - pnpm test -- reviewQueue
+    - pnpm test -- happyPath
+    - pnpm typecheck
+outputs_required:
+  - files_changed
+  - tests_run
+  - decisions_made
+  - risks
+  - follow_ups
+notes:
+  - "This should preserve the spend-control product angle: deep review is an escalation
+    path, not the default behavior."
+  - This intentionally overlaps `src/cli.ts` and `src/review/` with the triage task
+    because deep mode builds on the same command surface and evidence helpers; run after
+    triage, not in parallel.
+  - Prefer composing the existing `review` prompt generation behavior instead of
+    duplicating review prompt rendering.

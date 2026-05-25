@@ -1,0 +1,48 @@
+id: document-cheap-review-queue-workflow
+title: Document cheap review queue workflow
+status: pending
+type: docs
+domain: core
+priority: medium
+depends_on:
+  - add-review-queue-deep-escalation-mode
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - README.md
+forbidden_paths:
+  - src/
+  - tests/
+  - dist/
+  - .assignr/tasks/
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: The README explains the cheap review queue workflow and when to use triage versus
+  deep review.
+acceptance_criteria:
+  - README documentation explains that review-only Assignr runs buy repeatability,
+    auditability, resumability, and safer coordination rather than lowest raw token
+    cost.
+  - The docs show a triage-first workflow using `assignr review-queue --mode triage`
+    followed by deep escalation for risky tasks.
+  - The docs contrast direct prompt review, triage review queue, and deep review queue
+    in terms of cost, coordination risk, evidence durability, and manual tracking.
+  - The docs include a short example of interpreting pass, escalate, and blocked triage
+    outcomes.
+verification:
+  commands:
+    - pnpm run check:assignr-yaml
+    - pnpm typecheck
+outputs_required:
+  - files_changed
+  - tests_run
+  - decisions_made
+  - risks
+notes:
+  - "Keep the copy honest: cheap review mode minimizes unnecessary review spend while
+    preserving confidence; it does not claim Assignr is always cheaper than asking one
+    model directly."
+  - Avoid making parallel agents the main value proposition for this workflow.

@@ -1,0 +1,50 @@
+id: define-cheap-review-queue-mode-contract
+title: Define cheap review queue mode contract
+status: pending
+type: planning
+domain: core
+priority: high
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - README.md
+  - .assignr/specs/domains/core.yaml
+forbidden_paths:
+  - src/
+  - tests/
+  - dist/
+  - .assignr/tasks/
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: A contract defines how review-queue triage and deep modes reduce review spend
+  while preserving confidence.
+acceptance_criteria:
+  - The contract defines triage mode inputs and outputs for status, task spec, run log
+    evidence, files changed, verification commands, and obvious scope violations.
+  - The contract defines deep mode escalation criteria from triage findings, including
+    missing evidence, failed verification, changed files outside allowed paths,
+    documented risks, path conflicts, and incomplete acceptance evidence.
+  - The contract states how the new review-queue behavior relates to existing
+    review-check readiness scoring and coordinator queue grouping without duplicating
+    either command's responsibility.
+  - The contract includes at least three concrete CLI examples showing triage-only,
+    deep-only, and triage-then-escalate workflows.
+verification:
+  commands:
+    - pnpm run check:assignr-yaml
+    - pnpm typecheck
+outputs_required:
+  - files_changed
+  - tests_run
+  - decisions_made
+  - risks
+notes:
+  - This is a product-contract task only; do not implement commands here.
+  - Use the product lesson that Assignr should make reviews repeatable, auditable,
+    resumable, and safer, while minimizing unnecessary review spend.
+  - Do not position cheap review mode as cheaper than a direct single prompt; position
+    it as spend control with durable evidence and escalation.
