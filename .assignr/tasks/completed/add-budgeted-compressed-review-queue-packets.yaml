@@ -1,6 +1,6 @@
 id: add-budgeted-compressed-review-queue-packets
 title: Add budgeted compressed review queue packets
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: high
