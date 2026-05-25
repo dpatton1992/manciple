@@ -1,6 +1,6 @@
 id: tighten-run-log-evidence-receipts
 title: Tighten run log evidence receipts
-status: in_progress
+status: complete
 type: implementation
 domain: core
 priority: high
