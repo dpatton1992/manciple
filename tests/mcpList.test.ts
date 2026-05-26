@@ -5,13 +5,24 @@ import { tmpdir } from "os";
 import { afterEach, describe, expect, it } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { parse } from "yaml";
 import { listTasksForMcp } from "../src/mcpList.js";
 import { getPaths } from "../src/utils/paths.js";
 import type { TaskTier } from "../src/specs/loadTasks.js";
 
 const tempDirs: string[] = [];
 
-function writeTask(root: string, tier: TaskTier, id: string, status = "pending"): void {
+function writeTask(
+  root: string,
+  tier: TaskTier,
+  id: string,
+  status = "pending",
+  implementationNotes: string[] = []
+): void {
+  const implementationNoteLines =
+    implementationNotes.length > 0
+      ? ["implementation_notes:", ...implementationNotes.map((note) => `  - ${note}`)]
+      : ["implementation_notes: []"];
   const paths = getPaths(root, ".assignr");
   const dirByTier = {
     active: paths.tasksActive,
@@ -33,6 +44,7 @@ function writeTask(root: string, tier: TaskTier, id: string, status = "pending")
       "goal: Test task.",
       "acceptance_criteria:",
       "  - It works.",
+      ...implementationNoteLines,
       "allowed_paths:",
       "  - src/**",
       "forbidden_paths: []",
@@ -140,7 +152,7 @@ describe("listTasksForMcp", () => {
     mkdirSync(paths.specsDomains, { recursive: true });
     writeFileSync(join(paths.specsDomains, "core.yaml"), "id: core\nname: Core\n", "utf-8");
 
-    writeTask(root, "active", "target-task");
+    writeTask(root, "active", "target-task", "pending", ["Preserve packet parity."]);
     writeFileSync(
       join(paths.tasksActive, "owner-task.yaml"),
       [
@@ -154,6 +166,7 @@ describe("listTasksForMcp", () => {
         "goal: Test owner.",
         "acceptance_criteria:",
         "  - It works.",
+        "implementation_notes: []",
         "allowed_paths:",
         "  - src/**",
         "forbidden_paths: []",
@@ -187,6 +200,8 @@ describe("listTasksForMcp", () => {
         "goal: Test target.",
         "acceptance_criteria:",
         "  - It works.",
+        "implementation_notes:",
+        "  - Preserve packet parity.",
         "allowed_paths:",
         "  - src/mcp.ts",
         "  - src/utils/paths.ts",
@@ -260,7 +275,7 @@ describe("listTasksForMcp", () => {
     tempDirs.push(root);
     const paths = getPaths(root, ".assignr");
     mkdirSync(paths.tasksActive, { recursive: true });
-    writeTask(root, "active", "target-task");
+    writeTask(root, "active", "target-task", "pending", ["Preserve packet parity."]);
     writeFileSync(
       join(paths.tasksActive, "owner-task.yaml"),
       [
@@ -331,6 +346,7 @@ describe("listTasksForMcp", () => {
         unsafe_parallel_areas: [],
       },
       acceptance_criteria: ["It works."],
+      implementation_notes: ["Preserve packet parity."],
       verification_commands: ["pnpm test"],
       outputs_required: ["files_changed"],
       notes: [],
@@ -383,6 +399,50 @@ describe("listTasksForMcp", () => {
     const text = result.content.find((part) => part.type === "text")?.text;
     expect(result.isError).toBe(true);
     expect(JSON.parse(text!)).toEqual({ error: "Task not found: missing-task" });
+  });
+
+  it("creates tasks with implementation notes through MCP", async () => {
+    const root = await mkdtemp(join(tmpdir(), "assignr-mcp-create-"));
+    tempDirs.push(root);
+
+    const tsxBin = join(
+      process.cwd(),
+      "node_modules",
+      ".bin",
+      process.platform === "win32" ? "tsx.cmd" : "tsx"
+    );
+    const transport = new StdioClientTransport({
+      command: tsxBin,
+      args: [join(process.cwd(), "src", "mcp.ts")],
+      cwd: root,
+    });
+    const client = new Client({ name: "assignr-test", version: "0.0.0" });
+
+    await client.connect(transport);
+    const result = await client.callTool({
+      name: "assignr_create",
+      arguments: {
+        title: "MCP Design Contract",
+        type: "implementation",
+        domain: "core",
+        goal: "Create a task with design guidance.",
+        acceptance_criteria: ["It records design guidance."],
+        implementation_notes: ["Preserve CLI and MCP parity."],
+        verification_commands: ["pnpm test"],
+      },
+    });
+    await client.close();
+
+    const text = result.content.find((part) => part.type === "text")?.text;
+    expect(text).toBeDefined();
+    expect(JSON.parse(text!)).toMatchObject({
+      id: "mcp-design-contract",
+      file_path: ".assignr/tasks/active/mcp-design-contract.yaml",
+    });
+    const raw = readFileSync(join(root, ".assignr", "tasks", "active", "mcp-design-contract.yaml"), "utf-8");
+    expect((parse(raw) as Record<string, unknown>)["implementation_notes"]).toEqual([
+      "Preserve CLI and MCP parity.",
+    ]);
   });
 
   it("formats one task over MCP with a structured response", async () => {
@@ -449,6 +509,8 @@ describe("listTasksForMcp", () => {
         commands_run: ["pnpm build"],
         tests_run: ["pnpm test -- runLog"],
         acceptance_criteria_evidence: ["Acceptance evidence recorded."],
+        decisions_made: ["Separated non-test commands from verification evidence."],
+        follow_ups: ["none"],
         verify_receipt: '{"ok":true,"profile":"worker"}',
         result: "complete",
         risks: "No known risks.",
@@ -469,6 +531,8 @@ describe("listTasksForMcp", () => {
     expect(content).toContain("- pnpm build");
     expect(content).toContain("- pnpm test -- runLog");
     expect(content).toContain("Acceptance evidence recorded.");
+    expect(content).toContain("Separated non-test commands from verification evidence.");
+    expect(content).toContain("- none");
     expect(content).toContain('{"ok":true,"profile":"worker"}');
     expect(content).toContain("No known risks.");
   });

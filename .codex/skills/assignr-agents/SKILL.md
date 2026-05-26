@@ -91,5 +91,6 @@ Instructions:
 - Verify with assignr_verify profile worker or assignr verify --profile worker and report the returned receipt as the primary verification evidence.
 - Use assignr_format_task or assignr format-task <task-id> --check only when scoped task YAML formatting evidence is needed.
 - Create the Assignr run log with final task status, files changed, non-test commands, tests, acceptance evidence, risks, and the deterministic verify receipt; then set final task status according to assignr-mcp-task-runner.
+- For completed implementation work that changed behavior, include Decisions Made; omit it only when blocked before meaningful changes.
 - In your final response, report task id, final status, files changed, verification receipt, risks, blockers, and follow-ups.
 ```

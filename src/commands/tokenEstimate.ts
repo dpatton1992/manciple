@@ -1,5 +1,6 @@
 import { spawnSync } from "child_process";
-import { readFileSync } from "fs";
+import { appendFileSync, existsSync, readFileSync, readdirSync } from "fs";
+import { join } from "path";
 import { loadTasks } from "../specs/loadTasks.js";
 import { getTemplate, loadDomainContext } from "./compile.js";
 import {
@@ -16,6 +17,8 @@ import {
 export const DEFAULT_TOKEN_BUDGET = 4000;
 export const TOKEN_HEURISTIC_DESCRIPTION =
   "Deterministic local heuristic: estimated tokens = ceil(characters / 4). No external APIs are called.";
+export const TOKEN_ESTIMATE_SCOPE_DESCRIPTION =
+  "Scope: estimates Assignr artifact/context bloat only, not total provider, harness, tool, retry, reasoning, or generated-output usage.";
 
 export interface TokenEstimateOptions {
   specsTasksDir: string;
@@ -26,6 +29,7 @@ export interface TokenEstimateOptions {
   includeRunLog?: boolean;
   includeDiff?: boolean;
   includeGitContext?: boolean;
+  appendRunLog?: boolean;
 }
 
 export interface TokenEstimateBucket {
@@ -119,7 +123,7 @@ export function buildTokenEstimate(options: TokenEstimateOptions): TokenEstimate
 
   if (options.includeReview) {
     optionalBuckets.push(estimateBucket(
-      "optional review prompt",
+      "review prompt",
       renderReviewPrompt(spec, options.cwd, {
         includeRunLog: options.includeRunLog ?? false,
         includeGitDiff: options.includeDiff ?? false,
@@ -129,18 +133,18 @@ export function buildTokenEstimate(options: TokenEstimateOptions): TokenEstimate
   }
 
   if (options.includeRunLog) {
-    optionalBuckets.push(estimateBucket("optional latest run log", readLatestRunLog(options.cwd, spec.id), true));
+    optionalBuckets.push(estimateBucket("latest run log", readLatestRunLog(options.cwd, spec.id), true));
   }
 
   if (options.includeDiff) {
-    optionalBuckets.push(estimateBucket("optional git diff", readGitDiff(options.cwd), true));
+    optionalBuckets.push(estimateBucket("git diff", readGitDiff(options.cwd), true));
   }
 
   if (options.includeGitContext) {
-    optionalBuckets.push(estimateBucket("optional git context", readGitContext(options.cwd), true));
+    optionalBuckets.push(estimateBucket("git context", readGitContext(options.cwd), true));
   }
 
-  const compiledBucket = estimateBucket("compiled prompt total", compiledPrompt);
+  const compiledBucket = estimateBucket("base Assignr handoff", compiledPrompt);
   const optionalChars = optionalBuckets.reduce((sum, bucket) => sum + bucket.chars, 0);
   const totalChars = compiledBucket.chars + optionalChars;
   const totalWithOptional = {
@@ -164,6 +168,73 @@ function renderBucket(bucket: TokenEstimateBucket): string {
   return `- ${bucket.label}: ${bucket.chars} chars, ~${bucket.estimatedTokens} tokens`;
 }
 
+function latestRunLogPath(cwd: string, taskId: string): string | undefined {
+  const runsDir = join(cwd, ".assignr", "runs");
+  const taskRunLogDir = join(runsDir, taskId);
+
+  if (existsSync(taskRunLogDir)) {
+    const nestedLatest = readdirSync(taskRunLogDir)
+      .filter((file) => file.endsWith(".md"))
+      .sort()
+      .at(-1);
+    if (nestedLatest) {
+      return join(taskRunLogDir, nestedLatest);
+    }
+  }
+
+  if (!existsSync(runsDir)) {
+    return undefined;
+  }
+
+  const flatLatest = readdirSync(runsDir)
+    .filter((file) => file.endsWith(`-${taskId}.md`))
+    .sort()
+    .at(-1);
+
+  return flatLatest ? join(runsDir, flatLatest) : undefined;
+}
+
+export function renderTokenEstimateRunLogSection(result: TokenEstimateResult): string {
+  const budgetLine = result.risk === "over_budget"
+    ? `Budget warning: over budget (${result.totalWithOptional.estimatedTokens}/${result.budget} estimated tokens). Warning only; no workflow failed.`
+    : `Budget warning: within budget (${result.totalWithOptional.estimatedTokens}/${result.budget} estimated tokens). Warning only; no workflow failed.`;
+  const optional = result.optionalBuckets.length > 0
+    ? result.optionalBuckets.map(renderBucket).join("\n")
+    : "- optional sources: not requested";
+
+  return `## Token Estimate
+
+_Source: assignr token-estimate --append-run-log_
+
+${TOKEN_ESTIMATE_SCOPE_DESCRIPTION}
+- estimated: true
+- method: ceil(characters / 4)
+
+### Token Buckets
+
+${renderBucket(result.compiledPrompt)}
+${optional}
+
+### Base Assignr Handoff Detail
+
+${result.buckets.map(renderBucket).join("\n")}
+
+### Budget
+
+${budgetLine}
+`;
+}
+
+export function appendTokenEstimateToLatestRunLog(result: TokenEstimateResult, cwd: string): string {
+  const outPath = latestRunLogPath(cwd, result.taskId);
+  if (!outPath) {
+    throw new Error(`No existing run log found for task ${result.taskId}; create one before using --append-run-log.`);
+  }
+
+  appendFileSync(outPath, `\n${renderTokenEstimateRunLogSection(result)}`, "utf-8");
+  return outPath;
+}
+
 export function renderTokenEstimate(result: TokenEstimateResult): string {
   const optional = result.optionalBuckets.length > 0
     ? result.optionalBuckets.map(renderBucket).join("\n")
@@ -175,20 +246,19 @@ export function renderTokenEstimate(result: TokenEstimateResult): string {
   return `# Token Estimate: ${result.taskId}
 
 ${TOKEN_HEURISTIC_DESCRIPTION}
-Scope: estimates Assignr handoff prompt bloat, not total agent spend.
+${TOKEN_ESTIMATE_SCOPE_DESCRIPTION}
+- estimated: true
+- method: ceil(characters / 4)
 Budget: ${result.budget} estimated tokens
 
-## Compiled Prompt
+## Token Buckets
 
 ${renderBucket(result.compiledPrompt)}
+${optional}
 
-## Source Buckets
+## Base Assignr Handoff Detail
 
 ${result.buckets.map(renderBucket).join("\n")}
-
-## Optional Sources
-
-${optional}
 
 ## Total
 
@@ -198,7 +268,12 @@ ${risk}`;
 
 export function tokenEstimateCommand(options: TokenEstimateOptions): void {
   try {
-    console.log(renderTokenEstimate(buildTokenEstimate(options)));
+    const result = buildTokenEstimate(options);
+    console.log(renderTokenEstimate(result));
+    if (options.appendRunLog) {
+      const outPath = appendTokenEstimateToLatestRunLog(result, options.cwd);
+      console.log(`Appended token estimate to run log: ${outPath.replace(options.cwd + "/", "")}`);
+    }
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
     process.exit(1);

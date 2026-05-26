@@ -1,0 +1,64 @@
+id: confirm-warning-only-budget-overages-during-review
+title: Confirm warning-only budget overages during review
+status: pending
+type: hardening
+domain: core
+priority: high
+depends_on:
+  - harden-run-log-token-estimates-and-audit-evidence-quality
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/commands/review.ts
+  - src/commands/reviewCheck.ts
+  - src/review/evidence.ts
+  - src/review/readiness.ts
+  - src/review/deterministicGate.ts
+  - tests/reviewCheck.test.ts
+  - tests/reviewReadiness.test.ts
+  - tests/tokenEstimate.test.ts
+forbidden_paths:
+  - .assignr/runs/**
+  - dist/**
+  - node_modules/**
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Review evidence distinguishes token-estimate budget warnings from failed
+  verification when warning-only behavior is confirmed.
+acceptance_criteria:
+  - "Review readiness includes an explicit check for budget warning evidence when a
+    token estimate reports `Budget warning: over budget`."
+  - An over-budget token estimate does not fail review readiness solely because it is
+    over budget when the run log or token estimate section confirms warning-only
+    behavior.
+  - Missing warning-only confirmation for an over-budget estimate is reported as review
+    evidence needing human attention, not as a failed test command.
+  - Generated review prompts include a reviewer checklist item for `budget warning
+    present but warning-only behavior confirmed`.
+  - Tests cover over-budget warning-only receipts, over-budget receipts missing
+    warning-only confirmation, and ordinary run logs without token estimate sections.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test -- reviewCheck
+    - pnpm test -- reviewReadiness
+    - pnpm test -- tokenEstimate
+    - pnpm exec tsx src/cli.ts verify --profile worker
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+  - decisions_made
+notes:
+  - This task is follow-up work from review feedback on
+    `harden-run-log-token-estimates-and-audit-evidence-quality`; depend on that task
+    reaching review completion before starting.
+  - The behavior should reinforce that token budget overages are audit warnings unless a
+    command actually failed.
+  - "Reuse the existing run-log token estimate section shape: `estimated: true`,
+    `method: ceil(characters / 4)`, bucket lines, and `Budget warning: over budget
+    (...). Warning only; no workflow failed.`"
+  - Keep `Decisions Made` requirements for completed behavior-changing work intact.

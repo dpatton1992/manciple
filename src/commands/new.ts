@@ -13,6 +13,7 @@ export interface NewTaskOptions {
   domain: string;
   priority: Priority;
   goal?: string;
+  implementationNotes?: string[];
   cwd: string;
   activeDir: string;
 }
@@ -31,6 +32,7 @@ interface NewTaskSpecValues {
   allowedPaths: string[];
   forbiddenPaths: string[];
   outputsRequired: string[];
+  implementationNotes: string[];
   notes: string[];
 }
 
@@ -45,6 +47,7 @@ const defaultSpecValues: NewTaskSpecValues = {
     "risks",
     "follow_up_tasks",
   ],
+  implementationNotes: ["TODO: add behavior, product, or design constraints."],
   notes: ["TODO: add any notes or constraints."],
 };
 
@@ -78,6 +81,7 @@ function createTaskSpec(
     forbidden_paths: values.forbiddenPaths,
     goal: goalValue,
     acceptance_criteria: values.acceptanceCriteria,
+    implementation_notes: options.implementationNotes ?? values.implementationNotes,
     verification: {
       commands: values.verificationCommands,
     },
@@ -189,6 +193,7 @@ export async function newInteractiveCommand(
       allowedPaths: await askList(question, "Allowed path", false),
       forbiddenPaths: await askList(question, "Forbidden path", false),
       outputsRequired: await askList(question, "Output required", false),
+      implementationNotes: options.implementationNotes ?? [],
       notes: await askList(question, "Note", false),
     };
 

@@ -26,6 +26,7 @@ const spec: TaskSpec = {
     "Users can set an expiration date.",
     "Expiring licenses appear in dashboard.",
   ],
+  implementation_notes: ["Preserve existing dashboard ordering."],
   verification: {
     commands: ["pnpm typecheck", "pnpm test -- licenses"],
   },
@@ -59,6 +60,18 @@ describe("renderTemplate", () => {
     const out = renderTemplate(IMPLEMENTATION_TEMPLATE, spec);
     expect(out).toContain("```bash");
     expect(out).toContain("pnpm typecheck");
+  });
+
+  it("renders implementation notes separately from free-form notes", () => {
+    const out = renderTemplate(IMPLEMENTATION_TEMPLATE, spec);
+    expect(out).toContain("## Implementation Notes\n\n- Preserve existing dashboard ordering.");
+    expect(out).toContain("## Notes\n\n- Keep implementation narrow.");
+  });
+
+  it("renders review guidance for runner-made design decisions", () => {
+    const out = renderTemplate(REVIEW_TEMPLATE, spec);
+    expect(out).toContain("Product/design decisions");
+    expect(out).toContain("implementation notes");
   });
 
   it("renders allowed and forbidden paths", () => {
@@ -114,6 +127,8 @@ describe("renderTemplate", () => {
           "goal: Keep packet compact.",
           "acceptance_criteria:",
           "  - It returns compact fields.",
+          "implementation_notes:",
+          "  - Preserve MCP packet shape.",
           "allowed_paths:",
           "  - src/mcp.ts",
           "forbidden_paths:",
@@ -155,6 +170,7 @@ describe("renderTemplate", () => {
           unsafe_parallel_areas: [],
         },
         acceptance_criteria: ["It returns compact fields."],
+        implementation_notes: ["Preserve MCP packet shape."],
         verification_commands: ["pnpm typecheck"],
         outputs_required: ["files_changed"],
         notes: ["Skip full prompt prose."],

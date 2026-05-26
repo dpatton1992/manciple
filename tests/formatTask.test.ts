@@ -36,6 +36,7 @@ function writeTask(root: string, tier: TaskTier, id: string, status = "pending")
       "forbidden_paths: []",
       "goal: Keep task YAML deterministic.",
       "acceptance_criteria: [Task YAML is formatted deterministically.]",
+      "implementation_notes: []",
       "verification: { commands: [pnpm test -- format] }",
       "outputs_required: [files_changed, tests_run, risks]",
       "notes: []",
@@ -166,5 +167,40 @@ describe("formatTaskById", () => {
     const raw = readFileSync(filePath, "utf-8");
     expect(raw).toBe(formatYamlDocument(parse(raw)));
     expect((parse(raw) as Record<string, unknown>)["status"]).toBe("in_progress");
+  });
+
+  it("CLI new writes implementation notes when provided", async () => {
+    const root = await mkdtemp(join(tmpdir(), "assignr-new-task-"));
+    tempDirs.push(root);
+    const tsxBin = join(
+      process.cwd(),
+      "node_modules",
+      ".bin",
+      process.platform === "win32" ? "tsx.cmd" : "tsx"
+    );
+
+    const result = spawnSync(
+      tsxBin,
+      [
+        join(process.cwd(), "src", "cli.ts"),
+        "new",
+        "Design Contract",
+        "--goal",
+        "Create a task with design guidance.",
+        "--implementation-note",
+        "Preserve CLI and MCP parity.",
+      ],
+      {
+        cwd: root,
+        encoding: "utf-8",
+        shell: process.platform === "win32",
+      }
+    );
+
+    expect(result.status).toBe(0);
+    const raw = readFileSync(join(root, ".assignr", "tasks", "active", "design-contract.yaml"), "utf-8");
+    expect((parse(raw) as Record<string, unknown>)["implementation_notes"]).toEqual([
+      "Preserve CLI and MCP parity.",
+    ]);
   });
 });

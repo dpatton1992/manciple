@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { spawnSync } from "child_process";
@@ -10,6 +10,7 @@ import {
   buildTokenEstimate,
   DEFAULT_TOKEN_BUDGET,
   estimateTokens,
+  renderTokenEstimateRunLogSection,
   renderTokenEstimate,
   tokenEstimateCommand,
 } from "../src/commands/tokenEstimate.js";
@@ -76,8 +77,10 @@ describe("tokenEstimateCommand", () => {
     expect(result.budget).toBe(DEFAULT_TOKEN_BUDGET);
     expect(output).toContain("# Token Estimate: estimate-normal");
     expect(output).toContain("Deterministic local heuristic: estimated tokens = ceil(characters / 4). No external APIs are called.");
-    expect(output).toContain("Scope: estimates Assignr handoff prompt bloat, not total agent spend.");
-    expect(output).toContain("- compiled prompt total:");
+    expect(output).toContain("Scope: estimates Assignr artifact/context bloat only, not total provider, harness, tool, retry, reasoning, or generated-output usage.");
+    expect(output).toContain("- estimated: true");
+    expect(output).toContain("- method: ceil(characters / 4)");
+    expect(output).toContain("- base Assignr handoff:");
     expect(output).toContain("- task spec:");
     expect(output).toContain("- domain context:");
     expect(output).toContain("- template/instructions:");
@@ -133,10 +136,10 @@ describe("tokenEstimateCommand", () => {
       includeGitContext: true,
     }));
 
-    expect(output).toContain("- optional review prompt:");
-    expect(output).toContain("- optional latest run log:");
-    expect(output).toContain("- optional git diff:");
-    expect(output).toContain("- optional git context:");
+    expect(output).toContain("- review prompt:");
+    expect(output).toContain("- latest run log:");
+    expect(output).toContain("- git diff:");
+    expect(output).toContain("- git context:");
   });
 
   it("reports over-budget risk against a configurable budget", () => {
@@ -153,5 +156,74 @@ describe("tokenEstimateCommand", () => {
 
     expect(output).toContain("Budget: 1 estimated tokens");
     expect(output).toContain("Risk: over budget");
+  });
+
+  it("renders persisted run-log estimate markers and warning-only budget text", () => {
+    writeTask("estimate-section");
+
+    const section = renderTokenEstimateRunLogSection(buildTokenEstimate({
+      specsTasksDir: p.specsTasks,
+      cwd,
+      taskId: "estimate-section",
+      budget: 1,
+    }));
+
+    expect(section).toContain("## Token Estimate");
+    expect(section).toContain("_Source: assignr token-estimate --append-run-log_");
+    expect(section).toContain("- estimated: true");
+    expect(section).toContain("- method: ceil(characters / 4)");
+    expect(section).toContain("- base Assignr handoff:");
+    expect(section).toContain("### Base Assignr Handoff Detail");
+    expect(section).toContain("Budget warning: over budget");
+    expect(section).toContain("Warning only; no workflow failed.");
+  });
+
+  it("appends token estimates to the latest existing run log", () => {
+    writeTask("estimate-append");
+    runLogCommand("estimate-append", p.specsTasks, p.runs, p.promptsGenerated, cwd, {
+      result: "complete",
+      commandsRun: ["pnpm build"],
+      testsRun: ["pnpm test -- tokenEstimate"],
+      filesChanged: ["src/commands/tokenEstimate.ts"],
+      decisionsMade: ["Stored estimates in the durable run log."],
+      risks: "none",
+      acceptanceCriteriaEvidence: ["The token estimate command reports source buckets.: Output labels were asserted."],
+    });
+
+    const tsxBin = join(
+      process.cwd(),
+      "node_modules",
+      ".bin",
+      process.platform === "win32" ? "tsx.cmd" : "tsx"
+    );
+
+    const result = spawnSync(
+      tsxBin,
+      [
+        join(process.cwd(), "src", "cli.ts"),
+        "token-estimate",
+        "estimate-append",
+        "--include-review",
+        "--include-run-log",
+        "--include-diff",
+        "--include-git-context",
+        "--append-run-log",
+      ],
+      { cwd, encoding: "utf-8" }
+    );
+
+    const files = readdirSync(p.runs).filter((file) => file.endsWith("-estimate-append.md")).sort();
+    const content = readFileSync(join(p.runs, files.at(-1) ?? ""), "utf-8");
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Appended token estimate to run log:");
+    expect(content).toContain("## Token Estimate");
+    expect(content).toContain("- estimated: true");
+    expect(content).toContain("- method: ceil(characters / 4)");
+    expect(content).toContain("- base Assignr handoff:");
+    expect(content).toContain("- review prompt:");
+    expect(content).toContain("- latest run log:");
+    expect(content).toContain("- git diff:");
+    expect(content).toContain("- git context:");
   });
 });

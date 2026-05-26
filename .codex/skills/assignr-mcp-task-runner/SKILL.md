@@ -18,12 +18,12 @@ Once a task is selected, obey the task spec exactly. Do not expand or shrink `al
 1. Discover compact task context.
    - If the user names a task id, call `assignr_get_task_packet` first. If MCP is unavailable, run `assignr task-packet <task-id>`.
    - If asked to choose a task, use `assignr_dispatch_plan` first, then load the packet for one returned assignment.
-   - Use the packet fields as the default worker context: status, dependencies, allowed and forbidden paths, path ownership warnings, acceptance criteria, verification commands, outputs required, and notes.
+   - Use the packet fields as the default worker context: status, dependencies, allowed and forbidden paths, path ownership warnings, acceptance criteria, implementation notes, verification commands, outputs required, and notes.
    - Call `assignr_get_task` only when you need the full YAML shape. Call `assignr_compile` only when the compact packet is insufficient and explicit domain context or full prompt prose is needed.
 
 2. Start the task.
    - Call `assignr_set_status` with `in_progress` unless the packet already reports `in_progress`.
-   - Treat `allowed_paths`, `forbidden_paths`, `acceptance_criteria`, `verification_commands`, and `outputs_required` as binding constraints.
+   - Treat `allowed_paths`, `forbidden_paths`, `acceptance_criteria`, `implementation_notes`, `verification_commands`, and `outputs_required` as binding constraints.
 
 3. Implement the work.
    - Inspect the repo before editing.
@@ -38,6 +38,7 @@ Once a task is selected, obey the task spec exactly. Do not expand or shrink `al
 
 5. Finish.
    - Call `assignr_run_log` after implementation and verification. Include final task status, files changed, non-test commands in `commands_run`, test commands or receipts in `tests_run`, the deterministic verify receipt, acceptance criteria evidence, result, notes, and residual risks.
+   - For completed implementation work that changed behavior, include `Decisions Made`; omit it only when the task was blocked before meaningful changes.
    - Call `assignr_validate` before final status updates when task specs may have changed or the assignment requests metadata validation.
    - Set status with `assignr_set_status`:
      - `needs_review` when implementation is complete and verification passes.

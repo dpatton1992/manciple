@@ -81,6 +81,10 @@ You are an implementation agent working inside this repo.
 
 {{acceptance_criteria}}
 
+## Implementation Notes
+
+{{implementation_notes}}
+
 ## Verification Commands
 
 {{verification_commands}}
@@ -126,6 +130,10 @@ Evaluate whether the implementation satisfies the task without creating unnecess
 
 {{acceptance_criteria}}
 
+## Implementation Notes
+
+{{implementation_notes}}
+
 ## Verification Commands
 
 {{verification_commands}}
@@ -148,6 +156,7 @@ Evaluate whether the implementation satisfies the task without creating unnecess
 - [ ] Allowed paths: changed files are limited to the task's allowed paths or clearly justified.
 - [ ] Forbidden paths: no forbidden paths were modified.
 - [ ] Acceptance criteria evidence: each criterion has implementation evidence in the diff or run log.
+- [ ] Product/design decisions: runner-made behavior, UX, schema, evidence, or compatibility decisions are present in acceptance criteria, implementation notes, domain context, or notes.
 - [ ] Verification evidence: required commands were run and their results are recorded.
 - [ ] Generated artifacts: generated prompts, run logs, or other artifacts are present and named as expected.
 - [ ] Risk notes: risks are recorded, or explicitly marked as none.
@@ -252,6 +261,10 @@ export function renderTemplate(
       formatList(spec.forbidden_paths?.length ? spec.forbidden_paths : undefined)
     )
     .replace(/{{acceptance_criteria}}/g, formatList(spec.acceptance_criteria))
+    .replace(
+      /{{implementation_notes}}/g,
+      formatList(spec.implementation_notes?.length ? spec.implementation_notes : undefined)
+    )
     .replace(
       /{{verification_commands}}/g,
       renderVerificationCommands(spec.verification?.commands ?? [])

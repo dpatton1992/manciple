@@ -1,0 +1,65 @@
+id: reduce-default-review-prompt-bloat
+title: Reduce default review prompt bloat
+status: pending
+type: hardening
+domain: core
+priority: high
+depends_on:
+  - harden-run-log-token-estimates-and-audit-evidence-quality
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/commands/review.ts
+  - src/commands/tokenEstimate.ts
+  - src/cli.ts
+  - src/mcp.ts
+  - tests/tokenEstimate.test.ts
+  - tests/happyPath.test.ts
+  - tests/reviewQueue.test.ts
+  - tests/mcpList.test.ts
+forbidden_paths:
+  - .assignr/runs/**
+  - dist/**
+  - node_modules/**
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Generated review prompts stay useful while avoiding large embedded run-log and
+  diff payloads by default.
+acceptance_criteria:
+  - Default review prompts avoid embedding unbounded latest run-log content and large
+    git diffs; they include compact summaries, paths, or bounded excerpts sufficient for
+    reviewer orientation.
+  - A reviewer can still request full run-log and full-diff context explicitly through
+    CLI flags, options, or an equivalent documented command path.
+  - Token-estimate output shows a materially smaller review prompt bucket for typical
+    tasks with long run logs or large diffs, while preserving separate buckets for
+    review prompt, latest run log, git diff, and git context.
+  - Review prompts retain the task contract, acceptance criteria, verification commands,
+    allowed paths, forbidden paths, and decision checklist.
+  - Tests cover default compact review prompt rendering and opt-in full-context
+    rendering.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test -- tokenEstimate
+    - pnpm test -- happyPath
+    - pnpm test -- reviewQueue
+    - pnpm exec tsx src/cli.ts verify --profile worker
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+  - decisions_made
+notes:
+  - This task is follow-up work from review feedback on
+    `harden-run-log-token-estimates-and-audit-evidence-quality`; depend on that task
+    reaching review completion before starting.
+  - The target bloat is the review prompt bucket, not the base Assignr handoff. Keep the
+    base task contract intact.
+  - Current implementation embeds the latest run log and up to 400 diff lines by default
+    in `src/commands/review.ts`; prefer bounded summaries or explicit opt-in full
+    context.
+  - Do not remove the token-estimate bucket separation that makes this bloat visible.

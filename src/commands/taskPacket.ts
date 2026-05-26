@@ -15,6 +15,7 @@ export interface TaskPacket {
   forbidden_paths: string[];
   path_ownership: TaskSpec["path_ownership"];
   acceptance_criteria: string[];
+  implementation_notes: string[];
   verification_commands: string[];
   outputs_required: string[];
   notes: string[];
@@ -53,6 +54,7 @@ export function buildTaskPacket(options: BuildTaskPacketOptions): TaskPacket {
     forbidden_paths: spec.forbidden_paths,
     path_ownership: spec.path_ownership,
     acceptance_criteria: spec.acceptance_criteria,
+    implementation_notes: spec.implementation_notes ?? [],
     verification_commands: spec.verification.commands,
     outputs_required: spec.outputs_required,
     notes: spec.notes,

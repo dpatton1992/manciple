@@ -84,8 +84,9 @@ program
   .option("--domain <domain>", "Domain for this task.", "core")
   .option("--priority <priority>", `Priority (${PRIORITIES.join(", ")})`, "medium")
   .option("--goal <goal>", "Pre-fill the goal field.")
+  .option("--implementation-note <note>", "Behavior, product, or design constraint. May be repeated.", collect, [])
   .option("--interactive", "Prompt for task fields.", false)
-  .action(async (title: string | undefined, opts: { type: string; domain: string; priority: string; goal?: string; interactive: boolean }) => {
+  .action(async (title: string | undefined, opts: { type: string; domain: string; priority: string; goal?: string; implementationNote: string[]; interactive: boolean }) => {
     if (!title && !opts.interactive) {
       console.error("error: missing required argument 'title'");
       process.exit(1);
@@ -105,7 +106,15 @@ program
       await newInteractiveCommand(title, { type, domain: opts.domain, priority, goal: opts.goal, cwd, activeDir: p.tasksActive });
       return;
     }
-    newCommand(title!, { type, domain: opts.domain, priority, goal: opts.goal, cwd, activeDir: p.tasksActive });
+    newCommand(title!, {
+      type,
+      domain: opts.domain,
+      priority,
+      goal: opts.goal,
+      cwd,
+      activeDir: p.tasksActive,
+      implementationNotes: opts.implementationNote,
+    });
   });
 
 // validate
@@ -426,12 +435,14 @@ program
   .option("--include-run-log", "Include latest run log estimate.", false)
   .option("--include-diff", "Include git diff estimate.", false)
   .option("--include-git-context", "Include compact git status context estimate.", false)
+  .option("--append-run-log", "Append the token-estimate section to the latest existing run log.", false)
   .action((taskId: string, opts: {
     budget: number;
     includeReview: boolean;
     includeRunLog: boolean;
     includeDiff: boolean;
     includeGitContext: boolean;
+    appendRunLog: boolean;
   }) => {
     tokenEstimateCommand({
       specsTasksDir: p.specsTasks,
@@ -442,6 +453,7 @@ program
       includeRunLog: opts.includeRunLog,
       includeDiff: opts.includeDiff,
       includeGitContext: opts.includeGitContext,
+      appendRunLog: opts.appendRunLog,
     });
   });
 

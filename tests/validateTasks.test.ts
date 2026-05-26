@@ -30,6 +30,7 @@ function makeTask(overrides: Partial<LoadedTask["spec"]> = {}): LoadedTask {
       acceptance_criteria: ["It works."],
       verification: { commands: ["pnpm test"] },
       outputs_required: ["files_changed"],
+      implementation_notes: ["Preserve existing behavior."],
       notes: ["Keep it simple."],
       ...overrides,
     },
@@ -206,6 +207,7 @@ describe("validateTasks", () => {
         allowed_paths: [],
         forbidden_paths: [],
         outputs_required: [],
+        implementation_notes: [],
         notes: [],
       }),
     ];
@@ -215,6 +217,7 @@ describe("validateTasks", () => {
     expect(fields).toContain("allowed_paths");
     expect(fields).toContain("forbidden_paths");
     expect(fields).toContain("outputs_required");
+    expect(fields).toContain("implementation_notes");
     expect(fields).toContain("notes");
     // depends_on is not warned about — having no dependencies is valid.
     expect(fields).not.toContain("depends_on");

@@ -1,0 +1,65 @@
+id: mark-superseded-duplicate-run-logs
+title: Mark superseded duplicate run logs
+status: pending
+type: hardening
+domain: core
+priority: high
+depends_on:
+  - harden-run-log-token-estimates-and-audit-evidence-quality
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/commands/runLog.ts
+  - src/commands/tokenEstimate.ts
+  - src/review/evidence.ts
+  - src/mcp.ts
+  - tests/runLog.test.ts
+  - tests/tokenEstimate.test.ts
+  - tests/mcpList.test.ts
+forbidden_paths:
+  - .assignr/runs/**
+  - dist/**
+  - node_modules/**
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Repeated run-log or append operations for the same task clearly identify the
+  latest receipt and any superseded duplicate receipts.
+acceptance_criteria:
+  - "Creating or appending evidence for a task that already has a run log for the same
+    task/status marks the durable latest receipt unambiguously, using either a `latest:
+    true` marker, a `supersedes` marker, or an equivalent explicit convention documented
+    in the run log."
+  - Older duplicate receipts for the same task/status are either not created unless
+    explicitly requested or are clearly labeled as superseded without deleting
+    historical evidence.
+  - Latest-run-log discovery used by review, review-check, token-estimate append, and
+    MCP paths continues to select the intended latest receipt deterministically.
+  - Backward compatibility is preserved for existing flat
+    `.assignr/runs/<timestamp>-<task>.md` logs and any nested `.assignr/runs/<task>/`
+    logs.
+  - Tests cover repeated run-log creation or append behavior and latest receipt
+    selection.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test -- runLog
+    - pnpm test -- tokenEstimate
+    - pnpm test -- mcpList
+    - pnpm exec tsx src/cli.ts verify --profile worker
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+  - decisions_made
+notes:
+  - This task is follow-up work from review feedback on
+    `harden-run-log-token-estimates-and-audit-evidence-quality`; depend on that task
+    reaching review completion before starting.
+  - Do not delete existing run logs as part of the behavior. Historical receipts must
+    remain auditable.
+  - If adding a new CLI option, default behavior should reduce ambiguity for normal
+    users while still allowing explicit historical/multiple-receipt workflows.
+  - Keep CLI and MCP run-log behavior aligned.

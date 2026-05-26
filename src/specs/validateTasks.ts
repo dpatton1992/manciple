@@ -32,6 +32,7 @@ const OPTIONAL_FIELDS = [
   "allowed_paths",
   "forbidden_paths",
   "outputs_required",
+  "implementation_notes",
   "notes",
 ] as const;
 

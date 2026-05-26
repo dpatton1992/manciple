@@ -18,6 +18,10 @@ Evaluate whether the implementation satisfies the task without creating unnecess
 
 {{acceptance_criteria}}
 
+## Implementation Notes
+
+{{implementation_notes}}
+
 ## Verification Commands
 
 {{verification_commands}}
@@ -39,6 +43,7 @@ Evaluate whether the implementation satisfies the task without creating unnecess
 - tests run
 - type/lint/test failures
 - architecture consistency
+- runner-made product or design decisions not present in acceptance criteria, implementation notes, domain context, or notes
 - duplicated abstractions
 - excessive scope
 - missing edge cases

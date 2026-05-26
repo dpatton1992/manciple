@@ -34,6 +34,10 @@ You are an implementation agent working inside this repo.
 
 {{acceptance_criteria}}
 
+## Implementation Notes
+
+{{implementation_notes}}
+
 ## Verification Commands
 
 {{verification_commands}}

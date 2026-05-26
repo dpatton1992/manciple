@@ -38,6 +38,7 @@ Break the goal into the smallest set of independently reviewable tasks. Each tas
 
 - Be completable in one agent session without coordination with sibling tasks
 - Have a clear, testable outcome
+- For behavior-changing work, settle product semantics upfront in `implementation_notes`; do not leave runners to invent behavior during execution
 - Not overlap `allowed_paths` with sibling tasks unless the overlap is intentional and noted in both tasks' `notes`
 
 Prefer this decomposition order:
@@ -62,6 +63,7 @@ When MCP tools are available, call `assignr_create` for each task. The tool gene
   "priority": "<low|medium|high|critical>",
   "goal": "<one sentence — what is done when this task is complete>",
   "acceptance_criteria": ["<specific, testable criterion>", "..."],
+  "implementation_notes": ["<behavior, product, evidence, compatibility, or design constraint the runner must preserve>", "..."],
   "verification_commands": ["<shell command to verify — must be runnable as-is>"],
   "allowed_paths": ["<glob or exact path discovered in Step 2>"],
   "forbidden_paths": ["<glob or exact path>"],
@@ -74,6 +76,8 @@ When MCP tools are available, call `assignr_create` for each task. The tool gene
 If `assignr_create` returns an error because the id already exists, report the collision and ask whether to skip or choose a different title.
 
 If MCP tools are unavailable, fall back to writing YAML files directly to `.assignr/tasks/active/<task-id>.yaml` using the same fields. Do not use `assignr new` — it stubs required fields.
+
+For behavior-changing tasks, `implementation_notes` should capture any product semantics that are not already explicit in acceptance criteria. When relevant, call out shared receipt or evidence fields, separate test commands from non-test commands, backwards compatibility expectations, and CLI/MCP parity requirements.
 
 ## Step 5: Validate
 

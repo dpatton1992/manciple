@@ -140,7 +140,7 @@ export function buildRunLog(
   const decisionsMade = renderList(
     options.decisionsMade,
     "provided by user",
-    "Unknown: no decisions were provided. Record key implementation or review decisions."
+    "Unknown: no decisions were provided. Completed implementation work that changed behavior must record Decisions Made; omit only when blocked before meaningful changes."
   );
   const followUps = renderList(
     options.followUps,

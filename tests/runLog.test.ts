@@ -150,6 +150,24 @@ describe("runLogCommand", () => {
     }
   });
 
+  it("guides completed implementation run logs to record decisions made", () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    try {
+      runLogCommand("run-log-capture", p.specsTasks, p.runs, p.promptsGenerated, cwd, {
+        result: "complete",
+      });
+
+      const content = latestRunLog();
+      expect(content).toContain("## Decisions Made");
+      expect(content).toContain(
+        "Completed implementation work that changed behavior must record Decisions Made; omit only when blocked before meaningful changes."
+      );
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
+
   it("records CLI-provided task status, tests, acceptance evidence, and verify receipt", () => {
     const tsxBin = join(
       process.cwd(),

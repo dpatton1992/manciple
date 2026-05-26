@@ -33,6 +33,7 @@ export const TaskSpecSchema = z.object({
   acceptance_criteria: z
     .array(z.string())
     .min(1, "acceptance_criteria must not be empty"),
+  implementation_notes: z.array(z.string()).optional().default([]),
   verification: z.object({
     commands: z
       .array(z.string())
@@ -42,7 +43,10 @@ export const TaskSpecSchema = z.object({
   notes: z.array(z.string()).optional().default([]),
 });
 
-export type TaskSpec = z.infer<typeof TaskSpecSchema>;
+type ParsedTaskSpec = z.infer<typeof TaskSpecSchema>;
+export type TaskSpec = Omit<ParsedTaskSpec, "implementation_notes"> & {
+  implementation_notes?: string[];
+};
 
 export interface LoadedTask {
   spec: TaskSpec;

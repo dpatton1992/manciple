@@ -312,6 +312,7 @@ server.registerTool(
       priority: z.enum(PRIORITIES).optional().describe("Task priority. Defaults to medium."),
       goal: z.string().min(1).describe("One sentence describing what is done when this task is complete."),
       acceptance_criteria: z.array(z.string()).min(1).describe("Specific, testable criteria the implementation must satisfy."),
+      implementation_notes: z.array(z.string()).optional().describe("Behavior, product, or design constraints the runner must preserve."),
       verification_commands: z.array(z.string()).min(1).describe("Shell commands to verify the work. Must be runnable in the repo as-is."),
       allowed_paths: z.array(z.string()).optional().describe("Glob patterns or exact paths the agent may edit."),
       forbidden_paths: z.array(z.string()).optional().describe("Paths the agent must not touch."),
@@ -327,6 +328,7 @@ server.registerTool(
     priority,
     goal,
     acceptance_criteria,
+    implementation_notes,
     verification_commands,
     allowed_paths,
     forbidden_paths,
@@ -356,6 +358,7 @@ server.registerTool(
         forbidden_paths: forbidden_paths ?? [],
         goal,
         acceptance_criteria,
+        implementation_notes: implementation_notes ?? [],
         verification: { commands: verification_commands },
         outputs_required: outputs_required ?? ["files_changed", "tests_run", "risks"],
         notes: notes ?? [],
@@ -539,6 +542,11 @@ server.registerTool(
         .array(z.string())
         .optional()
         .describe("Evidence lines showing how acceptance criteria were satisfied."),
+      decisions_made: z
+        .array(z.string())
+        .optional()
+        .describe("Key decisions made during completed implementation work; omit only if blocked before meaningful changes."),
+      follow_ups: z.array(z.string()).optional().describe("Follow-up tasks or notes from the run."),
       verify_receipt: z
         .string()
         .optional()
@@ -560,6 +568,8 @@ server.registerTool(
     tests_run,
     task_status,
     acceptance_criteria_evidence,
+    decisions_made,
+    follow_ups,
     verify_receipt,
     result,
     risks,
@@ -585,6 +595,8 @@ server.registerTool(
           testsRun: tests_run,
           taskStatus: task_status,
           acceptanceCriteriaEvidence: acceptance_criteria_evidence,
+          decisionsMade: decisions_made,
+          followUps: follow_ups,
           verifyReceipt: verify_receipt,
           result,
           risks,

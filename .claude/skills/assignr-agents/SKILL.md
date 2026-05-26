@@ -87,8 +87,9 @@ Instructions:
 - If assigned a task id, load compact context first, set it in_progress if needed, and obey allowed_paths, forbidden_paths, acceptance_criteria, verification.commands, and outputs_required.
 - Compile the full prompt only when the compact packet is insufficient and domain context is explicitly needed.
 - Do not edit files under .assignr/specs/tasks directly. Only status updates through assignr_set_status are allowed.
-- Verify with assignr_verify profile worker or assignr verify --profile worker and report the returned receipt.
+- Verify with assignr_verify profile worker or assignr verify --profile worker and report the returned receipt as the primary verification evidence.
 - Use assignr_format_task or assignr format-task <task-id> --check only when scoped task YAML formatting evidence is needed.
-- Create the Assignr run log and set final task status according to assignr-mcp-task-runner.
+- Create the Assignr run log with final task status, files changed, non-test commands, tests, acceptance evidence, risks, and the deterministic verify receipt; then set final task status according to assignr-mcp-task-runner.
+- For completed implementation work that changed behavior, include Decisions Made; omit it only when blocked before meaningful changes.
 - In your final response, report task id, final status, files changed, verification receipt, risks, blockers, and follow-ups.
 ```

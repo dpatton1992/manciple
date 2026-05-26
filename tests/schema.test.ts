@@ -61,6 +61,25 @@ describe("TaskSpecSchema", () => {
     }
   });
 
+  it("defaults implementation_notes to an empty array when absent", () => {
+    const result = TaskSpecSchema.safeParse(baseSpec);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.implementation_notes).toEqual([]);
+    }
+  });
+
+  it("accepts implementation_notes as task design constraints", () => {
+    const result = TaskSpecSchema.safeParse({
+      ...baseSpec,
+      implementation_notes: ["Preserve CLI and MCP parity."],
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.implementation_notes).toEqual(["Preserve CLI and MCP parity."]);
+    }
+  });
+
   it("accepts all valid statuses", () => {
     const statuses = [
       "pending",

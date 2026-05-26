@@ -129,4 +129,20 @@ describe("loadTasks", () => {
       rmSync(cwd, { recursive: true, force: true });
     }
   });
+
+  it("loads legacy tasks without implementation_notes", () => {
+    const cwd = mkdtempSync(join(tmpdir(), "assignr-load-tasks-"));
+    const paths = getPaths(cwd, ".assignr");
+
+    try {
+      writeTask(paths, "active", "legacy-task");
+
+      const { tasks, errors } = loadTasks(paths.specsTasks);
+
+      expect(errors).toEqual([]);
+      expect(tasks[0].spec.implementation_notes).toEqual([]);
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
 });
