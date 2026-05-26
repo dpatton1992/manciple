@@ -16,7 +16,7 @@ import type { Status } from "../constants.js";
 import type { TaskSpec } from "../specs/schema.js";
 import { getPaths } from "../utils/paths.js";
 
-function getTemplate(type: TaskSpec["type"]): string {
+export function getTemplate(type: TaskSpec["type"]): string {
   switch (type) {
     case "review":
       return REVIEW_TEMPLATE;
@@ -27,7 +27,7 @@ function getTemplate(type: TaskSpec["type"]): string {
   }
 }
 
-function loadDomainContext(specsTasksDir: string, domain: string, cwd: string): string | undefined {
+export function loadDomainContext(specsTasksDir: string, domain: string, cwd: string): string | undefined {
   const assignrRoot = relative(cwd, dirname(dirname(specsTasksDir)));
   const domainPath = join(getPaths(cwd, assignrRoot).specsDomains, `${domain}.yaml`);
 

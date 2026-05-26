@@ -1,0 +1,102 @@
+id: add-task-design-constraints-contract
+title: Add task design constraints contract
+status: in_progress
+type: implementation
+domain: core
+priority: high
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/specs/schema.ts
+  - src/specs/validateTasks.ts
+  - src/specs/loadTasks.ts
+  - src/templates/renderTemplate.ts
+  - src/commands/new.ts
+  - src/commands/taskPacket.ts
+  - src/mcp.ts
+  - src/cli.ts
+  - tests/schema.test.ts
+  - tests/validateTasks.test.ts
+  - tests/formatTask.test.ts
+  - tests/renderTemplate.test.ts
+  - tests/mcpList.test.ts
+  - tests/loadTasks.test.ts
+  - .assignr/prompts/templates/implementation.md
+  - .assignr/prompts/templates/review.md
+  - .codex/skills/assignr-task-planner/SKILL.md
+  - .claude/skills/assignr-task-planner/SKILL.md
+  - .codex/skills/assignr-mcp-task-runner/SKILL.md
+  - .claude/skills/assignr-mcp-task-runner/SKILL.md
+forbidden_paths:
+  - dist/**
+  - node_modules/**
+  - .assignr/tasks/completed/**
+  - .assignr/tasks/archived/**
+  - .assignr/prompts/generated/**
+  - .assignr/runs/**
+  - package.json
+  - pnpm-lock.yaml
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Task specs, generated prompts, task packets, planner guidance, and review guidance
+  expose explicit implementation notes so runners execute scoped product behavior
+  instead of inferring missing semantics.
+acceptance_criteria:
+  - Task specs accept a lightweight optional `implementation_notes` field, or an
+    equivalently named `design_constraints` field if the implementation documents that
+    choice consistently, as an array of strings defaulting to an empty array for
+    existing task logs/specs.
+  - "Existing task specs and run logs remain backwards compatible: tasks without the new
+    field continue to load, validate, format, compile, list, and produce task packets
+    without migration."
+  - "CLI and MCP task creation stay in parity: both surfaces can create tasks with the
+    new design guidance field, and both continue to work when it is omitted."
+  - Generated implementation prompts and compact task packets include the new guidance
+    field in a clearly labeled section separate from free-form notes.
+  - Generated review prompts instruct reviewers to flag runner-made product or design
+    decisions that were not present in acceptance criteria, implementation notes/design
+    constraints, domain context, or notes.
+  - Planner skill instructions require behavior-changing tasks to include explicit
+    implementation notes/design constraints that settle product semantics upfront; the
+    guidance must call out, when relevant, shared receipt/evidence fields, separate test
+    commands versus non-test commands, backwards compatibility, and CLI/MCP parity.
+  - Tests cover schema defaulting, loading/formatting backwards compatibility, CLI/MCP
+    creation parity for the new field, prompt rendering, task-packet output, and review
+    prompt guidance.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test -- schema renderTemplate formatTask mcpList
+    - pnpm test
+    - pnpm exec tsx src/cli.ts verify --profile worker
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+  - acceptance_criteria_evidence
+  - implementation_notes_evidence
+notes:
+  - "Design constraint: prefer the field name `implementation_notes` unless a repo
+    convention discovered during implementation makes `design_constraints` clearly
+    better; do not support both names unless the runner documents why aliasing is
+    needed."
+  - "Design constraint: the new field is separate from `notes`; `notes` remains
+    free-form context, while `implementation_notes` captures behavior/product semantics
+    the runner must preserve."
+  - "Design constraint: for behavior-changing tasks, planner guidance should tell
+    authors to settle product semantics in the task contract before dispatch, not leave
+    the runner to discover them mid-run."
+  - "Design constraint: for the run-log evidence example that motivated this task,
+    explicit task contracts should specify shared receipt/evidence fields, separate test
+    commands from non-test commands, preserve backwards compatibility with existing run
+    logs, and keep CLI/MCP behavior in parity."
+  - "Design constraint: reviewers should request changes or at least flag findings when
+    a runner invents product semantics not stated in acceptance criteria, implementation
+    notes/design constraints, domain context, or notes."
+  - No active duplicate task was found. Related completed work includes
+    `tighten-run-log-evidence-receipts`, but that task implemented run-log receipt
+    behavior; this task changes the task-spec/planner/reviewer contract for future work.

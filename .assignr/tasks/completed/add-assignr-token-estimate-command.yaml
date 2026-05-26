@@ -1,0 +1,65 @@
+id: add-assignr-token-estimate-command
+title: Add assignr token-estimate command
+status: complete
+type: implementation
+domain: core
+priority: high
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/cli.ts
+  - src/commands/tokenEstimate.ts
+  - src/commands/compile.ts
+  - src/commands/review.ts
+  - src/templates/renderTemplate.ts
+  - src/review/evidence.ts
+  - src/utils/**
+  - tests/tokenEstimate.test.ts
+  - tests/renderTemplate.test.ts
+  - tests/review*.test.ts
+forbidden_paths:
+  - dist/**
+  - node_modules/**
+  - .assignr/runs/**
+  - .assignr/prompts/generated/**
+  - README.md
+  - docs/**
+  - .claude/**
+  - .codex/**
+  - scripts/**
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Add a deterministic `assignr token-estimate` command that estimates Assignr-owned
+  prompt and evidence token sizes for a task handoff.
+acceptance_criteria:
+  - "`assignr token-estimate <task-id>` prints character counts and estimated token
+    counts for the compiled prompt total and source buckets including task spec, domain
+    context, template/instructions, and verification/review contract."
+  - The command can include review prompt, latest run log, and git diff/context
+    estimates when requested by flags, and labels those optional sources clearly in the
+    output.
+  - The estimator uses a documented deterministic local heuristic, does not call
+    external APIs, and makes clear that it estimates Assignr handoff bloat rather than
+    total agent spend.
+  - The command reports a simple risk line against a configurable prompt budget,
+    defaulting to a 4k estimated-token budget.
+  - Unit tests cover normal output, missing task handling, optional review/run-log/diff
+    inclusion, and over-budget risk output.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test -- tokenEstimate
+    - pnpm test
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes:
+  - There is related completed work in `add-run-cost-summary-command`, but this task is
+    about pre-execution prompt-size estimation, not post-run usage/cost summaries.
+  - Prefer sharing render/assembly helpers with compile/review code over duplicating
+    prompt construction, but keep behavior deterministic and locally testable.

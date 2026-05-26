@@ -1,0 +1,91 @@
+id: harden-run-log-token-estimates-and-audit-evidence-quality
+title: Harden run log token estimates and audit evidence quality
+status: pending
+type: hardening
+domain: core
+priority: high
+depends_on:
+  - add-assignr-token-estimate-command
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/cli.ts
+  - src/mcp.ts
+  - src/commands/tokenEstimate.ts
+  - src/commands/runLog.ts
+  - src/commands/verify.ts
+  - src/review/evidence.ts
+  - tests/tokenEstimate.test.ts
+  - tests/runLog.test.ts
+  - tests/verify.test.ts
+  - tests/mcpList.test.ts
+  - .codex/skills/assignr-mcp-task-runner/SKILL.md
+  - .codex/skills/assignr-agents/SKILL.md
+  - .claude/skills/assignr-mcp-task-runner/SKILL.md
+  - .claude/skills/assignr-agents/SKILL.md
+forbidden_paths:
+  - dist/**
+  - node_modules/**
+  - .assignr/runs/**
+  - .assignr/prompts/generated/**
+  - .assignr/tasks/completed/**
+  - .assignr/tasks/archived/**
+  - scripts/**
+  - README.md
+  - docs/**
+  - package.json
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Run logs can optionally record Assignr handoff token estimates while worker
+  guidance and receipts produce clearer audit evidence without adding a new generic
+  receipt system.
+acceptance_criteria:
+  - "`assignr token-estimate <task-id> --append-run-log` or an equivalent explicit flag
+    appends/records a token-estimate section in the existing latest run log instead of
+    creating a separate generic receipt system."
+  - "Recorded token estimates include `estimated: true` and `method: ceil(characters /
+    4)` markers wherever token counts are persisted in a run log."
+  - Token-estimate output and run-log sections keep the scope narrow by stating that
+    counts estimate Assignr artifact/context bloat, not total provider, harness, tool,
+    retry, reasoning, or generated-output usage.
+  - Token buckets are clearly separated as base Assignr handoff, review prompt, latest
+    run log, git diff, and git context; base Assignr handoff may still show its internal
+    source breakdown as supporting detail.
+  - Budget checks remain warnings/risk lines only and do not fail normal compile,
+    run-log, verify, or token-estimate workflows by default.
+  - Worker run-log instructions require `Decisions Made` for completed implementation
+    work when behavior changed, while allowing omission only when the task was blocked
+    before meaningful changes.
+  - Run-log and MCP worker receipt guidance distinguish non-test commands from test
+    commands or deterministic test receipts instead of treating every command as
+    verification evidence.
+  - Tests cover token-estimate append behavior, persisted estimate markers/method text,
+    bucket labels, warning-only budget behavior, Decisions Made requirements/guidance,
+    and command-vs-test evidence separation.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test -- tokenEstimate
+    - pnpm test -- runLog
+    - pnpm test -- verify
+    - pnpm test -- mcpList
+    - pnpm exec tsx src/cli.ts verify --profile worker
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+  - acceptance_criteria_evidence
+notes:
+  - This intentionally overlaps the existing `add-assignr-token-estimate-command`
+    implementation paths and must wait for that task to be reviewed or otherwise
+    stabilized before execution.
+  - Do not add another generic receipt system; reuse the durable run log and existing
+    verify receipt surfaces.
+  - Treat `add-assignr-token-auditor-skill-and-script` as related but not a prerequisite
+    unless that task lands first; if it lands first, preserve its script workflow while
+    still recording estimates in existing run logs.
+  - "This task is about audit quality: better receipts, clearer evidence, fewer unknown
+    sections, and narrower token-estimate framing."

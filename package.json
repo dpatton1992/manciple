@@ -22,6 +22,7 @@
 		"dist/",
 		"docs/",
 		"README.md",
+		"scripts/assignr-token-audit.mjs",
 		".codex/skills/",
 		".claude/skills/"
 	],

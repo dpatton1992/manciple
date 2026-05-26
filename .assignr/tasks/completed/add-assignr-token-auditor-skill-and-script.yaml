@@ -1,0 +1,59 @@
+id: add-assignr-token-auditor-skill-and-script
+title: Add Assignr token auditor skill and script
+status: complete
+type: implementation
+domain: core
+priority: high
+depends_on:
+  - add-assignr-token-estimate-command
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - scripts/assignr-token-audit.mjs
+  - .claude/skills/assignr-token-auditor/SKILL.md
+  - .codex/AGENTS.md
+  - AGENTS.md
+  - package.json
+  - tests/**
+forbidden_paths:
+  - dist/**
+  - node_modules/**
+  - .assignr/runs/**
+  - .assignr/prompts/generated/**
+  - src/commands/**
+  - src/cli.ts
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Add Claude and Codex-facing token audit workflows that run a deterministic script
+  instead of asking agents to eyeball prompt size.
+acceptance_criteria:
+  - "`scripts/assignr-token-audit.mjs` runs locally for a task id and delegates to the
+    deterministic token-estimate command or equivalent local API, returning the
+    estimator output without requiring network access."
+  - A new `.claude/skills/assignr-token-auditor/SKILL.md` instructs Claude Code to run
+    the audit script, report the measured buckets, and avoid manual token counting.
+  - Codex-facing `AGENTS.md` instructions are added under `.codex/AGENTS.md` or the
+    project `AGENTS.md` to require token-audit prompts to use the script and report its
+    output.
+  - The skill and Codex instructions explain the limitation that this measures Assignr
+    handoff size, not total agent spend from file reads, tools, retries, internal
+    reasoning, or generated output.
+  - Verification demonstrates the script works against a fixture or real active task and
+    that packaged skill files remain included by the existing package configuration.
+verification:
+  commands:
+    - node scripts/assignr-token-audit.mjs add-assignr-token-estimate-command
+    - pnpm typecheck
+    - pnpm test
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes:
+  - This task intentionally follows the CLI estimator so the workflow can run a
+    script/command and cite receipts rather than relying on agent judgment.
+  - The user explicitly requested both Claude skill coverage and Codex instruction-layer
+    coverage. Prefer `.codex/AGENTS.md` if no project-level `AGENTS.md` already exists.

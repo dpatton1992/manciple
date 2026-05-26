@@ -24,6 +24,7 @@ import { checkLifecycleCommand } from "./commands/checkLifecycle.js";
 import { migrateTasksCommand } from "./commands/migrateTasks.js";
 import { runLogCommand } from "./commands/runLog.js";
 import { summarizeRunCostCommand } from "./commands/summarizeRunCost.js";
+import { tokenEstimateCommand, DEFAULT_TOKEN_BUDGET } from "./commands/tokenEstimate.js";
 import { reviewCommand } from "./commands/review.js";
 import { reviewCheckCommand } from "./commands/reviewCheck.js";
 import { reviewQueueCommand } from "./commands/reviewQueue.js";
@@ -414,6 +415,34 @@ program
   .description("Summarize recorded run-log model, token, and cost evidence.")
   .action((taskId: string | undefined) => {
     summarizeRunCostCommand(p.runs, taskId);
+  });
+
+// token-estimate
+program
+  .command("token-estimate <task-id>")
+  .description("Estimate Assignr handoff prompt size using a deterministic local heuristic.")
+  .option("--budget <tokens>", "Estimated-token budget for risk reporting.", parseNumberOption, DEFAULT_TOKEN_BUDGET)
+  .option("--include-review", "Include generated review prompt estimate.", false)
+  .option("--include-run-log", "Include latest run log estimate.", false)
+  .option("--include-diff", "Include git diff estimate.", false)
+  .option("--include-git-context", "Include compact git status context estimate.", false)
+  .action((taskId: string, opts: {
+    budget: number;
+    includeReview: boolean;
+    includeRunLog: boolean;
+    includeDiff: boolean;
+    includeGitContext: boolean;
+  }) => {
+    tokenEstimateCommand({
+      specsTasksDir: p.specsTasks,
+      cwd,
+      taskId,
+      budget: opts.budget,
+      includeReview: opts.includeReview,
+      includeRunLog: opts.includeRunLog,
+      includeDiff: opts.includeDiff,
+      includeGitContext: opts.includeGitContext,
+    });
   });
 
 // review

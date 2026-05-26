@@ -25,11 +25,11 @@ function formatVerificationCommands(commands: string[] | undefined): string {
   return commands.map((cmd) => `\`\`\`bash\n${cmd}\n\`\`\``).join("\n\n");
 }
 
-function readLatestRunLog(cwd: string, taskId: string): string {
+export function readLatestRunLog(cwd: string, taskId: string): string {
   return readLatestRunLogContent(cwd, taskId) ?? "_No run log available._";
 }
 
-function readGitDiff(cwd: string): string {
+export function readGitDiff(cwd: string): string {
   const result = spawnSync("git", ["diff", "HEAD"], {
     cwd,
     encoding: "utf8",
@@ -54,7 +54,19 @@ function readGitDiff(cwd: string): string {
   return `\`\`\`diff\n${lines.slice(0, 400).join("\n")}\n\`\`\`\n\n_Diff truncated after 400 lines._`;
 }
 
-function renderReviewPrompt(spec: TaskSpec, cwd: string): string {
+export interface RenderReviewPromptOptions {
+  includeRunLog?: boolean;
+  includeGitDiff?: boolean;
+}
+
+export function renderReviewPrompt(
+  spec: TaskSpec,
+  cwd: string,
+  options: RenderReviewPromptOptions = {}
+): string {
+  const includeRunLog = options.includeRunLog ?? true;
+  const includeGitDiff = options.includeGitDiff ?? true;
+
   return `# Review Task: ${spec.title}
 
 You are reviewing an agent-produced change.
@@ -81,11 +93,11 @@ ${formatVerificationCommands(spec.verification?.commands)}
 
 ## Run Log
 
-${readLatestRunLog(cwd, spec.id)}
+${includeRunLog ? readLatestRunLog(cwd, spec.id) : "_Run log omitted._"}
 
 ## Git Diff
 
-${readGitDiff(cwd)}
+${includeGitDiff ? readGitDiff(cwd) : "_Git diff omitted._"}
 
 ## Allowed Paths
 
