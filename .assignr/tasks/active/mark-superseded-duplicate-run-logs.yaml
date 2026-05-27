@@ -1,6 +1,6 @@
 id: mark-superseded-duplicate-run-logs
 title: Mark superseded duplicate run logs
-status: pending
+status: needs_review
 type: hardening
 domain: core
 priority: high

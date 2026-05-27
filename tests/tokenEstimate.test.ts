@@ -158,6 +158,35 @@ describe("tokenEstimateCommand", () => {
     expect(output).toContain("Risk: over budget");
   });
 
+  it("keeps over-budget estimates warning-only in the CLI", () => {
+    writeTask("estimate-warning-only", {
+      goal: "x".repeat(100),
+    });
+
+    const tsxBin = join(
+      process.cwd(),
+      "node_modules",
+      ".bin",
+      process.platform === "win32" ? "tsx.cmd" : "tsx"
+    );
+
+    const result = spawnSync(
+      tsxBin,
+      [
+        join(process.cwd(), "src", "cli.ts"),
+        "token-estimate",
+        "estimate-warning-only",
+        "--budget",
+        "1",
+      ],
+      { cwd, encoding: "utf-8" }
+    );
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Risk: over budget");
+    expect(result.stderr).toBe("");
+  });
+
   it("renders persisted run-log estimate markers and warning-only budget text", () => {
     writeTask("estimate-section");
 

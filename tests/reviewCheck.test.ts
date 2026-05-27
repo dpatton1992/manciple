@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
+import { appendFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { stringify } from "yaml";
 
 import { initCommand } from "../src/commands/init.js";
 import { reviewCheckCommand } from "../src/commands/reviewCheck.js";
+import { renderReviewPrompt } from "../src/commands/review.js";
 import { runLogCommand } from "../src/commands/runLog.js";
 import { getPaths } from "../src/utils/paths.js";
 import type { TaskSpec } from "../src/specs/schema.js";
@@ -61,6 +62,14 @@ function writeCompleteRunLog(taskId: string): void {
   });
 }
 
+function appendTokenEstimateSection(taskId: string, section: string): void {
+  const runLogFile = join(
+    p.runs,
+    readdirSync(p.runs).filter((file) => file.endsWith(`-${taskId}.md`)).sort().at(-1) ?? ""
+  );
+  appendFileSync(runLogFile, `\n\n## Token Estimate\n\n${section}\n`, "utf-8");
+}
+
 function writeGeneratedPrompts(taskId: string): void {
   mkdirSync(p.promptsGenerated, { recursive: true });
   writeFileSync(join(p.promptsGenerated, `${taskId}.md`), "implementation prompt", "utf-8");
@@ -68,6 +77,32 @@ function writeGeneratedPrompts(taskId: string): void {
 }
 
 describe("reviewCheckCommand", () => {
+  it("includes budget warning confirmation in generated review prompt checklists", () => {
+    const task: TaskSpec = {
+      id: "review-prompt-budget-warning",
+      title: "review-prompt-budget-warning",
+      status: "needs_review",
+      type: "implementation",
+      domain: "core",
+      priority: "medium",
+      depends_on: [],
+      allowed_paths: ["src/commands/review.ts"],
+      forbidden_paths: ["dist/"],
+      goal: "Review budget warning evidence.",
+      acceptance_criteria: ["Budget warnings are checked."],
+      verification: {
+        commands: ["pnpm test"],
+      },
+      outputs_required: ["files_changed"],
+      notes: [],
+    };
+
+    expect(renderReviewPrompt(task, cwd, {
+      includeRunLog: false,
+      includeGitDiff: false,
+    })).toContain("- [ ] Budget warning present but warning-only behavior confirmed.");
+  });
+
   it("exits zero and prints ready rows when all needs_review tasks are ready", () => {
     writeTask("ready-one");
     writeTask("ready-two");
@@ -111,6 +146,39 @@ describe("reviewCheckCommand", () => {
       expect(output).toContain("No run log is available for task missing-evidence.");
       expect(output).toContain("No verification commands are recorded in the run log.");
       expect(output).toContain("No risks entry is recorded in the run log");
+    } finally {
+      logSpy.mockRestore();
+      exitSpy.mockRestore();
+    }
+  });
+
+  it("reports over-budget estimates without warning-only confirmation as missing review evidence", () => {
+    writeTask("budget-warning-needs-attention");
+    writeCompleteRunLog("budget-warning-needs-attention");
+    appendTokenEstimateSection(
+      "budget-warning-needs-attention",
+      [
+        "Scope: estimates Assignr artifact/context bloat only.",
+        "- estimated: true",
+        "- method: ceil(characters / 4)",
+        "Budget warning: over budget (15804/4000 estimated tokens).",
+      ].join("\n")
+    );
+
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
+      throw new Error(`process.exit(${code})`);
+    }) as never);
+
+    try {
+      expect(() => reviewCheckCommand(p.tasksActive, cwd, "budget-warning-needs-attention")).toThrow("process.exit(1)");
+      expect(exitSpy).toHaveBeenCalledWith(1);
+
+      const output = logSpy.mock.calls.flat().join("\n");
+      expect(output).toContain("missing\tbudget-warning-needs-attention\tscore=");
+      expect(output).toContain("Over-budget token estimate needs review evidence confirming budget overages are warning-only.");
+      expect(output).toContain("human_review=yes");
+      expect(output).not.toContain("Verification command(s) appear to have failed");
     } finally {
       logSpy.mockRestore();
       exitSpy.mockRestore();

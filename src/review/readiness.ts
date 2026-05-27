@@ -26,6 +26,7 @@ export interface ReviewReadinessRunLog {
   followUps?: readonly string[];
   acceptanceCriteriaEvidence?: readonly ReviewReadinessAcceptanceEvidence[];
   notes?: string | null;
+  tokenEstimate?: string | null;
 }
 
 export interface ReviewReadinessEvidence {
@@ -143,6 +144,26 @@ function documentedRisks(runLogs: readonly ReviewReadinessRunLog[]): string[] {
   return presentValues(runLogs.map((log) => log.risks)).filter((risk) => !isExplicitNone(risk));
 }
 
+function tokenEstimateSections(runLogs: readonly ReviewReadinessRunLog[]): string[] {
+  return presentValues(runLogs.map((log) => log.tokenEstimate));
+}
+
+function hasOverBudgetTokenEstimate(runLogs: readonly ReviewReadinessRunLog[]): boolean {
+  return tokenEstimateSections(runLogs).some((section) => /Budget warning:\s*over budget\b/i.test(section));
+}
+
+function hasWarningOnlyBudgetConfirmation(runLogs: readonly ReviewReadinessRunLog[]): boolean {
+  const searchable = presentValues(runLogs.flatMap((log) => [
+    log.tokenEstimate,
+    log.risks,
+    log.notes,
+    ...(log.decisionsMade ?? []),
+    ...(log.acceptanceCriteriaEvidence ?? []).map((entry) => entry.evidence),
+  ])).join("\n");
+
+  return /\bwarning[- ]only\b/i.test(searchable) || /Warning only;\s*no workflow failed\./i.test(searchable);
+}
+
 function failedVerificationCommands(runLogs: readonly ReviewReadinessRunLog[]): string[] {
   const failedFromResults = runLogs.flatMap((log) => (
     log.commandResults ?? []
@@ -236,6 +257,8 @@ export function evaluateReviewReadiness(
   const missingReceiptFields = spec.outputs_required.filter((field) => (
     !receiptFieldIsPresent(field, runLogs, changedFilesSource, hasVerification, hasRisks)
   ));
+  const hasBudgetWarning = hasOverBudgetTokenEstimate(runLogs);
+  const hasBudgetWarningOnlyConfirmation = !hasBudgetWarning || hasWarningOnlyBudgetConfirmation(runLogs);
 
   const missingEvidence: string[] = [];
   if (!hasRunLog) {
@@ -265,6 +288,11 @@ export function evaluateReviewReadiness(
   }
   if (uncoveredCriteria.length > 0) {
     missingEvidence.push(sentence(`Acceptance criteria without evidence: ${uncoveredCriteria.join(" | ")}`));
+  }
+  if (!hasBudgetWarningOnlyConfirmation) {
+    missingEvidence.push(
+      "Over-budget token estimate needs review evidence confirming budget overages are warning-only."
+    );
   }
   if (risks.length > 0) {
     missingEvidence.push(sentence(`Documented risk(s) need review: ${risks.join(" | ")}`));
@@ -313,6 +341,14 @@ export function evaluateReviewReadiness(
       label: "No documented residual risks",
       passed: hasRisks && risks.length === 0,
       reason: !hasRisks ? "missing risks receipt" : risks.join(" | ") || undefined,
+    },
+    {
+      id: "budget-warning",
+      label: "Budget warning present but warning-only behavior confirmed",
+      passed: hasBudgetWarningOnlyConfirmation,
+      reason: !hasBudgetWarning
+        ? "no over-budget token estimate"
+        : "missing warning-only confirmation",
     },
   ];
   const score = scoreFrom(checklist);

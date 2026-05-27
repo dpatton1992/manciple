@@ -1,7 +1,8 @@
 import { writeFileSync, mkdirSync, existsSync } from "fs";
-import { join } from "path";
+import { join, basename } from "path";
 import { spawnSync } from "child_process";
 import { loadTasks } from "../specs/loadTasks.js";
+import { findLatestRunLogPath, markRunLogSuperseded } from "../review/evidence.js";
 
 export interface RunLogOptions {
   result?: string;
@@ -22,6 +23,8 @@ export interface RunLogOptions {
   acceptanceCriteriaEvidence?: string[];
   verifyReceipt?: string;
   notes?: string;
+  /** Filename of the run log this one supersedes, if any. */
+  supersedes?: string;
 }
 
 interface AutoDetectedFiles {
@@ -34,8 +37,9 @@ export function timestamp(): string {
   return new Date()
     .toISOString()
     .replace(/:/g, "-")
-    .replace(/\..+/, "")
-    .replace("T", "-");
+    .replace("T", "-")
+    .replace(/\./, "-")
+    .replace("Z", "");
 }
 
 export function currentBranch(cwd: string): string {
@@ -168,6 +172,10 @@ export function buildRunLog(
   ].filter(Boolean).join("\n");
   const costEvidence = options.costUsd !== undefined ? `- Cost USD: ${options.costUsd}` : "";
 
+  const supersedesLine = options.supersedes
+    ? `- Latest: true\n- Supersedes: ${options.supersedes}`
+    : `- Latest: true`;
+
   return `# Run Log: ${title}
 
 ## Metadata
@@ -178,6 +186,7 @@ export function buildRunLog(
 - Agent/Harness (${agentSource}): ${agent ?? "Unknown: not provided."}
 - Model (${modelSource}): ${options.model ?? "Unknown: not provided."}
 - Branch: ${branch}
+${supersedesLine}
 ${tokenEvidence || costEvidence ? `
 ## Usage Evidence
 
@@ -271,9 +280,24 @@ export function runLogCommand(
   }
 
   const ts = timestamp();
-  const outPath = join(runsDir, `${ts}-${taskId}.md`);
+  const outFilename = `${ts}-${taskId}.md`;
+  const outPath = join(runsDir, outFilename);
+
+  // Find existing latest run log for the same task to mark as superseded
+  const existingLatest = findLatestRunLogPath(cwd, taskId);
+
+  if (existingLatest) {
+    const existingBasename = basename(existingLatest);
+    options = { ...options, supersedes: existingBasename };
+  }
+
   const content = buildRunLog(spec.title, spec.id, spec.status, generatedDir, cwd, options);
 
   writeFileSync(outPath, content, "utf-8");
   console.log(`Created run log: ${outPath.replace(cwd + "/", "")}`);
+
+  // Mark the previous latest as superseded
+  if (existingLatest) {
+    markRunLogSuperseded(existingLatest, outFilename);
+  }
 }

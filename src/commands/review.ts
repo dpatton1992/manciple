@@ -115,6 +115,7 @@ ${formatList(spec.forbidden_paths)}
 - [ ] Verification evidence: required commands were run and their results are recorded.
 - [ ] Generated artifacts: generated prompts, run logs, or other artifacts are present and named as expected.
 - [ ] Risk notes: risks are recorded, or explicitly marked as none.
+- [ ] Budget warning present but warning-only behavior confirmed.
 
 ## Integration Review
 

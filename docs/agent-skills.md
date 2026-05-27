@@ -27,3 +27,34 @@ deterministic Assignr surfaces:
 Use the MCP setup in [MCP Server](mcp-server.md) when the agent should call
 Assignr tools directly. Use [Getting Started](getting-started.md) for the
 underlying CLI flow those skills automate.
+
+## OpenCode
+
+OpenCode reads `.claude/skills/` automatically via its Claude Code compatibility
+layer — no separate `.opencode/skills/` copies are needed.
+
+Two custom agents are defined in `.opencode/agents/`:
+
+- **`assignr-worker`** (`mode: subagent`) — invoke via `@assignr-worker` or
+  have the coordinator spawn it. Calls the `skill` tool with
+  `assignr-mcp-task-runner` to load its workflow at runtime.
+- **`assignr-coordinator`** (`mode: primary`) — reachable via the Tab key.
+  Calls the `skill` tool with `assignr-agents`, dispatches a plan, and spawns
+  `assignr-worker` subagents in parallel.
+
+The Assignr MCP server is registered in `opencode.json`:
+
+```json
+{
+  "mcp": {
+    "assignr": {
+      "type": "local",
+      "command": ["node", "./bin/assignr-mcp.js"],
+      "enabled": true
+    }
+  }
+}
+```
+
+Project-level rules for OpenCode sessions (token audit instructions, agent
+hints, conventions) live in `AGENTS.md` at the repo root.

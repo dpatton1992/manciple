@@ -33,7 +33,7 @@ Once a task is selected, obey the task spec exactly. Do not expand or shrink `al
 
 4. Verify.
    - Prefer `assignr_verify` with profile `worker` when MCP tools are available, or `assignr verify --profile worker` from the CLI. Report the returned receipt.
-   - Do not replace the worker profile with a hand-picked suite of local tests. Run additional targeted checks only when they are directly relevant to files changed or needed to diagnose a failure.
+   - Treat that deterministic worker receipt as the primary verification evidence. Do not stack routine manual checklists on top of it; run additional targeted checks only when they are directly relevant to files changed or needed to diagnose a failure.
    - Use `assignr_format_task` with `check_only: true` or `assignr format-task <task-id> --check` only when scoped task YAML formatting evidence is needed. Do not run routine whole-repo YAML formatting loops during worker completion.
 
 5. Finish.

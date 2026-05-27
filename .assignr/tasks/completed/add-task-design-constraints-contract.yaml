@@ -1,6 +1,6 @@
 id: add-task-design-constraints-contract
 title: Add task design constraints contract
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: high

@@ -182,4 +182,94 @@ describe("evaluateReviewReadiness", () => {
     expect(absent.failedVerificationCommands).toEqual([]);
     expect(absent.absentVerificationCommands).toEqual(["pnpm build", "pnpm test"]);
   });
+
+  it("accepts over-budget token estimates when warning-only behavior is confirmed", () => {
+    const report = evaluateReviewReadiness(task, {
+      runLogs: [{
+        filesChanged: ["src/review/readiness.ts"],
+        testsRun: ["pnpm build", "pnpm test"],
+        commandResults: [
+          { command: "pnpm build", status: "passed" },
+          { command: "pnpm test", status: "passed" },
+        ],
+        decisionsMade: ["Token budget overages remain warning-only audit evidence."],
+        risks: "none",
+        followUps: ["none"],
+        acceptanceCriteriaEvidence: [{
+          criterion: "Readiness can be evaluated.",
+          evidence: "Covered by tests.",
+        }],
+        tokenEstimate: [
+          "Scope: estimates Assignr artifact/context bloat only.",
+          "Budget warning: over budget (15804/4000 estimated tokens). Warning only; no workflow failed.",
+        ].join("\n"),
+      }],
+    });
+
+    expect(report.ready).toBe(true);
+    expect(report.failedVerificationCommands).toEqual([]);
+    expect(report.missingEvidence).toEqual([]);
+    expect(report.checklist).toContainEqual(expect.objectContaining({
+      id: "budget-warning",
+      passed: true,
+    }));
+  });
+
+  it("reports missing warning-only confirmation as human review evidence instead of a failed command", () => {
+    const report = evaluateReviewReadiness(task, {
+      runLogs: [{
+        filesChanged: ["src/review/readiness.ts"],
+        testsRun: ["pnpm build", "pnpm test"],
+        commandResults: [
+          { command: "pnpm build", status: "passed" },
+          { command: "pnpm test", status: "passed" },
+        ],
+        decisionsMade: ["Recorded token estimate evidence."],
+        risks: "none",
+        followUps: ["none"],
+        acceptanceCriteriaEvidence: [{
+          criterion: "Readiness can be evaluated.",
+          evidence: "Covered by tests.",
+        }],
+        tokenEstimate: "Budget warning: over budget (15804/4000 estimated tokens).",
+      }],
+    });
+
+    expect(report.ready).toBe(false);
+    expect(report.hasVerification).toBe(true);
+    expect(report.failedVerificationCommands).toEqual([]);
+    expect(report.missingEvidence).toContain(
+      "Over-budget token estimate needs review evidence confirming budget overages are warning-only."
+    );
+    expect(report.humanReviewReasons).toContain(
+      "Budget warning present but warning-only behavior confirmed: missing warning-only confirmation"
+    );
+  });
+
+  it("does not require budget warning evidence for ordinary run logs without token estimates", () => {
+    const report = evaluateReviewReadiness(task, {
+      runLogs: [{
+        filesChanged: ["src/review/readiness.ts"],
+        testsRun: ["pnpm build", "pnpm test"],
+        commandResults: [
+          { command: "pnpm build", status: "passed" },
+          { command: "pnpm test", status: "passed" },
+        ],
+        decisionsMade: ["Scored readiness with ordinary run-log evidence."],
+        risks: "none",
+        followUps: ["none"],
+        acceptanceCriteriaEvidence: [{
+          criterion: "Readiness can be evaluated.",
+          evidence: "Covered by tests.",
+        }],
+      }],
+    });
+
+    expect(report.ready).toBe(true);
+    expect(report.checklist).toContainEqual(expect.objectContaining({
+      id: "budget-warning",
+      passed: true,
+      reason: "no over-budget token estimate",
+    }));
+  });
 });

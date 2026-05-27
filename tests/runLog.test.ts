@@ -16,6 +16,7 @@ import { initCommand } from "../src/commands/init.js";
 import { newCommand } from "../src/commands/new.js";
 import { runLogCommand } from "../src/commands/runLog.js";
 import { getPaths } from "../src/utils/paths.js";
+import { findLatestRunLogPath, readLatestRunLogContent } from "../src/review/evidence.js";
 
 let cwd: string;
 let p: ReturnType<typeof getPaths>;
@@ -215,6 +216,95 @@ describe("runLogCommand", () => {
       expect(content).toContain("_Source: unknown_");
       expect(content).toContain("Unknown: git is unavailable or this directory is not a git repository.");
       expect(content).toContain("Unknown: no commands were provided.");
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
+
+  it("marks the first run log as superseded when a second is created", () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    try {
+      // Create first run log
+      runLogCommand("run-log-capture", p.specsTasks, p.runs, p.promptsGenerated, cwd, {
+        commandsRun: ["pnpm build"],
+      });
+
+      let files = readdirSync(p.runs).filter((file) => file.endsWith(".md")).sort();
+      expect(files.length).toBe(1);
+      let firstContent = readFileSync(join(p.runs, files[0]), "utf-8");
+      expect(firstContent).toContain("- Latest: true");
+      expect(firstContent).not.toContain("- Supersedes:");
+
+      // Create second run log for the same task
+      runLogCommand("run-log-capture", p.specsTasks, p.runs, p.promptsGenerated, cwd, {
+        commandsRun: ["pnpm test"],
+      });
+
+      files = readdirSync(p.runs).filter((file) => file.endsWith(".md")).sort();
+      expect(files.length).toBe(2);
+
+      // First file should now be marked superseded
+      firstContent = readFileSync(join(p.runs, files[0]), "utf-8");
+      expect(firstContent).toContain("- Superseded by:");
+      expect(firstContent).toContain(files[1]); // references the new file
+
+      // Second file should be latest and reference supersedes
+      const secondContent = readFileSync(join(p.runs, files[1]), "utf-8");
+      expect(secondContent).toContain("- Latest: true");
+      expect(secondContent).toContain("- Supersedes:");
+      expect(secondContent).toContain(files[0]); // references the old file
+
+      // findLatestRunLogPath should return the second file
+      const latestPath = findLatestRunLogPath(cwd, "run-log-capture");
+      expect(latestPath).toBeDefined();
+      expect(latestPath).toContain(files[1]);
+
+      // readLatestRunLogContent should return the second file's content
+      const latestContent = readLatestRunLogContent(cwd, "run-log-capture");
+      expect(latestContent).toBeDefined();
+      expect(latestContent).toContain("- pnpm test");
+      expect(latestContent).not.toContain("- pnpm build");
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
+
+  it("keeps backward compatibility for an existing single run log without latest marker", () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    try {
+      // Write a run log "manually" without the latest marker (simulating pre-feature file)
+      const oldFilename = "2026-01-01T00-00-00-run-log-capture.md";
+      const oldPath = join(p.runs, oldFilename);
+      writeFileSync(oldPath, `# Run Log: Run log capture\n\n## Metadata\n\n- Task ID: run-log-capture\n- Status: needs_review\n`, "utf-8");
+
+      // Even without the latest marker, should be found
+      const content = readLatestRunLogContent(cwd, "run-log-capture");
+      expect(content).toBeDefined();
+      expect(content).toContain("Task ID: run-log-capture");
+
+      // Creating a new run log should supersede it
+      runLogCommand("run-log-capture", p.specsTasks, p.runs, p.promptsGenerated, cwd, {
+        commandsRun: ["pnpm test"],
+      });
+
+      const files = readdirSync(p.runs).filter((file) => file.endsWith(".md")).sort();
+      expect(files.length).toBe(2);
+
+      // Old file should be marked superseded
+      const oldContent = readFileSync(join(p.runs, files[0]), "utf-8");
+      expect(oldContent).toContain("- Superseded by:");
+
+      // New file should have Latest: true and Supersedes
+      const newContent = readFileSync(join(p.runs, files[1]), "utf-8");
+      expect(newContent).toContain("- Latest: true");
+      expect(newContent).toContain("- Supersedes:");
+
+      // findLatestRunLogPath should return the new file
+      const latestPath = findLatestRunLogPath(cwd, "run-log-capture");
+      expect(latestPath).toBeDefined();
+      expect(latestPath).toContain(files[1]);
     } finally {
       logSpy.mockRestore();
     }

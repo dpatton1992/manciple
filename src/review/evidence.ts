@@ -1,37 +1,137 @@
-import { existsSync, readdirSync, readFileSync } from "fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "fs";
 import { spawnSync } from "child_process";
 import { join } from "path";
 import type { ReviewReadinessAcceptanceEvidence, ReviewReadinessRunLog } from "./readiness.js";
 
-export function readLatestRunLogContent(cwd: string, taskId: string): string | undefined {
-  const runLogDir = join(cwd, ".assignr", "runs", taskId);
+/**
+ * Find the path to the latest run log for a given task.
+ * Checks nested `.assignr/runs/<taskId>/` first, then flat `.assignr/runs/<timestamp>-<taskId>.md`.
+ * Among candidate files, prefers one with `- latest: true` in its metadata,
+ * falling back to filename sort order for backward compatibility.
+ */
+export function findLatestRunLogPath(cwd: string, taskId: string): string | undefined {
   const runsDir = join(cwd, ".assignr", "runs");
+  const taskRunLogDir = join(runsDir, taskId);
 
-  if (!existsSync(runLogDir)) {
-    const flatLatestFile = existsSync(runsDir)
-      ? readdirSync(runsDir)
-          .filter((file) => file.endsWith(`-${taskId}.md`))
-          .sort()
-          .at(-1)
-      : undefined;
+  let candidates: string[] = [];
 
-    if (!flatLatestFile) {
-      return undefined;
-    }
-
-    return readFileSync(join(runsDir, flatLatestFile), "utf-8").trim();
+  if (existsSync(taskRunLogDir)) {
+    candidates = readdirSync(taskRunLogDir)
+      .filter((file) => file.endsWith(".md"))
+      .sort()
+      .map((file) => join(taskRunLogDir, file));
+  } else if (existsSync(runsDir)) {
+    candidates = readdirSync(runsDir)
+      .filter((file) => file.endsWith(`-${taskId}.md`))
+      .sort()
+      .map((file) => join(runsDir, file));
   }
 
-  const latestFile = readdirSync(runLogDir)
-    .filter((file) => file.endsWith(".md"))
-    .sort()
-    .at(-1);
+  if (candidates.length === 0) return undefined;
 
-  if (!latestFile) {
+  // Prefer files with `- latest: true` in metadata
+  const latestMarked = candidates.filter((file) => {
+    try {
+      const content = readFileSync(file, "utf-8");
+      const metaLines = extractMetadataSection(content);
+      return metaLines.some((line) => /^-\s*Latest:\s*true\s*$/i.test(line));
+    } catch {
+      return false;
+    }
+  });
+
+  if (latestMarked.length > 0) {
+    // If multiple (shouldn't happen), take the one with latest timestamp
+    return latestMarked.at(-1);
+  }
+
+  // Fall back to sort order
+  return candidates.at(-1);
+}
+
+function extractMetadataSection(content: string): string[] {
+  const lines = content.split("\n");
+  const meta: string[] = [];
+  let inMeta = false;
+
+  for (const line of lines) {
+    if (line.startsWith("## Metadata")) {
+      inMeta = true;
+      continue;
+    }
+    if (inMeta) {
+      if (line.startsWith("## ")) break;
+      if (line.startsWith("- ")) meta.push(line.trim());
+    }
+  }
+
+  return meta;
+}
+
+/**
+ * Mark a run log file as superseded by injecting a `- Superseded by: <filename>` line
+ * into its Metadata section.
+ */
+export function markRunLogSuperseded(filePath: string, supersedingFilename: string): void {
+  const content = readFileSync(filePath, "utf-8");
+  const marker = `- Superseded by: ${supersedingFilename}`;
+
+  if (content.includes(marker)) return; // already marked
+
+  const lines = content.split("\n");
+  let metaHeaderIndex = -1;
+  let metaEndIndex = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].startsWith("## Metadata")) {
+      metaHeaderIndex = i;
+      // Find the end of the metadata section (next heading or end of file)
+      for (let j = i + 1; j < lines.length; j++) {
+        if (lines[j].startsWith("## ")) {
+          metaEndIndex = j;
+          break;
+        }
+      }
+      if (metaEndIndex === -1) {
+        // No subsequent heading — append at end of file
+        metaEndIndex = lines.length;
+      }
+      break;
+    }
+  }
+
+  if (metaHeaderIndex >= 0 && metaEndIndex > metaHeaderIndex) {
+    const updated = [
+      ...lines.slice(0, metaEndIndex),
+      marker,
+      ...lines.slice(metaEndIndex),
+    ].join("\n");
+    writeFileSync(filePath, updated, "utf-8");
+  }
+}
+
+/**
+ * Check if a run log content has been superseded.
+ */
+export function isRunLogSuperseded(content: string): boolean {
+  return /^-\s*Superseded by:\s+/m.test(content);
+}
+
+/**
+ * Check if a run log content marks itself as the latest.
+ */
+export function isRunLogLatest(content: string): boolean {
+  return /^-\s*Latest:\s*true\s*$/m.test(content);
+}
+
+export function readLatestRunLogContent(cwd: string, taskId: string): string | undefined {
+  const latestPath = findLatestRunLogPath(cwd, taskId);
+
+  if (!latestPath) {
     return undefined;
   }
 
-  return readFileSync(join(runLogDir, latestFile), "utf-8").trim();
+  return readFileSync(latestPath, "utf-8").trim();
 }
 
 export function readGitChangedFiles(cwd: string): string[] {
@@ -117,5 +217,6 @@ export function parseRunLogEvidence(content: string | undefined): ReviewReadines
     followUps: parseRunLogListSection(extractRunLogSection(content, "Follow-Up Tasks")),
     acceptanceCriteriaEvidence: parseAcceptanceEvidence(extractRunLogSection(content, "Acceptance Criteria Evidence")),
     notes: parseValueSection(extractRunLogSection(content, "Notes")),
+    tokenEstimate: parseValueSection(extractRunLogSection(content, "Token Estimate")),
   }];
 }

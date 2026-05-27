@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "assignr": {
+      "type": "local",
+      "command": ["node", "./bin/assignr-mcp.js"],
+      "enabled": true
+    }
+  }
+}
