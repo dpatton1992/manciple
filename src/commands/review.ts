@@ -51,7 +51,55 @@ export function readGitDiff(cwd: string): string {
     return `\`\`\`diff\n${diff}\n\`\`\``;
   }
 
-  return `\`\`\`diff\n${lines.slice(0, 400).join("\n")}\n\`\`\`\n\n_Diff truncated after 400 lines._`;
+  return `\`\`\`diff\n${lines.slice(0, 400).join("\n")}\`\`\`\n\n_Diff truncated after 400 lines._`;
+}
+
+function compactRunLogSummary(cwd: string, taskId: string): string {
+  const content = readLatestRunLogContent(cwd, taskId);
+  if (!content) return "_No run log available._";
+
+  const parts: string[] = [];
+
+  const resultMatch = content.match(/^## Result\s*\n\n([\s\S]*?)(?=\n## |\n$)/m);
+  if (resultMatch) {
+    const resultVal = resultMatch[1]
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l && !l.startsWith("_Source:") && !l.startsWith("<!--"))
+      .join(" ")
+      .trim();
+    if (resultVal) parts.push(`result: ${resultVal}`);
+  }
+
+  const filesMatch = content.match(/^## Files Changed\s*\n\n([\s\S]*?)(?=\n## |\n$)/m);
+  if (filesMatch) {
+    const count = filesMatch[1]
+      .split("\n")
+      .filter((l) => l.trim().startsWith("- ") && !l.includes("_Source:"))
+      .length;
+    if (count > 0) parts.push(`${count} file(s) changed`);
+  }
+
+  const summary = parts.length > 0 ? parts.join("; ") : "available";
+  return `_Run log ${summary}. Use \`assignr review --include-run-log\` for full context._`;
+}
+
+function compactGitDiffSummary(cwd: string): string {
+  const result = spawnSync("git", ["status", "--short", "--untracked-files=all"], {
+    cwd,
+    encoding: "utf8",
+  });
+
+  if (result.error || result.status !== 0) {
+    return "_No git context available._";
+  }
+
+  const lines = result.stdout.trim().split("\n").filter(Boolean);
+  if (lines.length === 0) {
+    return "_No changes staged._";
+  }
+
+  return `_Git changes available (${lines.length} file(s) modified). Use \`assignr review --include-diff\` for full diff._`;
 }
 
 export interface RenderReviewPromptOptions {
@@ -64,8 +112,8 @@ export function renderReviewPrompt(
   cwd: string,
   options: RenderReviewPromptOptions = {}
 ): string {
-  const includeRunLog = options.includeRunLog ?? true;
-  const includeGitDiff = options.includeGitDiff ?? true;
+  const includeRunLog = options.includeRunLog ?? false;
+  const includeGitDiff = options.includeGitDiff ?? false;
 
   return `# Review Task: ${spec.title}
 
@@ -93,11 +141,11 @@ ${formatVerificationCommands(spec.verification?.commands)}
 
 ## Run Log
 
-${includeRunLog ? readLatestRunLog(cwd, spec.id) : "_Run log omitted._"}
+${includeRunLog ? readLatestRunLog(cwd, spec.id) : compactRunLogSummary(cwd, spec.id)}
 
 ## Git Diff
 
-${includeGitDiff ? readGitDiff(cwd) : "_Git diff omitted._"}
+${includeGitDiff ? readGitDiff(cwd) : compactGitDiffSummary(cwd)}
 
 ## Allowed Paths
 
@@ -147,7 +195,8 @@ export function createReviewPrompt(
   taskId: string,
   specsTasksDir: string,
   generatedDir: string,
-  cwd: string
+  cwd: string,
+  options?: RenderReviewPromptOptions
 ): string {
   const { tasks, errors } = loadTasks(specsTasksDir, "all");
 
@@ -168,7 +217,7 @@ export function createReviewPrompt(
     mkdirSync(generatedDir, { recursive: true });
   }
 
-  const rendered = renderReviewPrompt(found.spec, cwd);
+  const rendered = renderReviewPrompt(found.spec, cwd, options);
   const outPath = join(generatedDir, reviewPromptFilename(taskId));
   writeFileSync(outPath, rendered, "utf-8");
 
@@ -179,9 +228,10 @@ export function reviewCommand(
   taskId: string,
   specsTasksDir: string,
   generatedDir: string,
-  cwd: string
+  cwd: string,
+  options?: RenderReviewPromptOptions
 ): void {
-  const outPath = createReviewPrompt(taskId, specsTasksDir, generatedDir, cwd);
+  const outPath = createReviewPrompt(taskId, specsTasksDir, generatedDir, cwd, options);
 
   console.log(`Created review prompt: ${outPath.replace(cwd + "/", "")}`);
   console.log(

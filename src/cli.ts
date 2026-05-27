@@ -461,8 +461,13 @@ program
 program
   .command("review <task-id>")
   .description("Generate a review prompt for a task.")
-  .action((taskId: string) => {
-    reviewCommand(taskId, p.specsTasks, p.promptsGenerated, cwd);
+  .option("--include-run-log", "Include full latest run log content.", false)
+  .option("--include-diff", "Include full git diff content.", false)
+  .action((taskId: string, opts: { includeRunLog: boolean; includeDiff: boolean }) => {
+    reviewCommand(taskId, p.specsTasks, p.promptsGenerated, cwd, {
+      includeRunLog: opts.includeRunLog,
+      includeGitDiff: opts.includeDiff,
+    });
   });
 
 // review-check

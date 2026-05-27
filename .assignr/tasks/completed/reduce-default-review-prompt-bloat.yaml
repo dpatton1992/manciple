@@ -1,6 +1,6 @@
 id: reduce-default-review-prompt-bloat
 title: Reduce default review prompt bloat
-status: pending
+status: complete
 type: hardening
 domain: core
 priority: high

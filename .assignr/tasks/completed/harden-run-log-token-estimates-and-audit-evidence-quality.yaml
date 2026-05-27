@@ -1,6 +1,6 @@
 id: harden-run-log-token-estimates-and-audit-evidence-quality
 title: Harden run log token estimates and audit evidence quality
-status: needs_review
+status: complete
 type: hardening
 domain: core
 priority: high

@@ -606,7 +606,7 @@ describe("assignr review", () => {
     }
   });
 
-  it("keeps enriched task, run log, and diff content in the review prompt", () => {
+  it("uses compact summaries by default and omits full run log and diff content", () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
 
     try {
@@ -663,6 +663,89 @@ none
         p.specsTasks,
         p.promptsGenerated,
         cwd
+      );
+
+      const reviewPromptFile = join(
+        p.promptsGenerated,
+        "review-license-expiration-reminders.md"
+      );
+      const content = readFileSync(reviewPromptFile, "utf-8");
+
+      // Default compact: no full run log content or full diff
+      expect(content).toContain("## Run Log");
+      expect(content).toContain("_Run log");
+      expect(content).toContain("--include-run-log");
+      expect(content).not.toContain("# Run Log: License expiration reminders");
+      expect(content).not.toContain("src/features/licenses/reminders.ts");
+
+      expect(content).toContain("## Git Diff");
+      expect(content).toContain("_Git changes available");
+      expect(content).toContain("--include-diff");
+      expect(content).not.toContain("-export const reminders");
+      expect(content).not.toContain("+export const reminders");
+    } finally {
+      logSpy.mockRestore();
+    }
+  });
+
+  it("includes full run log and diff content when opt-in flags are passed", () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    try {
+      newCommand("License expiration reminders", {
+        type: "implementation",
+        domain: "credentialing",
+        priority: "high",
+        goal: "Add expiration reminder support for provider licenses.",
+        cwd,
+        activeDir: p.tasksActive,
+      });
+
+      const runLogPath = join(p.runs, "2026-05-23-12-00-00-license-expiration-reminders.md");
+      writeFileSync(runLogPath, `# Run Log: License expiration reminders
+
+## Files Changed
+
+_Source: provided by user_
+
+- src/features/licenses/reminders.ts
+
+## Commands Run
+
+_Source: provided by user_
+
+- TODO: add verification commands
+
+## Result
+
+_Source: provided by user_
+
+complete
+
+## Risks
+
+_Source: provided by user_
+
+none
+`, "utf-8");
+
+      const featureDir = join(cwd, "src", "features", "licenses");
+      mkdirSync(featureDir, { recursive: true });
+      const featureFile = join(featureDir, "reminders.ts");
+      writeFileSync(featureFile, "export const reminders = false;\n", "utf-8");
+      spawnSync("git", ["init"], { cwd, encoding: "utf-8" });
+      spawnSync("git", ["config", "user.email", "test@example.com"], { cwd, encoding: "utf-8" });
+      spawnSync("git", ["config", "user.name", "Assignr Test"], { cwd, encoding: "utf-8" });
+      spawnSync("git", ["add", "."], { cwd, encoding: "utf-8" });
+      spawnSync("git", ["commit", "-m", "baseline"], { cwd, encoding: "utf-8" });
+      writeFileSync(featureFile, "export const reminders = true;\n", "utf-8");
+
+      reviewCommand(
+        "license-expiration-reminders",
+        p.specsTasks,
+        p.promptsGenerated,
+        cwd,
+        { includeRunLog: true, includeGitDiff: true }
       );
 
       const reviewPromptFile = join(

@@ -1,6 +1,6 @@
 id: confirm-warning-only-budget-overages-during-review
 title: Confirm warning-only budget overages during review
-status: needs_review
+status: complete
 type: hardening
 domain: core
 priority: high
