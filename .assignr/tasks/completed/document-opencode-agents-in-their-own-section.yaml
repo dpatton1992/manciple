@@ -1,0 +1,39 @@
+id: document-opencode-agents-in-their-own-section
+title: Document opencode agents in their own section
+status: complete
+type: docs
+domain: core
+priority: high
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - README.md
+  - docs/agent-skills.md
+  - docs/opencode-agents.md
+forbidden_paths: []
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Create a dedicated docs page for OpenCode agents and update existing documentation
+  to reference it, giving the opencode agent configuration its own standalone section.
+acceptance_criteria:
+  - docs/opencode-agents.md exists as a standalone page covering the assignr-worker and
+    assignr-coordinator OpenCode agents, their configuration files, MCP setup, and
+    usage.
+  - docs/agent-skills.md no longer contains the 'OpenCode' section; instead it links to
+    the new opencode-agents.md.
+  - README.md links to docs/opencode-agents.md in its 'Deeper Docs' section.
+  - All three doc changes are consistent and cross-reference correctly.
+verification:
+  commands:
+    - grep -n 'opencode-agents' README.md
+    - grep -n 'opencode-agents' docs/agent-skills.md
+    - test -f docs/opencode-agents.md
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes: []

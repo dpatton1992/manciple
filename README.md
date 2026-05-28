@@ -153,6 +153,8 @@ outputs_required:
 - [Review Queue](docs/review-queue.md): triage and deep-review workflows for
   batches of `needs_review` tasks.
 - [MCP Server](docs/mcp-server.md): MCP setup and tool surface.
+- [OpenCode Agents](docs/opencode-agents.md): assignr-worker and
+  assignr-coordinator agents for OpenCode.
 - [Agent Skills](docs/agent-skills.md): Claude Code and Codex skill files for
   Assignr workflows.
 

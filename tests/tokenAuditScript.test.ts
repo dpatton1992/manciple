@@ -17,8 +17,8 @@ describe("assignr-token-audit script", () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("# Token Estimate: add-assignr-token-estimate-command");
     expect(result.stdout).toContain("Deterministic local heuristic: estimated tokens = ceil(characters / 4). No external APIs are called.");
-    expect(result.stdout).toContain("Scope: estimates Assignr handoff prompt bloat, not total agent spend.");
-    expect(result.stdout).toContain("## Source Buckets");
+    expect(result.stdout).toContain("Scope: estimates Assignr artifact/context bloat only, not total provider, harness, tool, retry, reasoning, or generated-output usage.");
+    expect(result.stdout).toContain("## Token Buckets");
     expect(result.stdout).toContain("Risk: within budget");
   });
 
