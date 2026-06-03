@@ -24,7 +24,8 @@
 		"README.md",
 		"scripts/assignr-token-audit.mjs",
 		".codex/skills/",
-		".claude/skills/"
+		".claude/skills/",
+		".opencode/agents/"
 	],
 	"keywords": [
 		"assignr",

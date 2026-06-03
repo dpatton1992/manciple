@@ -76,7 +76,6 @@ export async function initCommand(options: {
   const dirs = [
     p.root,
     p.specs,
-    p.specsTasks,
     p.specsDomains,
     p.specsContracts,
     p.tasksActive,

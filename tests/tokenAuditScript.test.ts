@@ -22,13 +22,18 @@ describe("assignr-token-audit script", () => {
     expect(result.stdout).toContain("Risk: within budget");
   });
 
-  it("keeps packaged skill directories included", () => {
+  it("keeps release agent assets and token audit tooling included", () => {
     const packageJson = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf-8")) as {
       files?: string[];
     };
 
     expect(packageJson.files).toContain(".claude/skills/");
     expect(packageJson.files).toContain(".codex/skills/");
+    expect(packageJson.files).toContain(".opencode/agents/");
     expect(packageJson.files).toContain("scripts/assignr-token-audit.mjs");
+    expect(packageJson.files).not.toContain(".opencode/node_modules/");
+    expect(packageJson.files).not.toContain(".opencode/package.json");
+    expect(packageJson.files).not.toContain(".opencode/package-lock.json");
+    expect(packageJson.files).not.toContain(".opencode/bun.lock");
   });
 });

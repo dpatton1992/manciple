@@ -1,0 +1,68 @@
+id: package-agent-assets-for-npm-release
+title: Package agent assets for npm release
+status: complete
+type: implementation
+domain: core
+priority: high
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - package.json
+  - tests/**/*.test.ts
+  - .opencode/agents/**/*.md
+  - .codex/skills/**
+  - .claude/skills/**
+forbidden_paths:
+  - .opencode/node_modules/**
+  - .opencode/package.json
+  - .opencode/package-lock.json
+  - .opencode/bun.lock
+  - dist/**
+  - .assignr/tasks/**
+  - .assignr/runs/**
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: The npm release includes the Codex skills, Claude skills, and OpenCode agent
+  configuration files with tests that prove the packed tarball contains only the
+  intended agent assets.
+acceptance_criteria:
+  - "`package.json` includes release manifest entries for `.codex/skills/`,
+    `.claude/skills/`, and `.opencode/agents/` while avoiding `.opencode/node_modules/`
+    and local OpenCode package manager files."
+  - A focused test or deterministic check verifies that the package manifest covers
+    Codex skills, Claude skills, OpenCode agent markdown files, and the token audit
+    script expected by existing release tooling.
+  - "`npm pack --dry-run` output includes `.opencode/agents/assignr-worker.md` and
+    `.opencode/agents/assignr-coordinator.md` in addition to existing skill assets."
+  - "`npm pack --dry-run` output does not include `.opencode/node_modules/`,
+    `.opencode/package.json`, `.opencode/package-lock.json`, or `.opencode/bun.lock`."
+  - Existing build and test workflows still pass.
+implementation_notes:
+  - Treat `.opencode/agents/` as the releaseable OpenCode surface; do not package
+    `.opencode/node_modules/` or OpenCode-local lock/package files.
+  - The package already ships `.codex/skills/` and `.claude/skills/`; preserve those
+    entries and add coverage rather than replacing them.
+  - Prefer a small test near the existing package manifest assertions in
+    `tests/tokenAuditScript.test.ts` unless a more specific release-manifest test file
+    is clearer.
+  - Use actual `npm pack --dry-run` evidence in the run log so reviewers can see the
+    tarball contents, not just package.json intent.
+  - Do not modify generated `dist/` output in this task unless the verification command
+    explicitly requires a build artifact update.
+verification:
+  commands:
+    - pnpm test
+    - pnpm typecheck
+    - npm pack --dry-run
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes:
+  - OpenCode has two releaseable agent files even though the request says agent
+    singular; package both `assignr-worker` and `assignr-coordinator` because the docs
+    describe them as a pair.

@@ -1,5 +1,5 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "fs";
-import { join, relative } from "path";
+import { basename, join, relative } from "path";
 import { parse } from "yaml";
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -33,6 +33,8 @@ import { TaskSpecSchema } from "./specs/schema.js";
 import type { LoadedTask, TaskSpec } from "./specs/schema.js";
 
 const cwd = process.cwd();
+const repoDir = basename(cwd);
+const mcpServerName = `assignr-${repoDir}`;
 const config = loadConfig(cwd);
 const root = config.root;
 const p = getPaths(cwd, root);
@@ -186,7 +188,7 @@ function loadActiveValidationTasks(): {
 }
 
 const server = new McpServer({
-  name: "assignr",
+  name: mcpServerName,
   version: "0.1.0",
 });
 

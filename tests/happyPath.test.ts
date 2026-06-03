@@ -45,8 +45,8 @@ describe("assignr init", () => {
     expect(existsSync(p.tasksArchived)).toBe(true);
   });
 
-  it("creates the legacy specs/tasks directory for backward compatibility", () => {
-    expect(existsSync(p.specsTasks)).toBe(true);
+  it("does NOT create the legacy specs/tasks directory", () => {
+    expect(existsSync(p.specsTasks)).toBe(false);
   });
 
   it("creates prompts/templates and state", () => {

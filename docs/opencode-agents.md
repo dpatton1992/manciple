@@ -3,6 +3,10 @@
 OpenCode reads `.claude/skills/` automatically via its Claude Code compatibility
 layer — no separate `.opencode/skills/` copies are needed.
 
+The npm package ships `.opencode/agents/` for OpenCode release consumers. Copy
+that directory into your repo when you want the packaged Assignr OpenCode
+agents, then configure the Assignr MCP server for that repo.
+
 Two custom agents are defined in `.opencode/agents/`:
 
 ## `assignr-worker` (Subagent Mode)
@@ -42,7 +46,7 @@ The Assignr MCP server is registered in `opencode.json` at the repo root:
 ```json
 {
   "mcp": {
-    "assignr": {
+    "assignr-promptops": {
       "type": "local",
       "command": ["node", "./bin/assignr-mcp.js"],
       "enabled": true
@@ -51,9 +55,18 @@ The Assignr MCP server is registered in `opencode.json` at the repo root:
 }
 ```
 
+The server key is `assignr-<repo-dir-name>` so that each repo gets a unique
+MCP server name. This prevents agents in one repo from accidentally calling
+the MCP tools of another repo.
+
 Assignr tools are prefixed `assignr_` (e.g. `assignr_get_task_packet`,
 `assignr_set_status`, `assignr_verify`). Prefer these over raw CLI calls when
 both are available. See [MCP Server](mcp-server.md) for the full tool surface.
+
+The release surface is the reusable `.opencode/agents/` directory. Local
+OpenCode runtime dependencies such as `.opencode/node_modules/` and local
+OpenCode package files are project artifacts, not packaged Assignr agent
+assets.
 
 ## Skills at Runtime
 

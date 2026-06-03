@@ -163,4 +163,7 @@ outputs_required:
 - npm: `@dpatt/assignr`
 - CLI: `assignr`
 - MCP binary: `assignr-mcp`
+- Agent assets: packaged docs include [Agent Skills](docs/agent-skills.md) for
+  `.codex/skills/` and `.claude/skills/`, plus
+  [OpenCode Agents](docs/opencode-agents.md) for `.opencode/agents/`.
 - License: MIT

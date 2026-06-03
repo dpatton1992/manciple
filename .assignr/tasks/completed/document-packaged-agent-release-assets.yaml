@@ -1,0 +1,64 @@
+id: document-packaged-agent-release-assets
+title: Document packaged agent release assets
+status: complete
+type: docs
+domain: core
+priority: medium
+depends_on:
+  - package-agent-assets-for-npm-release
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - README.md
+  - docs/agent-skills.md
+  - docs/opencode-agents.md
+forbidden_paths:
+  - package.json
+  - .opencode/**
+  - .codex/**
+  - .claude/**
+  - src/**
+  - tests/**
+  - dist/**
+  - .assignr/tasks/**
+  - .assignr/runs/**
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: The release documentation explains that Assignr ships Codex skills, Claude skills,
+  and OpenCode agents, and shows users where those packaged assets live.
+acceptance_criteria:
+  - "`docs/agent-skills.md` states that the npm package ships both `.codex/skills/` and
+    `.claude/skills/` and clarifies the intended copy/install workflow for those
+    directories."
+  - "`docs/opencode-agents.md` states that the npm package ships `.opencode/agents/` for
+    OpenCode and clarifies that `.opencode/node_modules/` and local OpenCode package
+    files are not part of the release surface."
+  - "`README.md` links or summarizes the packaged agent assets clearly enough that a
+    release consumer can discover the skill and OpenCode agent files from the package
+    docs."
+  - Documentation remains consistent with the package manifest semantics established by
+    `package-agent-assets-for-npm-release`.
+  - No docs claim that OpenCode needs separate `.opencode/skills/` copies; preserve the
+    existing compatibility-layer explanation.
+implementation_notes:
+  - This task depends on the package manifest behavior being settled first so the docs
+    can describe the actual release surface instead of intended future behavior.
+  - Keep the docs concise and operational; avoid adding a broad release guide unless the
+    existing README structure clearly calls for it.
+  - Mention both OpenCode agents, `assignr-worker` and `assignr-coordinator`, because
+    both are part of the releaseable OpenCode workflow.
+  - Do not edit agent or skill behavior in this docs task.
+verification:
+  commands:
+    - pnpm test
+    - pnpm typecheck
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes:
+  - If the implementation task changes the packaged paths, update this task's docs
+    language to match that final manifest.

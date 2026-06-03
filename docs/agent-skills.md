@@ -3,8 +3,13 @@
 Skill files for Claude Code and Codex live in `.claude/skills/` and
 `.codex/skills/`.
 
-Copy the relevant skill into your own repo when you want agents to follow the
-Assignr workflow automatically.
+The npm package ships both directories so release consumers can copy the
+relevant packaged skill directory into their own repo:
+
+- Copy `.codex/skills/` when Codex should follow the Assignr workflow.
+- Copy `.claude/skills/` when Claude Code should follow the Assignr workflow.
+
+You can copy one or both directories depending on which agents you run.
 
 ## Available Skills
 

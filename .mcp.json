@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "assignr": {
+    "assignr-promptops": {
       "command": "node",
       "args": [
         "/Users/danielpatton/Documents/GitHub/promptops/bin/assignr-mcp.js"

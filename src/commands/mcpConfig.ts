@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from "fs";
-import { dirname, join, relative } from "path";
+import { basename, dirname, join, relative } from "path";
 import { fileURLToPath } from "url";
 
 interface McpConfig {
@@ -12,9 +12,15 @@ function assignrMcpBinPath(): string {
   return join(commandDir, "..", "..", "bin", "assignr-mcp.js");
 }
 
+function mcpServerName(cwd: string): string {
+  const repoDir = basename(cwd);
+  return `assignr-${repoDir}`;
+}
+
 export function mcpConfigCommand(options: { cwd: string; force: boolean }): void {
   const { cwd, force } = options;
   const configPath = join(cwd, ".mcp.json");
+  const serverKey = mcpServerName(cwd);
 
   let config: McpConfig = {};
 
@@ -35,16 +41,16 @@ export function mcpConfigCommand(options: { cwd: string; force: boolean }): void
     process.exit(1);
   }
 
-  if (Object.prototype.hasOwnProperty.call(mcpServers, "assignr") && !force) {
+  if (Object.prototype.hasOwnProperty.call(mcpServers, serverKey) && !force) {
     console.error(
-      `${relative(cwd, configPath)} already has an "assignr" MCP server. Use --force to overwrite it.`
+      `${relative(cwd, configPath)} already has an "${serverKey}" MCP server. Use --force to overwrite it.`
     );
     process.exit(1);
   }
 
   config.mcpServers = {
     ...mcpServers,
-    assignr: {
+    [serverKey]: {
       command: "node",
       args: [assignrMcpBinPath()],
       cwd,
