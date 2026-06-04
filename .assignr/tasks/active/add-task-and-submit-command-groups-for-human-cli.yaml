@@ -1,0 +1,66 @@
+id: add-task-and-submit-command-groups-for-human-cli
+title: Add task and submit command groups for human CLI
+status: needs_review
+type: implementation
+domain: core
+priority: high
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/cli.ts
+  - src/commands/task.ts
+  - src/commands/submit.ts
+forbidden_paths:
+  - dist/
+  - node_modules/
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Create the `assignr task` and `assignr submit` command groups that wrap existing
+  granular commands into a human-friendly CLI surface.
+acceptance_criteria:
+  - "`assignr task new <title>` creates a task (same as `assignr new`)."
+  - "`assignr task list` lists tasks (same as `assignr list`)."
+  - "`assignr task show <task-id>` shows task details (prints the parsed task YAML)."
+  - "`assignr task start <task-id>` sets status to in_progress."
+  - "`assignr task pause <task-id> --reason <text>` sets status to blocked."
+  - "`assignr task resume <task-id>` sets status to pending (or in_progress if it was
+    in_progress before blocked)."
+  - "`assignr task archive <task-id>` archives the task (same as `assignr archive`)."
+  - "`assignr task reopen <task-id>` reopens the task (same as `assignr reopen`)."
+  - "`assignr submit <task-id> --result complete --agent Codex --model gpt-5` creates a
+    run log and sets task status to needs_review."
+  - "`assignr submit <task-id> --blocked --reason <text>` creates a run log and sets
+    status to blocked."
+  - "`assignr submit <task-id> --complete` creates a run log and completes the task
+    (skips review)."
+  - The existing assignr new, list, set-status, archive, reopen, complete, run-log
+    commands still work unchanged.
+implementation_notes:
+  - "New files: src/commands/task.ts and src/commands/submit.ts. Each exports a single
+    command function."
+  - "task.ts delegates to: newCommand, listCommand, loadTasks (for show),
+    setStatusCommand, archiveCommand, reopenCommand from existing command modules."
+  - "submit.ts delegates to: runLogCommand, setStatusCommand, completeCommand (for
+    --complete)."
+  - The pause command maps to setStatusCommand with status=blocked, require --reason.
+  - The resume command attempts to move from blocked to pending. If the task is archived
+    or completed, it should reopen it first.
+  - Wire both command groups into src/cli.ts using commander's .command() with
+    subcommands.
+  - The existing `assignr list`, `assignr new`, etc. commands remain untouched in cli.ts
+    as separate .command() registrations.
+  - No import or type changes to existing command modules beyond importing them from the
+    new files.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test -- happyPath
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes: []

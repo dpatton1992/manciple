@@ -184,7 +184,7 @@ describe("tokenEstimateCommand", () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("Risk: over budget");
-    expect(result.stderr).toBe("");
+    expect(result.stderr).toContain("token-estimate -> assignr check tokens");
   });
 
   it("renders persisted run-log estimate markers and warning-only budget text", () => {

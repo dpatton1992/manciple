@@ -17,6 +17,51 @@ function mcpServerName(cwd: string): string {
   return `assignr-${repoDir}`;
 }
 
+/**
+ * Init-friendly MCP setup — logs warnings instead of exiting on errors.
+ * This is the version used by `assignr init`.
+ */
+export function setupMcpConfig(cwd: string, force: boolean): void {
+  const configPath = join(cwd, ".mcp.json");
+  const serverKey = mcpServerName(cwd);
+
+  let config: Record<string, unknown> = {};
+  if (existsSync(configPath)) {
+    try {
+      config = JSON.parse(readFileSync(configPath, "utf-8")) as Record<string, unknown>;
+    } catch {
+      if (!force) {
+        console.log(`  - ${relative(cwd, configPath)} (unparseable, use --force to overwrite)`);
+        return;
+      }
+    }
+  }
+
+  const mcpServers = (config.mcpServers ?? {}) as Record<string, unknown>;
+  if (typeof mcpServers !== "object" || Array.isArray(mcpServers)) {
+    if (!force) {
+      console.log(`  - ${relative(cwd, configPath)} (invalid mcpServers, use --force to overwrite)`);
+      return;
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(mcpServers, serverKey)) {
+    if (!force) {
+      return; // idempotent — already configured
+    }
+  }
+
+  (mcpServers as Record<string, unknown>)[serverKey] = {
+    command: "node",
+    args: [assignrMcpBinPath()],
+    cwd,
+  };
+  config.mcpServers = mcpServers;
+
+  writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf-8");
+  console.log(`  ✓ ${relative(cwd, configPath)} (${serverKey})`);
+}
+
 export function mcpConfigCommand(options: { cwd: string; force: boolean }): void {
   const { cwd, force } = options;
   const configPath = join(cwd, ".mcp.json");

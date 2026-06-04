@@ -35,6 +35,19 @@ import { doctorCommand } from "./commands/doctor.js";
 import { mcpConfigCommand } from "./commands/mcpConfig.js";
 import { installAssetsCommand } from "./commands/installAssets.js";
 import { verifyCommand } from "./commands/verify.js";
+import { handoffCommand, handoffQueueCommand } from "./commands/handoff.js";
+import type { HandoffContext } from "./commands/handoff.js";
+import { registerTaskCommands } from "./commands/task.js";
+import { registerSubmitCommand } from "./commands/submit.js";
+import {
+  checkDefaultCommand,
+  checkTasksCommand,
+  checkLifecycleSubCommand,
+  checkVerifyCommand,
+  checkTokensCommand,
+  checkCostCommand,
+} from "./commands/check.js";
+import type { CheckContext } from "./commands/check.js";
 import type { Status, TaskType, Priority } from "./constants.js";
 
 function collect(value: string, previous: string[]): string[] {
@@ -51,6 +64,46 @@ function parseNumberOption(value: string): number {
 }
 
 const RUN_LOG_RESULTS = ["complete", "partial", "blocked", "failed"];
+
+// === Deprecation system for legacy commands ===
+const DEPRECATED_COMMANDS = new Map<string, string>([
+  ["compile", "handoff"],
+  ["task-packet", "handoff --packet"],
+  ["planner-context", "handoff"],
+  ["coordinator", "handoff queue"],
+  ["dispatch-plan", "handoff queue --json"],
+  ["new", "task new"],
+  ["list", "task list"],
+  ["set-status", "task start|pause|resume"],
+  ["status", "task show"],
+  ["archive", "task archive"],
+  ["reopen", "task reopen"],
+  ["complete", "submit --complete"],
+  ["run-log", "submit"],
+  ["review-check", "review check"],
+  ["review-queue", "review queue"],
+  ["approve", "review approve"],
+  ["request-changes", "review changes"],
+  ["block-review", "review block"],
+  ["validate", "check tasks"],
+  ["doctor", "check"],
+  ["check-lifecycle", "check lifecycle"],
+  ["verify", "check verify --profile <profile>"],
+  ["token-estimate", "check tokens"],
+  ["summarize-run-cost", "check cost"],
+]);
+
+const shownDeprecation = new Set<string>();
+
+function emitDeprecation(name: string): void {
+  if (!shownDeprecation.has(name)) {
+    shownDeprecation.add(name);
+    const replacement = DEPRECATED_COMMANDS.get(name);
+    if (replacement) {
+      console.error(`assignr ${name} -> assignr ${replacement}`);
+    }
+  }
+}
 
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json") as { version: string };
@@ -73,8 +126,10 @@ program
   .description("Initialize Assignr folder structure, MCP config, gitignore entries, and packaged agent skills/agents in this repo.")
   .option("--force", "Overwrite existing files.", false)
   .option("--root <dir>", "Root directory for Assignr.", DEFAULT_ROOT)
-  .action(async (opts: { force: boolean; root: string }) => {
-    await initCommand({ force: opts.force, cwd, root: opts.root });
+  .option("--mcp", "Only set up MCP config (.mcp.json), skip directory creation and agents.", false)
+  .option("--agents", "Only install packaged agent skills and agents, skip directory creation and MCP.", false)
+  .action(async (opts: { force: boolean; root: string; mcp: boolean; agents: boolean }) => {
+    await initCommand({ force: opts.force, cwd, root: opts.root, mcp: opts.mcp, agents: opts.agents });
   });
 
 // install-assets
@@ -163,6 +218,39 @@ program
       specsTasksDir: p.specsTasks,
       cwd,
       checkOnly: opts.check,
+    });
+  });
+
+// handoff
+const handoff = program
+  .command("handoff [task-id]")
+  .description("Compile a task prompt, or inspect the worker queue. See `assignr handoff --help`.")
+  .option("--packet", "Print compact worker packet instead of compiled prompt.", false)
+  .action((taskId: string | undefined, opts: { packet: boolean }) => {
+    if (taskId) {
+      handoffCommand(taskId, {
+        cwd,
+        specsTasksDir: p.specsTasks,
+        tasksActiveDir: p.tasksActive,
+        generatedDir: p.promptsGenerated,
+        packet: opts.packet,
+      });
+    } else {
+      handoff.help();
+    }
+  });
+
+handoff
+  .command("queue")
+  .description("Show runnable/deferred work (same as `assignr coordinator`). Use --json for dispatch plan (same as `assignr dispatch-plan`).")
+  .option("--json", "Print deterministic dispatch packet JSON.", false)
+  .action((opts: { json: boolean }) => {
+    handoffQueueCommand({
+      cwd,
+      specsTasksDir: p.specsTasks,
+      tasksActiveDir: p.tasksActive,
+      generatedDir: p.promptsGenerated,
+      json: opts.json,
     });
   });
 
@@ -335,6 +423,95 @@ program
     });
   });
 
+// check
+const check = program
+  .command("check")
+  .description("Health summary, validation, lifecycle check, and diagnostics. See `assignr check --help`.")
+  .action(() => {
+    checkDefaultCommand({
+      cwd,
+      root,
+      specsTasksDir: p.specsTasks,
+      tasksActiveDir: p.tasksActive,
+      tasksCompletedDir: p.tasksCompleted,
+      tasksArchivedDir: p.tasksArchived,
+      runsDir: p.runs,
+      generatedDir: p.promptsGenerated,
+    });
+  });
+
+check
+  .command("tasks")
+  .description("Validate all task specs (same as `assignr validate`).")
+  .action(() => {
+    checkTasksCommand({
+      cwd,
+      root,
+      specsTasksDir: p.specsTasks,
+      tasksActiveDir: p.tasksActive,
+      tasksCompletedDir: p.tasksCompleted,
+      tasksArchivedDir: p.tasksArchived,
+      runsDir: p.runs,
+      generatedDir: p.promptsGenerated,
+    });
+  });
+
+check
+  .command("lifecycle")
+  .description("Run lifecycle placement check (same as `assignr check-lifecycle`).")
+  .action(() => {
+    checkLifecycleSubCommand({
+      cwd,
+      root,
+      specsTasksDir: p.specsTasks,
+      tasksActiveDir: p.tasksActive,
+      tasksCompletedDir: p.tasksCompleted,
+      tasksArchivedDir: p.tasksArchived,
+      runsDir: p.runs,
+      generatedDir: p.promptsGenerated,
+    });
+  });
+
+check
+  .command("verify")
+  .description("Run verification (same as `assignr verify`).")
+  .requiredOption("--profile <profile>", "Verification profile: coordinator, worker, or review.")
+  .action(async (opts: { profile: string }) => {
+    await checkVerifyCommand(opts.profile, cwd);
+  });
+
+check
+  .command("tokens <task-id>")
+  .description("Estimate token usage for a task (same as `assignr token-estimate`).")
+  .action((taskId: string) => {
+    checkTokensCommand({
+      cwd,
+      root,
+      specsTasksDir: p.specsTasks,
+      tasksActiveDir: p.tasksActive,
+      tasksCompletedDir: p.tasksCompleted,
+      tasksArchivedDir: p.tasksArchived,
+      runsDir: p.runs,
+      generatedDir: p.promptsGenerated,
+    }, taskId);
+  });
+
+check
+  .command("cost")
+  .description("Summarize run costs (same as `assignr summarize-run-cost`).")
+  .action(() => {
+    checkCostCommand({
+      cwd,
+      root,
+      specsTasksDir: p.specsTasks,
+      tasksActiveDir: p.tasksActive,
+      tasksCompletedDir: p.tasksCompleted,
+      tasksArchivedDir: p.tasksArchived,
+      runsDir: p.runs,
+      generatedDir: p.promptsGenerated,
+    });
+  });
+
 // migrate-tasks
 program
   .command("migrate-tasks")
@@ -467,16 +644,103 @@ program
     });
   });
 
-// review
-program
-  .command("review <task-id>")
-  .description("Generate a review prompt for a task.")
+// review command group
+const review = program
+  .command("review [task-id]")
+  .description("Manage the review process. See `assignr review --help` for subcommands.")
+  .option("--include-run-log", "Include full latest run log content.", false)
+  .option("--include-diff", "Include full git diff content.", false)
+  .action((taskId: string | undefined, opts: { includeRunLog: boolean; includeDiff: boolean }) => {
+    if (taskId) {
+      // Backward compat: `assignr review <task-id>` => same as `review prompt <task-id>`
+      reviewCommand(taskId, p.specsTasks, p.promptsGenerated, cwd, {
+        includeRunLog: opts.includeRunLog,
+        includeGitDiff: opts.includeDiff,
+      });
+    } else {
+      review.help();
+    }
+  });
+
+review
+  .command("queue")
+  .description("Run review queue triage (same as `assignr review-queue`).")
+  .option("--mode <mode>", "Review queue mode: triage or deep.", "triage")
+  .option("--all", "In deep mode, include tasks that passed triage.", false)
+  .option("--budget <tokens>", "Positive integer review budget estimate for queued packets.")
+  .option("--deep-only <filter>", "In deep mode, emit only tasks matching the filter: risky.")
+  .action((opts: { mode: string; all: boolean; budget?: string; deepOnly?: string }) => {
+    reviewQueueCommand(p.tasksActive, cwd, {
+      mode: opts.mode as "triage" | "deep",
+      all: opts.all,
+      budget: opts.budget,
+      deepOnly: opts.deepOnly,
+      generatedDir: p.promptsGenerated,
+      activeDir: p.tasksActive,
+      completedDir: p.tasksCompleted,
+      archivedDir: p.tasksArchived,
+    });
+  });
+
+review
+  .command("check [task-id]")
+  .description("Check review readiness (same as `assignr review-check`).")
+  .option("--deterministic", "Run local deterministic review gate checks.", false)
+  .action((taskId: string | undefined, opts: { deterministic: boolean }) => {
+    reviewCheckCommand(p.tasksActive, cwd, taskId, {
+      deterministic: opts.deterministic,
+      generatedDir: p.promptsGenerated,
+      activeDir: p.tasksActive,
+      completedDir: p.tasksCompleted,
+      archivedDir: p.tasksArchived,
+    });
+  });
+
+review
+  .command("prompt <task-id>")
+  .description("Generate a review prompt (same as `assignr review <task-id>`).")
   .option("--include-run-log", "Include full latest run log content.", false)
   .option("--include-diff", "Include full git diff content.", false)
   .action((taskId: string, opts: { includeRunLog: boolean; includeDiff: boolean }) => {
     reviewCommand(taskId, p.specsTasks, p.promptsGenerated, cwd, {
       includeRunLog: opts.includeRunLog,
       includeGitDiff: opts.includeDiff,
+    });
+  });
+
+review
+  .command("approve <task-id>")
+  .description("Approve and complete a task (same as `assignr approve`).")
+  .action((taskId: string) => {
+    approveCommand(taskId, {
+      specsTasksDir: p.specsTasks,
+      completedDir: p.tasksCompleted,
+      runsDir: p.runs,
+      cwd,
+    });
+  });
+
+review
+  .command("changes <task-id>")
+  .description("Request changes and return task to in_progress (same as `assignr request-changes`).")
+  .requiredOption("--reason <text>", "Reason changes are required.")
+  .action((taskId: string, opts: { reason: string }) => {
+    requestChangesCommand(taskId, opts.reason, {
+      specsTasksDir: p.specsTasks,
+      runsDir: p.runs,
+      cwd,
+    });
+  });
+
+review
+  .command("block <task-id>")
+  .description("Block review for a task (same as `assignr block-review`).")
+  .requiredOption("--reason <text>", "Reason review is blocked.")
+  .action((taskId: string, opts: { reason: string }) => {
+    blockReviewCommand(taskId, opts.reason, {
+      specsTasksDir: p.specsTasks,
+      runsDir: p.runs,
+      cwd,
     });
   });
 
@@ -571,4 +835,65 @@ program
     mcpConfigCommand({ cwd, force: opts.force });
   });
 
-program.parse(process.argv);
+// task command group
+registerTaskCommands(program, p, cwd);
+
+// submit command
+registerSubmitCommand(program, p, cwd);
+
+// === Hide non-primary commands and add deprecation hints ===
+const PRIMARY_COMMANDS = new Set(["init", "task", "handoff", "submit", "review", "check"]);
+
+for (const cmd of program.commands) {
+  const name = cmd.name();
+  if (name === "help") continue; // preserve built-in help command
+  if (!PRIMARY_COMMANDS.has(name)) {
+    (cmd as any)._hidden = true;
+    const replacement = DEPRECATED_COMMANDS.get(name);
+    if (replacement) {
+      const origAction = (cmd as any)._actionHandler;
+      if (origAction) {
+        (cmd as any)._actionHandler = function (...args: unknown[]) {
+          emitDeprecation(name);
+          return origAction.apply(this, args);
+        };
+      }
+    }
+  }
+}
+
+// === Help customization: detect --all flag to show hidden commands ===
+const showAllCommands = process.argv.slice(2).includes("--all");
+
+const origHelpInformation = program.helpInformation.bind(program);
+program.helpInformation = () => {
+  // Temporarily unhide legacy commands when --all is active
+  const toggled: Command[] = [];
+  if (showAllCommands) {
+    for (const cmd of program.commands) {
+      if ((cmd as any)._hidden) {
+        (cmd as any)._hidden = false;
+        toggled.push(cmd);
+      }
+    }
+  }
+
+  let help = origHelpInformation();
+
+  // Restore hidden state
+  for (const cmd of toggled) {
+    (cmd as any)._hidden = true;
+  }
+
+  if (showAllCommands) {
+    help = help.replace("Commands:", "All commands (primary and legacy):");
+  } else {
+    help += "\nRun `assignr --help --all` to show all commands, including legacy/deprecated ones.\n";
+  }
+
+  return help;
+};
+
+// Filter --all from argv before parsing so commander does not error on unknown option
+const filteredArgv = process.argv.filter((a) => a !== "--all");
+program.parse(filteredArgv);

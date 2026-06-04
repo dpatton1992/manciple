@@ -1,0 +1,51 @@
+id: add-mcp-and-agents-flags-to-init-command
+title: Add --mcp and --agents flags to init command
+status: needs_review
+type: implementation
+domain: core
+priority: high
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/commands/init.ts
+  - src/commands/installAssets.ts
+  - src/commands/mcpConfig.ts
+forbidden_paths:
+  - dist/
+  - node_modules/
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Add --mcp and --agents flags to `assignr init` so users can selectively initialize
+  MCP config or install packaged agent assets without the full init.
+acceptance_criteria:
+  - assignr init --mcp creates or updates .mcp.json with the assignr MCP server entry
+    without touching other init files.
+  - assignr init --agents copies packaged agent skills and agents (.claude/skills/,
+    .codex/skills/, .opencode/agents/) without touching other init files.
+  - assignr init (no flags) continues to work as before, running full setup.
+  - assignr init --force still works with the new flags.
+  - The existing init --force and init --root flags remain unchanged.
+implementation_notes:
+  - The init command already runs setupMcpConfig and installAssets unconditionally in
+    its final lines. The --mcp and --agents flags should skip non-matching setup steps
+    when one or both are provided — but default to all when neither is provided.
+  - "Backwards compatible: existing callers passing no flags get the same behavior as
+    before."
+  - --mcp alone should skip directory/file creation and gitignore updates.
+  - --agents alone should skip MCP setup and directory/file creation.
+  - When both --mcp and --agents are provided, only those two steps run.
+  - The existing installAssetsCommand and mcpConfigCommand functions should be reused or
+    the inline logic in init.ts should be extracted.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test -- happyPath
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes: []

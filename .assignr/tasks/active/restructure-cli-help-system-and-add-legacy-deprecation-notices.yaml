@@ -1,0 +1,70 @@
+id: restructure-cli-help-system-and-add-legacy-deprecation-notices
+title: Restructure CLI help system and add legacy deprecation notices
+status: needs_review
+type: implementation
+domain: core
+priority: high
+depends_on:
+  - add-mcp-and-agents-flags-to-init-command
+  - add-task-and-submit-command-groups-for-human-cli
+  - add-handoff-check-and-review-command-groups-for-human-cli
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/cli.ts
+forbidden_paths:
+  - dist/
+  - node_modules/
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Restructure the CLI help output to show only the 6 primary command groups by
+  default, support `--help --all` for legacy commands, and add deprecation hints to all
+  replaced legacy commands.
+acceptance_criteria:
+  - "`assignr --help` shows only 6 primary commands: init, task, handoff, submit,
+    review, check."
+  - "`assignr --help --all` or `assignr help --all` shows all commands including
+    legacy/granular ones."
+  - Legacy commands (e.g. `assignr compile`, `assignr new`) print a deprecation hint on
+    first use, e.g. 'assignr compile -> assignr handoff' .
+  - The deprecation hint appears on stderr once per session (not every invocation within
+    the same run).
+  - Help output clearly distinguishes primary commands from hidden/legacy commands.
+  - All existing CLI behavior and exit codes are preserved.
+implementation_notes:
+  - "Modify src/cli.ts to use commander features for help customization. Option 1: use
+    .addHelpCommand() and customize the help text. Option 2: use .helpInformation() to
+    filter displayed commands. Option 3: add a --all flag to help that shows
+    everything."
+  - Add a formatHelp() or override program.helpInformation() to show only the 6 primary
+    commands normally, and all commands when --all is passed.
+  - Add a deprecation registry (e.g. Map<string, string> mapping old command name to new
+    command name) and wrap each legacy command's .action() to print the deprecation hint
+    before delegating to the actual handler.
+  - Use process.stderr for deprecation hints so they don't interfere with stdout-based
+    scripts.
+  - Use a WeakSet or module-level Set to track whether a deprecation hint has been shown
+    in the current process, so it only prints once per command type.
+  - Do NOT change any existing command implementation files. All changes stay in
+    src/cli.ts.
+  - "The deprecation mapping: compile -> handoff, task-packet -> handoff,
+    planner-context -> handoff, coordinator -> handoff, dispatch-plan -> handoff, new ->
+    task, list -> task, set-status -> task, status -> task, archive -> task, reopen ->
+    task, complete -> task, run-log -> submit, review (prompt) -> review prompt,
+    review-check -> review check, review-queue -> review queue, approve -> review
+    approve, request-changes -> review changes, block-review -> review block, validate
+    -> check, doctor -> check, check-lifecycle -> check, verify -> check, token-estimate
+    -> check tokens, summarize-run-cost -> check cost."
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test -- happyPath
+    - pnpm test -- reviewOutcomeCommands
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes: []

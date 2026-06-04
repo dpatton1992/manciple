@@ -1,0 +1,90 @@
+id: add-handoff-check-and-review-command-groups-for-human-cli
+title: Add handoff check and review command groups for human CLI
+status: needs_review
+type: implementation
+domain: core
+priority: high
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/cli.ts
+  - src/commands/handoff.ts
+  - src/commands/check.ts
+  - src/commands/review.ts
+forbidden_paths:
+  - dist/
+  - node_modules/
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Create `assignr handoff`, `assignr review`, and `assignr check` command groups
+  wrapping existing granular commands into the human-friendly CLI surface.
+acceptance_criteria:
+  - "`assignr handoff <task-id>` compiles the task prompt and prints the path (same
+    output as `assignr compile <task-id>`)."
+  - "`assignr handoff <task-id> --packet` prints the compact worker packet (same as
+    `assignr task-packet`)."
+  - "`assignr handoff queue` shows runnable/deferred work (same as `assignr
+    coordinator`)."
+  - "`assignr handoff queue --json` prints the deterministic dispatch packet JSON (same
+    as `assignr dispatch-plan`)."
+  - "`assignr review queue` runs the review queue triage (same as `assignr
+    review-queue`)."
+  - "`assignr review check <task-id>` runs review readiness check (same as `assignr
+    review-check`)."
+  - "`assignr review prompt <task-id>` generates the review prompt (same as `assignr
+    review`)."
+  - "`assignr review approve <task-id>` approves and completes the task (same as
+    `assignr approve`)."
+  - "`assignr review changes <task-id> --reason <text>` returns to in_progress with
+    reason (same as `assignr request-changes`)."
+  - "`assignr review block <task-id> --reason <text>` blocks the task (same as `assignr
+    block-review`)."
+  - "`assignr check` runs doctor + validate + lifecycle check and prints a health
+    summary."
+  - "`assignr check tasks` validates all task specs (same as `assignr validate`)."
+  - "`assignr check lifecycle` runs lifecycle placement check (same as `assignr
+    check-lifecycle`)."
+  - "`assignr check verify --profile <profile>` runs verification (same as `assignr
+    verify`)."
+  - "`assignr check tokens <task-id>` estimates token usage (same as `assignr
+    token-estimate`)."
+  - "`assignr check cost` summarizes run costs (same as `assignr summarize-run-cost`)."
+  - Existing `assignr review`, `assignr review-queue`, `assignr review-check`, `assignr
+    approve`, `assignr request-changes`, `assignr block-review`, `assignr compile`,
+    `assignr task-packet`, `assignr coordinator`, `assignr dispatch-plan`, `assignr
+    doctor`, `assignr validate`, `assignr check-lifecycle`, `assignr verify`, `assignr
+    token-estimate`, `assignr summarize-run-cost` commands all still work.
+implementation_notes:
+  - "New files: src/commands/handoff.ts, src/commands/check.ts. The existing review.ts
+    will need to be refactored into a group structure (either a new
+    src/commands/reviewGroup.ts or modify the existing review.ts to be the group entry
+    point and rename the prompt generation to a helper)."
+  - "Careful: `assignr review` already exists as a command that generates review
+    prompts. The new `assignr review` becomes a command group with subcommands, making
+    `assignr review <task-id>` ambiguous. The old behavior moves to `assignr review
+    prompt <task-id>`. If `assignr review` is called without a subcommand and with a
+    task-id argument, it should maintain backward compatibility by detecting the bare
+    <task-id> pattern."
+  - "handoff.ts delegates to: compileCommand, taskPacketCommand, coordinatorCommand (for
+    handoff queue), dispatchPlanCommand (for handoff queue --json)."
+  - "check.ts delegates to: doctorCommand, validateCommand, checkLifecycleCommand,
+    verifyCommand, tokenEstimateCommand, summarizeRunCostCommand."
+  - Wire all three groups into src/cli.ts.
+  - The default `assignr check` should run doctor + validate + check-lifecycle in
+    sequence, printing results from each.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test -- happyPath
+    - pnpm test -- reviewCheck
+    - pnpm test -- reviewOutcomeCommands
+    - pnpm test -- reviewQueue
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes: []

@@ -1,0 +1,74 @@
+id: add-cli-workflow-tests-for-new-command-groups-and-deprecation
+title: Add CLI workflow tests for new command groups and deprecation
+status: needs_review
+type: test
+domain: core
+priority: medium
+depends_on:
+  - add-mcp-and-agents-flags-to-init-command
+  - add-task-and-submit-command-groups-for-human-cli
+  - add-handoff-check-and-review-command-groups-for-human-cli
+  - restructure-cli-help-system-and-add-legacy-deprecation-notices
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - tests/cliWorkflow.test.ts
+forbidden_paths:
+  - dist/
+  - node_modules/
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Add test coverage for the 6 new human-facing command groups, help system
+  filtering, legacy deprecation hints, and backward compatibility.
+acceptance_criteria:
+  - Tests verify `assignr init --mcp` only touches MCP config (no full directory
+    creation).
+  - Tests verify `assignr init --agents` only installs packaged agent assets.
+  - Tests verify `assignr init` (no flags) still runs full setup.
+  - Tests verify `assignr task new/list/start/show/archive/reopen/pause/resume` delegate
+    correctly to existing implementations.
+  - Tests verify `assignr submit <task-id> --result complete` creates a run log and sets
+    needs_review.
+  - Tests verify `assignr submit <task-id> --complete` creates a run log and completes
+    the task (moves to completed).
+  - Tests verify `assignr submit <task-id> --blocked --reason <text>` creates a run log
+    and sets blocked.
+  - Tests verify `assignr handoff <task-id>` produces the same output as `assignr
+    compile`.
+  - Tests verify `assignr handoff <task-id> --packet` matches `assignr task-packet`.
+  - Tests verify `assignr review queue/check/prompt/approve/changes/block` delegate
+    correctly.
+  - Tests verify `assignr check` runs doctor + validate + lifecycle check.
+  - Tests verify `assignr check tasks/lifecycle/verify/tokens/cost` delegate correctly.
+  - Tests verify `assignr --help` shows only 6 primary commands.
+  - Tests verify `assignr --help --all` shows legacy commands too.
+  - Tests verify legacy commands print deprecation hints to stderr.
+  - Tests verify all legacy commands still work correctly.
+implementation_notes:
+  - Create a new test file tests/cliWorkflow.test.ts to keep tests for the new CLI
+    structure separate from happyPath.test.ts.
+  - Import command functions directly (not via CLI spawn) following the existing test
+    pattern.
+  - Use vi.spyOn to capture console.log, console.error, and process.exit calls.
+  - For tests that need the full CLI help output, use the spawnSync pattern from
+    reviewOutcomeCommands.test.ts.
+  - The test file follows the same beforeEach/afterEach temp-directory pattern as
+    happyPath.test.ts.
+  - The tests mock or skip git operations that need .gitignore modification (init with
+    git).
+  - Focus on verifying delegation to existing command functions — do not re-test the
+    underlying implementations, only the new wrapper wiring.
+  - For help output tests, consider testing at the module level (import cli module and
+    check help text) or at the CLI level (spawn).
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test -- cliWorkflow
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes: []

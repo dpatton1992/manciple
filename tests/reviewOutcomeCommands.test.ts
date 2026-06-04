@@ -76,6 +76,10 @@ describe("review outcome commands", () => {
       cwd: root,
       encoding: "utf-8",
     });
+    const allHelp = spawnSync("pnpm", ["exec", "tsx", "src/cli.ts", "--help", "--all"], {
+      cwd: root,
+      encoding: "utf-8",
+    });
     const requestChangesHelp = spawnSync("pnpm", ["exec", "tsx", "src/cli.ts", "request-changes", "--help"], {
       cwd: root,
       encoding: "utf-8",
@@ -85,10 +89,26 @@ describe("review outcome commands", () => {
       encoding: "utf-8",
     });
 
+    // Default --help shows only 6 primary commands
     expect(mainHelp.status).toBe(0);
-    expect(mainHelp.stdout).toContain("approve <task-id>");
-    expect(mainHelp.stdout).toContain("request-changes [options] <task-id>");
-    expect(mainHelp.stdout).toContain("block-review [options] <task-id>");
+    expect(mainHelp.stdout).toContain("  init");
+    expect(mainHelp.stdout).toContain("  handoff");
+    expect(mainHelp.stdout).toContain("  check");
+    expect(mainHelp.stdout).toContain("  review");
+    expect(mainHelp.stdout).toContain("  task");
+    expect(mainHelp.stdout).toContain("  submit");
+    expect(mainHelp.stdout).not.toContain("approve <task-id>");
+    expect(mainHelp.stdout).not.toContain("request-changes");
+    expect(mainHelp.stdout).not.toContain("block-review");
+    expect(mainHelp.stdout).toContain("--help --all");
+
+    // --help --all shows legacy commands
+    expect(allHelp.status).toBe(0);
+    expect(allHelp.stdout).toContain("approve");
+    expect(allHelp.stdout).toContain("request-changes");
+    expect(allHelp.stdout).toContain("block-review");
+
+    // Subcommand --help still works for legacy commands
     expect(requestChangesHelp.stdout).toContain("--reason <text>");
     expect(blockReviewHelp.stdout).toContain("--reason <text>");
   });
