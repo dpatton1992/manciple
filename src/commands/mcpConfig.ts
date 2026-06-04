@@ -1,5 +1,6 @@
-import { existsSync, readFileSync, writeFileSync } from "fs";
-import { basename, dirname, join, relative } from "path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { homedir } from "os";
+import { dirname, join, relative } from "path";
 import { fileURLToPath } from "url";
 
 interface McpConfig {
@@ -7,28 +8,89 @@ interface McpConfig {
   [key: string]: unknown;
 }
 
-function assignrMcpBinPath(): string {
-  const commandDir = dirname(fileURLToPath(import.meta.url));
-  return join(commandDir, "..", "..", "bin", "assignr-mcp.js");
+interface OpenCodeConfig {
+  mcp?: Record<string, unknown>;
+  [key: string]: unknown;
 }
 
-function mcpServerName(cwd: string): string {
-  const repoDir = basename(cwd);
-  return `assignr-${repoDir}`;
+const SERVER_NAME = "assignr";
+
+function assignrNpxArgs(): string[] {
+  return ["--yes", "--package", "@dpatt/assignr", "assignr-mcp"];
 }
 
 /**
- * Init-friendly MCP setup — logs warnings instead of exiting on errors.
- * This is the version used by `assignr init`.
+ * Resolve the OpenCode global config path.
+ * Checks ~/.config/opencode/opencode.json first, then ~/.opencode/opencode.json.
  */
-export function setupMcpConfig(cwd: string, force: boolean): void {
-  const configPath = join(cwd, ".mcp.json");
-  const serverKey = mcpServerName(cwd);
+function openCodeGlobalConfigPath(): string | null {
+  const home = homedir();
+  const candidates = [
+    join(home, ".config", "opencode", "opencode.json"),
+    join(home, ".opencode", "opencode.json"),
+  ];
+  for (const p of candidates) {
+    if (existsSync(p)) return p;
+  }
+  // Default to XDG-style
+  return join(home, ".config", "opencode", "opencode.json");
+}
 
-  let config: Record<string, unknown> = {};
+/**
+ * Write the assignr MCP entry into the OpenCode global config
+ * so that every repo automatically gets the server.
+ */
+function setupOpenCodeGlobalConfig(force: boolean): void {
+  const configPath = openCodeGlobalConfigPath();
+  if (!configPath) return;
+
+  let config: OpenCodeConfig = {};
   if (existsSync(configPath)) {
     try {
-      config = JSON.parse(readFileSync(configPath, "utf-8")) as Record<string, unknown>;
+      config = JSON.parse(readFileSync(configPath, "utf-8")) as OpenCodeConfig;
+    } catch {
+      if (!force) {
+        console.log(`  - ${configPath} (unparseable, use --force to overwrite)`);
+        return;
+      }
+      config = {};
+    }
+  }
+
+  const mcp = config.mcp ?? {};
+  if (Object.prototype.hasOwnProperty.call(mcp, SERVER_NAME)) {
+    if (!force) {
+      return; // idempotent — already configured
+    }
+  }
+
+  mcp[SERVER_NAME] = {
+    type: "local",
+    command: ["npx", ...assignrNpxArgs()],
+    enabled: true,
+  };
+  config.mcp = mcp;
+
+  const configDir = dirname(configPath);
+  if (!existsSync(configDir)) {
+    mkdirSync(configDir, { recursive: true });
+  }
+
+  writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf-8");
+  console.log(`  ✓ ${configPath} (${SERVER_NAME})`);
+}
+
+/**
+ * Write the assignr MCP entry into the local .mcp.json for editors
+ * (Cline, Claude Desktop, etc.) that look for project-level MCP config.
+ */
+function setupLocalMcpConfig(cwd: string, force: boolean): void {
+  const configPath = join(cwd, ".mcp.json");
+
+  let config: McpConfig = {};
+  if (existsSync(configPath)) {
+    try {
+      config = JSON.parse(readFileSync(configPath, "utf-8")) as McpConfig;
     } catch {
       if (!force) {
         console.log(`  - ${relative(cwd, configPath)} (unparseable, use --force to overwrite)`);
@@ -45,27 +107,38 @@ export function setupMcpConfig(cwd: string, force: boolean): void {
     }
   }
 
-  if (Object.prototype.hasOwnProperty.call(mcpServers, serverKey)) {
+  if (Object.prototype.hasOwnProperty.call(mcpServers, SERVER_NAME)) {
     if (!force) {
       return; // idempotent — already configured
     }
   }
 
-  (mcpServers as Record<string, unknown>)[serverKey] = {
-    command: "node",
-    args: [assignrMcpBinPath()],
-    cwd,
+  (mcpServers as Record<string, unknown>)[SERVER_NAME] = {
+    command: "npx",
+    args: assignrNpxArgs(),
   };
   config.mcpServers = mcpServers;
 
   writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf-8");
-  console.log(`  ✓ ${relative(cwd, configPath)} (${serverKey})`);
+  console.log(`  ✓ ${relative(cwd, configPath)} (${SERVER_NAME})`);
+}
+
+/**
+ * Init-friendly MCP setup — logs warnings instead of exiting on errors.
+ * This is the version used by `assignr init`.
+ *
+ * Writes to:
+ *   - OpenCode global config (~/.config/opencode/opencode.json)
+ *   - Local .mcp.json (for Cline, Claude Desktop, etc.)
+ */
+export function setupMcpConfig(cwd: string, force: boolean): void {
+  setupOpenCodeGlobalConfig(force);
+  setupLocalMcpConfig(cwd, force);
 }
 
 export function mcpConfigCommand(options: { cwd: string; force: boolean }): void {
   const { cwd, force } = options;
   const configPath = join(cwd, ".mcp.json");
-  const serverKey = mcpServerName(cwd);
 
   let config: McpConfig = {};
 
@@ -86,19 +159,18 @@ export function mcpConfigCommand(options: { cwd: string; force: boolean }): void
     process.exit(1);
   }
 
-  if (Object.prototype.hasOwnProperty.call(mcpServers, serverKey) && !force) {
+  if (Object.prototype.hasOwnProperty.call(mcpServers, SERVER_NAME) && !force) {
     console.error(
-      `${relative(cwd, configPath)} already has an "${serverKey}" MCP server. Use --force to overwrite it.`
+      `${relative(cwd, configPath)} already has an "${SERVER_NAME}" MCP server. Use --force to overwrite it.`
     );
     process.exit(1);
   }
 
   config.mcpServers = {
     ...mcpServers,
-    [serverKey]: {
-      command: "node",
-      args: [assignrMcpBinPath()],
-      cwd,
+    [SERVER_NAME]: {
+      command: "npx",
+      args: assignrNpxArgs(),
     },
   };
 

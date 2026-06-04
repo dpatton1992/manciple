@@ -33,8 +33,7 @@ import { TaskSpecSchema } from "./specs/schema.js";
 import type { LoadedTask, TaskSpec } from "./specs/schema.js";
 
 const cwd = process.cwd();
-const repoDir = basename(cwd);
-const mcpServerName = `assignr-${repoDir}`;
+const mcpServerName = "assignr";
 const config = loadConfig(cwd);
 const root = config.root;
 const p = getPaths(cwd, root);
