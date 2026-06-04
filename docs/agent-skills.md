@@ -3,13 +3,24 @@
 Skill files for Claude Code and Codex live in `.claude/skills/` and
 `.codex/skills/`.
 
-The npm package ships both directories so release consumers can copy the
-relevant packaged skill directory into their own repo:
+The npm package ships both directories. Run `assignr init` from your repo root
+to copy them from the installed package automatically (along with MCP config,
+`.gitignore` entries, and the OpenCode agents):
 
-- Copy `.codex/skills/` when Codex should follow the Assignr workflow.
-- Copy `.claude/skills/` when Claude Code should follow the Assignr workflow.
+```bash
+assignr init
+```
 
-You can copy one or both directories depending on which agents you run.
+Or run `assignr install-assets` separately if you only want to update the skill
+files without re-running full init:
+
+```bash
+assignr install-assets
+```
+
+Both copy `.claude/skills/` and `.codex/skills/` from
+`node_modules/@dpatt/assignr/` into your repo root, plus the OpenCode agents
+(see [OpenCode Agents](opencode-agents.md)).
 
 ## Available Skills
 

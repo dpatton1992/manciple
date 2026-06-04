@@ -33,6 +33,7 @@ import { dispatchPlanCommand } from "./commands/dispatchPlan.js";
 import { worktreeCommand } from "./commands/worktree.js";
 import { doctorCommand } from "./commands/doctor.js";
 import { mcpConfigCommand } from "./commands/mcpConfig.js";
+import { installAssetsCommand } from "./commands/installAssets.js";
 import { verifyCommand } from "./commands/verify.js";
 import type { Status, TaskType, Priority } from "./constants.js";
 
@@ -69,11 +70,20 @@ program
 // init
 program
   .command("init")
-  .description("Initialize Assignr folder structure in this repo.")
+  .description("Initialize Assignr folder structure, MCP config, gitignore entries, and packaged agent skills/agents in this repo.")
   .option("--force", "Overwrite existing files.", false)
   .option("--root <dir>", "Root directory for Assignr.", DEFAULT_ROOT)
   .action(async (opts: { force: boolean; root: string }) => {
     await initCommand({ force: opts.force, cwd, root: opts.root });
+  });
+
+// install-assets
+program
+  .command("install-assets")
+  .description("Copy packaged agent skills (.claude/skills/, .codex/skills/) and OpenCode agents (.opencode/agents/) from node_modules to the repo root.")
+  .option("--force", "Overwrite existing files.", false)
+  .action((opts: { force: boolean }) => {
+    installAssetsCommand({ cwd, force: opts.force });
   });
 
 // new

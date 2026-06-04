@@ -3,9 +3,15 @@
 OpenCode reads `.claude/skills/` automatically via its Claude Code compatibility
 layer — no separate `.opencode/skills/` copies are needed.
 
-The npm package ships `.opencode/agents/` for OpenCode release consumers. Copy
-that directory into your repo when you want the packaged Assignr OpenCode
-agents, then configure the Assignr MCP server for that repo.
+The npm package ships `.opencode/agents/` for OpenCode release consumers. Run
+this from your repo root to install them from the installed package:
+
+```bash
+assignr install-assets
+```
+
+Or use `assignr init --with-assets` to set up the Assignr structure and assets
+together. After installing, configure the Assignr MCP server for this repo.
 
 Two custom agents are defined in `.opencode/agents/`:
 

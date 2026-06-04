@@ -1,5 +1,6 @@
-import { mkdirSync, writeFileSync, existsSync, readFileSync, appendFileSync } from "fs";
-import { join } from "path";
+import { mkdirSync, writeFileSync, existsSync, readFileSync, appendFileSync, copyFileSync, readdirSync, statSync } from "fs";
+import { basename, dirname, join, relative } from "path";
+import { fileURLToPath } from "url";
 import { getPaths } from "../utils/paths.js";
 import {
   IMPLEMENTATION_TEMPLATE,
@@ -64,6 +65,117 @@ function updateGitignore(cwd: string, root: string): void {
   const action = existing === "" ? "Created" : "Updated";
   console.log(`  ✓ .gitignore ${action.toLowerCase()} (added ${missing.length} assignr entr${missing.length === 1 ? "y" : "ies"})`);
 }
+
+// ── MCP config (idempotent) ─────────────────────────────────────────────
+
+function assignrMcpBinPath(): string {
+  const commandDir = dirname(fileURLToPath(import.meta.url));
+  return join(commandDir, "..", "..", "bin", "assignr-mcp.js");
+}
+
+function mcpServerName(cwd: string): string {
+  return `assignr-${basename(cwd)}`;
+}
+
+function setupMcpConfig(cwd: string, force: boolean): void {
+  const configPath = join(cwd, ".mcp.json");
+  const serverKey = mcpServerName(cwd);
+
+  let config: Record<string, unknown> = {};
+  if (existsSync(configPath)) {
+    try {
+      config = JSON.parse(readFileSync(configPath, "utf-8")) as Record<string, unknown>;
+    } catch {
+      // Corrupt file — will overwrite below if force, otherwise skip
+      if (!force) {
+        console.log(`  - ${relative(cwd, configPath)} (unparseable, use --force to overwrite)`);
+        return;
+      }
+    }
+  }
+
+  const mcpServers = (config.mcpServers ?? {}) as Record<string, unknown>;
+  if (typeof mcpServers !== "object" || Array.isArray(mcpServers)) {
+    if (!force) {
+      console.log(`  - ${relative(cwd, configPath)} (invalid mcpServers, use --force to overwrite)`);
+      return;
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(mcpServers, serverKey)) {
+    if (!force) {
+      return; // idempotent — already configured
+    }
+  }
+
+  (mcpServers as Record<string, unknown>)[serverKey] = {
+    command: "node",
+    args: [assignrMcpBinPath()],
+    cwd,
+  };
+  config.mcpServers = mcpServers;
+
+  writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf-8");
+  console.log(`  ✓ ${relative(cwd, configPath)} (${serverKey})`);
+}
+
+// ── Packaged assets (idempotent) ────────────────────────────────────────
+
+const ASSET_DIRS = [
+  { source: ".claude/skills", target: ".claude/skills" },
+  { source: ".codex/skills", target: ".codex/skills" },
+  { source: ".opencode/agents", target: ".opencode/agents" },
+];
+
+function packageRoot(): string {
+  const commandDir = dirname(fileURLToPath(import.meta.url));
+  return join(commandDir, "..", "..");
+}
+
+function copyDirContents(src: string, dest: string, force: boolean): number {
+  if (!existsSync(src)) return 0;
+
+  let count = 0;
+  for (const entry of readdirSync(src)) {
+    const srcPath = join(src, entry);
+    const destPath = join(dest, entry);
+
+    if (statSync(srcPath).isDirectory()) {
+      mkdirSync(destPath, { recursive: true });
+      count += copyDirContents(srcPath, destPath, force);
+    } else {
+      if (existsSync(destPath) && !force) continue;
+      mkdirSync(dest, { recursive: true });
+      copyFileSync(srcPath, destPath);
+      count++;
+    }
+  }
+  return count;
+}
+
+function installAssets(cwd: string, force: boolean): void {
+  const pkgRoot = packageRoot();
+  let totalFiles = 0;
+
+  for (const asset of ASSET_DIRS) {
+    const sourceDir = join(pkgRoot, asset.source);
+    const targetDir = join(cwd, asset.target);
+
+    if (!existsSync(sourceDir)) continue;
+
+    const copied = copyDirContents(sourceDir, targetDir, force);
+    if (copied > 0) {
+      console.log(`  ✓ ${asset.target}/ (${copied} file${copied === 1 ? "" : "s"})`);
+    }
+    totalFiles += copied;
+  }
+
+  if (totalFiles > 0) {
+    console.log(`  Installed ${totalFiles} packaged asset file${totalFiles === 1 ? "" : "s"}.`);
+  }
+}
+
+// ── Init command ────────────────────────────────────────────────────────
 
 export async function initCommand(options: {
   force: boolean;
@@ -132,6 +244,10 @@ export async function initCommand(options: {
   }
 
   updateGitignore(cwd, root);
+
+  // Idempotent extras — quiet if already set up
+  setupMcpConfig(cwd, force);
+  installAssets(cwd, force);
 
   console.log(`\nAssignr initialized at ${root}/`);
 }

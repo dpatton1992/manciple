@@ -21,8 +21,19 @@ Run `assignr init` at the root of the repo where agents will work:
 assignr init
 ```
 
-This creates `.assignr/` with configuration, task directories, prompt output,
-run logs, and review evidence folders.
+This one command does everything to set up the repo:
+
+- Creates `.assignr/` with configuration, task directories, prompt output,
+  run logs, and review evidence folders.
+- Adds Assignr entries to `.gitignore`.
+- Writes `.mcp.json` with the Assignr MCP server (keyed to the repo directory
+  name so it is unique per repo).
+- Copies packaged agent skills (`.claude/skills/`, `.codex/skills/`) and
+  OpenCode agents (`.opencode/agents/`) from the installed npm package into
+  your repo root so agent harnesses can find them.
+
+Running `assignr init` again is safe — it skips anything already set up.
+Use `--force` to overwrite existing files.
 
 ## Create And Compile A Task
 
