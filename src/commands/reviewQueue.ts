@@ -1,3 +1,4 @@
+import picocolors from "picocolors";
 import { basename, dirname, join } from "path";
 import { evaluateDeterministicReviewGate } from "../review/deterministicGate.js";
 import type {
@@ -6,6 +7,12 @@ import type {
   DeterministicReviewTaskReport,
 } from "../review/deterministicGate.js";
 import { createReviewPrompt } from "./review.js";
+import {
+  headerBanner,
+  colorForStatus,
+  statusSymbol,
+  styleCell,
+} from "../utils/styling.js";
 
 export type ReviewQueueMode = "triage" | "deep";
 export type ReviewQueueDeepOnly = "risky";
@@ -15,6 +22,7 @@ export interface ReviewQueueCommandOptions {
   all?: boolean;
   budget?: string | number;
   deepOnly?: ReviewQueueDeepOnly | string;
+  machine?: boolean;
   generatedDir?: string;
   activeDir?: string;
   completedDir?: string;
@@ -41,6 +49,17 @@ function formatReasons(blockers: readonly DeterministicReviewBlocker[]): string 
   return blockers
     .map((blocker) => `${blocker.kind}: ${blocker.reason}`)
     .join(" | ");
+}
+
+function summarizeBlockers(blockers: readonly DeterministicReviewBlocker[]): string {
+  if (blockers.length === 0) return "deterministic=pass";
+  const counts = new Map<DeterministicReviewBlockerKind, number>();
+  for (const blocker of blockers) {
+    counts.set(blocker.kind, (counts.get(blocker.kind) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([kind, count]) => `${count} ${kind}`)
+    .join(", ");
 }
 
 function formatDeepEvidence(taskReport: DeterministicReviewTaskReport): string {
@@ -174,6 +193,51 @@ function compressedPacketFor(taskReport: DeterministicReviewTaskReport): string 
   ].join(";");
 }
 
+function formatPacketMultiline(taskReport: DeterministicReviewTaskReport): string[] {
+  const readiness = taskReport.readiness;
+  const changedFileCount = readiness?.changedFiles.length ?? 0;
+  const riskFlags = riskFlagsFor(taskReport);
+
+  return [
+    `Changes: ${changedFileCount}`,
+    `Path: ${allowedPathSummary(taskReport)}`,
+    `Criteria: ${taskReport.acceptanceCriteriaCount}`,
+    `Risks: ${riskFlags.length > 0 ? riskFlags.join(", ") : "none"}`,
+    `Question: ${reviewerQuestionFor(taskReport)}`,
+  ];
+}
+
+function formatCondensedEvidence(taskReport: DeterministicReviewTaskReport): string[] {
+  const readiness = taskReport.readiness;
+  if (!readiness) return ["readiness: unavailable"];
+
+  const lines: string[] = [];
+  lines.push(`score: ${readiness.score}`);
+  lines.push(`changedFiles: ${readiness.changedFilesSource}`);
+  if (readiness.missingEvidence.length > 0) {
+    lines.push(`missing: ${readiness.missingEvidence.length} items`);
+  }
+  if (readiness.failedVerificationCommands.length > 0) {
+    lines.push(`failedVerification: ${readiness.failedVerificationCommands.length} items`);
+  }
+  if (readiness.missingVerificationCommands.length > 0) {
+    lines.push(`missingVerification: ${readiness.missingVerificationCommands.length} items`);
+  }
+  if (readiness.documentedRisks.length > 0) {
+    lines.push(`risks: ${readiness.documentedRisks.length} items`);
+  }
+  if (readiness.overlappingFiles.length > 0) {
+    lines.push(`overlappingFiles: ${readiness.overlappingFiles.length} items`);
+  }
+  if (readiness.missingReceiptFields.length > 0) {
+    lines.push(`missingReceiptFields: ${readiness.missingReceiptFields.length} items`);
+  }
+  if (readiness.uncoveredAcceptanceCriteria.length > 0) {
+    lines.push(`uncoveredAcceptanceCriteria: ${readiness.uncoveredAcceptanceCriteria.length} items`);
+  }
+  return lines;
+}
+
 function estimatedTokens(text: string): number {
   return Math.max(1, Math.ceil(text.length / 4));
 }
@@ -209,16 +273,72 @@ function assignrRootFrom(tasksDir: string): string {
   return dirname(tasksDir);
 }
 
+function colorForDecision(decision: "pass" | "escalate" | "blocked"): (text: string) => string {
+  switch (decision) {
+    case "pass": return picocolors.green;
+    case "escalate": return picocolors.yellow;
+    case "blocked": return picocolors.red;
+  }
+}
+
+function symbolForDecision(decision: "pass" | "escalate" | "blocked"): string {
+  switch (decision) {
+    case "pass": return "✓";
+    case "escalate": return "◐";
+    case "blocked": return "⊘";
+  }
+}
+
+function formatDecisionLabel(decision: "pass" | "escalate" | "blocked"): string {
+  const color = colorForDecision(decision);
+  return color(`${symbolForDecision(decision)} ${decision}`);
+}
+
 function runTriageMode(
-  report: ReturnType<typeof evaluateDeterministicReviewGate>
+  report: ReturnType<typeof evaluateDeterministicReviewGate>,
+  machine: boolean
 ): void {
-  for (const taskReport of report.taskReports) {
-    const decision = decisionFor(taskReport.blockers);
-    console.log(`${decision}\t${taskReport.taskId}\t${formatReasons(taskReport.blockers)}`);
+  if (machine) {
+    for (const taskReport of report.taskReports) {
+      const decision = decisionFor(taskReport.blockers);
+      console.log(`${decision}\t${taskReport.taskId}\t${formatReasons(taskReport.blockers)}`);
+    }
+    for (const blocker of report.loadBlockers) {
+      console.log(`blocked\t${blocker.taskId}\t${blocker.kind}: ${blocker.reason}`);
+    }
+    return;
   }
 
+  const allEntries: Array<{ taskId: string; decision: "pass" | "escalate" | "blocked"; detail: string }> = [];
+
+  for (const taskReport of report.taskReports) {
+    allEntries.push({
+      taskId: taskReport.taskId,
+      decision: decisionFor(taskReport.blockers),
+      detail: summarizeBlockers(taskReport.blockers),
+    });
+  }
   for (const blocker of report.loadBlockers) {
-    console.log(`blocked\t${blocker.taskId}\t${blocker.kind}: ${blocker.reason}`);
+    allEntries.push({
+      taskId: blocker.taskId,
+      decision: "blocked",
+      detail: blocker.kind,
+    });
+  }
+
+  if (allEntries.length === 0) return;
+
+  const idWidth = Math.max(4, ...allEntries.map((e) => e.taskId.length));
+  const decisionWidth = Math.max(8, ...allEntries.map((e) => `${symbolForDecision(e.decision)} ${e.decision}`.length));
+  const rule = "─".repeat(idWidth + decisionWidth + 4);
+
+  console.log(headerBanner().trimEnd());
+  console.log(`  ${styleCell("TASK", undefined, idWidth)}  ${styleCell("DECISION", undefined, decisionWidth)}  DETAILS`);
+  console.log(`  ${rule}`);
+
+  for (const entry of allEntries) {
+    const coloredDecision = formatDecisionLabel(entry.decision);
+    console.log(`  ${styleCell(entry.taskId, undefined, idWidth)}  ${styleCell(coloredDecision, undefined, decisionWidth)}  ${entry.detail}`);
   }
 }
 
@@ -229,11 +349,73 @@ function runDeepMode(
   report: ReturnType<typeof evaluateDeterministicReviewGate>,
   includeAll: boolean,
   budget: number | undefined,
-  deepOnly: ReviewQueueDeepOnly | undefined
+  deepOnly: ReviewQueueDeepOnly | undefined,
+  machine: boolean
 ): void {
+  if (machine) {
+    // Machine-readable tab-delimited deep output
+    let emitted = 0;
+    let queued = 0;
+    let usedBudget = 0;
+
+    for (const taskReport of report.taskReports) {
+      const decision = decisionFor(taskReport.blockers);
+      const riskFlags = riskFlagsFor(taskReport);
+
+      if (decision === "blocked" || (!includeAll && decision === "pass")) {
+        continue;
+      }
+      if (deepOnly === "risky" && riskFlags.length === 0) {
+        continue;
+      }
+
+      queued += 1;
+      const packet = compressedPacketFor(taskReport);
+      const packetCost = estimatedTokens(packet);
+
+      if (budget !== undefined && usedBudget + packetCost > budget) {
+        continue;
+      }
+
+      const promptPath = createReviewPrompt(taskReport.taskId, specsTasksDir, generatedDir, cwd);
+      usedBudget += packetCost;
+      emitted += 1;
+      console.log([
+        decision === "pass" ? "deep-all" : "deep",
+        taskReport.taskId,
+        `prompt=${rel(cwd, promptPath)}`,
+        `packet=${packet}`,
+        `reasons=${formatReasons(taskReport.blockers)}`,
+        `evidence=${formatDeepEvidence(taskReport)}`,
+      ].join("\t"));
+    }
+
+    for (const blocker of report.loadBlockers) {
+      console.log(`blocked\t${blocker.taskId}\t${blocker.kind}: ${blocker.reason}`);
+    }
+
+    const blockedReports = report.taskReports.filter((task) => decisionFor(task.blockers) === "blocked");
+    for (const taskReport of blockedReports) {
+      console.log(`blocked\t${taskReport.taskId}\t${formatReasons(taskReport.blockers)}`);
+    }
+
+    if (emitted === 0 && report.loadBlockers.length === 0 && blockedReports.length === 0) {
+      console.log("No tasks escalated for deep review.");
+    }
+
+    if (budget !== undefined) {
+      console.log(`budget\tlimit=${budget}\tfit=${emitted}/${queued}\testimated=${usedBudget}`);
+    }
+    return;
+  }
+
+  // Formatted deep output with section separators
+  console.log(headerBanner().trimEnd());
+
   let emitted = 0;
   let queued = 0;
   let usedBudget = 0;
+  let printedFirst = false;
 
   for (const taskReport of report.taskReports) {
     const decision = decisionFor(taskReport.blockers);
@@ -257,32 +439,54 @@ function runDeepMode(
     const promptPath = createReviewPrompt(taskReport.taskId, specsTasksDir, generatedDir, cwd);
     usedBudget += packetCost;
     emitted += 1;
-    console.log([
-      decision === "pass" ? "deep-all" : "deep",
-      taskReport.taskId,
-      `prompt=${rel(cwd, promptPath)}`,
-      `packet=${packet}`,
-      `reasons=${formatReasons(taskReport.blockers)}`,
-      `evidence=${formatDeepEvidence(taskReport)}`,
-    ].join("\t"));
+
+    if (printedFirst) {
+      console.log("");
+    }
+    printedFirst = true;
+
+    const decisionLabel = formatDecisionLabel(decision);
+    const decisionColor = colorForDecision(decision);
+    console.log(`  ${picocolors.bold("── Task:")} ${taskReport.taskId} ${picocolors.dim("(" + decisionLabel + ")")}`);
+    console.log(`  ${picocolors.bold("Prompt:")}  ${rel(cwd, promptPath)}`);
+    console.log(`  ${picocolors.bold("Packet:")}`);
+    for (const line of formatPacketMultiline(taskReport)) {
+      console.log(`    ${line}`);
+    }
+    console.log(`  ${picocolors.bold("Reasons:")} ${summarizeBlockers(taskReport.blockers)}`);
+
+    const evidenceLines = formatCondensedEvidence(taskReport);
+    console.log(`  ${picocolors.bold("Evidence:")}`);
+    for (const line of evidenceLines) {
+      console.log(`    ${line}`);
+    }
+    if (riskFlags.length > 0) {
+      console.log(`  ${picocolors.bold("Risks:")}   ${riskFlags.join(", ")}`);
+    }
   }
 
-  for (const blocker of report.loadBlockers) {
-    console.log(`blocked\t${blocker.taskId}\t${blocker.kind}: ${blocker.reason}`);
-  }
-
+  // Print blocked tasks at the bottom
   const blockedReports = report.taskReports.filter((task) => decisionFor(task.blockers) === "blocked");
+  const hasBlocked = blockedReports.length > 0 || report.loadBlockers.length > 0;
 
-  for (const taskReport of blockedReports) {
-    console.log(`blocked\t${taskReport.taskId}\t${formatReasons(taskReport.blockers)}`);
+  if (hasBlocked) {
+    if (printedFirst) console.log("");
+    console.log(`  ${picocolors.bold(picocolors.red("Blocked tasks:"))}`);
+    for (const taskReport of blockedReports) {
+      console.log(`    ${picocolors.red("⊘")} ${taskReport.taskId}  ${summarizeBlockers(taskReport.blockers)}`);
+    }
+    for (const blocker of report.loadBlockers) {
+      console.log(`    ${picocolors.red("⊘")} ${blocker.taskId}  ${blocker.kind}`);
+    }
   }
 
-  if (emitted === 0 && report.loadBlockers.length === 0 && blockedReports.length === 0) {
-    console.log("No tasks escalated for deep review.");
+  if (emitted === 0 && blockedReports.length === 0 && report.loadBlockers.length === 0) {
+    console.log("  No tasks escalated for deep review.");
   }
 
   if (budget !== undefined) {
-    console.log(`budget\tlimit=${budget}\tfit=${emitted}/${queued}\testimated=${usedBudget}`);
+    const budgetColor = emitted > 0 ? picocolors.green : picocolors.yellow;
+    console.log(`\n  ${budgetColor(`Budget: limit=${budget}, fit=${emitted}/${queued}, estimated=${usedBudget}`)}`);
   }
 }
 
@@ -319,6 +523,8 @@ export function reviewQueueCommand(
     return;
   }
 
+  const machine = options.machine ?? false;
+
   if (mode === "deep") {
     runDeepMode(
       specsTasksDir,
@@ -327,13 +533,19 @@ export function reviewQueueCommand(
       report,
       options.all ?? false,
       budget,
-      deepOnly
+      deepOnly,
+      machine
     );
   } else {
-    runTriageMode(report);
+    runTriageMode(report, machine);
     if (budget !== undefined) {
-      const rows = report.taskReports.length;
-      console.log(`budget\tlimit=${budget}\tfit=${rows}/${rows}\testimated=${rows}`);
+      if (machine) {
+        const rows = report.taskReports.length;
+        console.log(`budget\tlimit=${budget}\tfit=${rows}/${rows}\testimated=${rows}`);
+      } else {
+        const rows = report.taskReports.length;
+        console.log(`\n  Budget: limit=${budget}, fit=${rows}/${rows}, estimated=${rows}`);
+      }
     }
   }
 

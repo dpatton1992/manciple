@@ -15,6 +15,8 @@ import {
 import type { Status } from "../constants.js";
 import type { TaskSpec } from "../specs/schema.js";
 import { getPaths } from "../utils/paths.js";
+import { colorForStatus, statusSymbol } from "../utils/styling.js";
+import picocolors from "picocolors";
 
 export function getTemplate(type: TaskSpec["type"]): string {
   switch (type) {
@@ -86,7 +88,7 @@ export function compileCommand(options: CompileOptions): void {
   if (errors.length > 0) {
     console.error(`Cannot compile: ${errors.length} task(s) failed to load.`);
     for (const e of errors) {
-      console.error(`  ✕ ${e.filePath.replace(cwd + "/", "")}: ${e.error}`);
+      console.error(`  ${picocolors.red("✕")} ${e.filePath.replace(cwd + "/", "")}: ${e.error}`);
     }
     process.exit(1);
   }
@@ -127,8 +129,8 @@ export function compileCommand(options: CompileOptions): void {
     const rendered = renderTemplate(template, spec, domainContext);
     const outPath = join(generatedDir, implementationPromptFilename(spec.id));
     writeFileSync(outPath, rendered, "utf-8");
-    console.log(`  ✓ Compiled: ${outPath.replace(cwd + "/", "")}`);
+    console.log(`  ${picocolors.green("✓ Compiled:")} ${picocolors.bold(outPath.replace(cwd + "/", ""))}`);
   }
 
-  console.log(`\nCompiled ${targets.length} task${targets.length === 1 ? "" : "s"}.`);
+  console.log(`\n${picocolors.green(picocolors.bold(`Compiled ${targets.length} task${targets.length === 1 ? "" : "s"}.`))}`);
 }

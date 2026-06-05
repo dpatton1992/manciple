@@ -3,8 +3,19 @@ import { basename, dirname, join } from "path";
 import { STATUSES } from "../constants.js";
 import { loadTasks } from "../specs/loadTasks.js";
 import type { LoadedTaskWithTier, LoadTaskTier } from "../specs/loadTasks.js";
+import {
+  colorForStatus,
+  priorityBadge,
+  styleCell,
+  statusSymbol,
+  styleHelpSection,
+} from "../utils/styling.js";
 
 const MAX_TITLE_WIDTH = 50;
+
+const VALID_GROUP_BY_VALUES = ["status", "domain", "tier"] as const;
+
+export type GroupByField = (typeof VALID_GROUP_BY_VALUES)[number];
 
 export interface ListCommandOptions {
   status?: string;
@@ -12,6 +23,7 @@ export interface ListCommandOptions {
   completed?: boolean;
   archived?: boolean;
   all?: boolean;
+  groupBy?: GroupByField;
 }
 
 function truncateTitle(title: string): string {
@@ -41,30 +53,37 @@ function formatRows(tasks: LoadedTaskWithTier[], showTier: boolean): string[] {
   const tierWidth = Math.max("TIER".length, ...rows.map((row) => row.tier.length));
   const depsWidth = Math.max("DEPS".length, ...rows.map((row) => String(row.deps).length));
 
+  const statusDisplayWidth = statusWidth + 2; // room for statusSymbol + space
+
   if (showTier) {
     return [
-      `${pad("ID", idWidth)}  ${pad("TITLE", titleWidth)}  ${pad("STATUS", statusWidth)}  ${pad(
+      `${styleCell("ID", undefined, idWidth)}  ${styleCell("TITLE", undefined, titleWidth)}  ${styleCell("STATUS", undefined, statusWidth)}  ${styleCell(
         "TIER",
+        undefined,
         tierWidth
-      )}  ${pad("DEPS", depsWidth)}`,
+      )}  ${styleCell("DEPS", undefined, depsWidth)}`,
       ...rows.map(
-        (row) =>
-          `${pad(row.id, idWidth)}  ${pad(row.title, titleWidth)}  ${pad(row.status, statusWidth)}  ${pad(
+        (row) => {
+          const plainStatus = `${statusSymbol(row.status)} ${row.status}`;
+          return `${pad(row.id, idWidth)}  ${pad(row.title, titleWidth)}  ${colorForStatus(row.status)(pad(plainStatus, statusDisplayWidth))}  ${pad(
             row.tier,
             tierWidth
-          )}  ${pad(row.deps, depsWidth)}`
+          )}  ${pad(row.deps, depsWidth)}`;
+        }
       ),
     ];
   }
 
   return [
-    `${pad("ID", idWidth)}  ${pad("TITLE", titleWidth)}  ${pad("STATUS", statusWidth)}  ${pad("DEPS", depsWidth)}`,
+    `${styleCell("ID", undefined, idWidth)}  ${styleCell("TITLE", undefined, titleWidth)}  ${styleCell("STATUS", undefined, statusWidth)}  ${styleCell("DEPS", undefined, depsWidth)}`,
     ...rows.map(
-      (row) =>
-        `${pad(row.id, idWidth)}  ${pad(row.title, titleWidth)}  ${pad(row.status, statusWidth)}  ${pad(
+      (row) => {
+        const plainStatus = `${statusSymbol(row.status)} ${row.status}`;
+        return `${pad(row.id, idWidth)}  ${pad(row.title, titleWidth)}  ${colorForStatus(row.status)(pad(plainStatus, statusDisplayWidth))}  ${pad(
           row.deps,
           depsWidth
-        )}`
+        )}`;
+      }
     ),
   ];
 }
@@ -140,6 +159,41 @@ function requiredTaskDirs(specsTasksDir: string, tier: LoadTaskTier): string[] {
   return [join(tasksRoot, tier)];
 }
 
+function groupTasksBy(
+  tasks: LoadedTaskWithTier[],
+  groupBy: GroupByField,
+): Map<string, LoadedTaskWithTier[]> {
+  const groups = new Map<string, LoadedTaskWithTier[]>();
+
+  for (const task of tasks) {
+    let key: string;
+    switch (groupBy) {
+      case "status":
+        key = task.spec.status;
+        break;
+      case "domain":
+        key = task.spec.domain;
+        break;
+      case "tier":
+        key = task.tier;
+        break;
+    }
+    const existing = groups.get(key);
+    if (existing) {
+      existing.push(task);
+    } else {
+      groups.set(key, [task]);
+    }
+  }
+
+  return groups;
+}
+
+function formatGroupHeader(groupBy: GroupByField, key: string, count: number): string {
+  const label = groupBy === "tier" ? "Tier" : groupBy === "status" ? "Status" : "Domain";
+  return styleHelpSection(`── ${label}: ${key} (${count}) ──────────`);
+}
+
 export function listCommand(specsTasksDir: string, _cwd: string, options: ListCommandOptions = {}): void {
   const tier = resolveTier(options);
   const taskDirs = requiredTaskDirs(specsTasksDir, tier);
@@ -171,7 +225,36 @@ export function listCommand(specsTasksDir: string, _cwd: string, options: ListCo
     return;
   }
 
-  for (const row of formatRows(filteredTasks, tier === "all")) {
+  const showTier = tier === "all" || options.groupBy === "tier";
+
+  if (options.groupBy) {
+    if (!VALID_GROUP_BY_VALUES.includes(options.groupBy)) {
+      console.error(
+        `Invalid --group-by value: "${options.groupBy}". Allowed: ${VALID_GROUP_BY_VALUES.join(", ")}`,
+      );
+      process.exit(1);
+    }
+
+    const groups = groupTasksBy(filteredTasks, options.groupBy);
+    const allRows = formatRows(filteredTasks, showTier);
+
+    // Print column header once before groups
+    if (allRows.length > 0) {
+      console.log(allRows[0]);
+    }
+
+    for (const [key, groupTasks] of groups) {
+      console.log(formatGroupHeader(options.groupBy, key, groupTasks.length));
+      const rows = formatRows(groupTasks, showTier);
+      // Skip the column header row per group, only show data rows
+      for (const row of rows.slice(1)) {
+        console.log(row);
+      }
+    }
+    return;
+  }
+
+  for (const row of formatRows(filteredTasks, showTier)) {
     console.log(row);
   }
 }

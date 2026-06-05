@@ -5,6 +5,8 @@ import { loadTasks } from "../specs/loadTasks.js";
 import type { LoadedTaskWithTier } from "../specs/loadTasks.js";
 import { formatYamlDocument } from "../utils/yamlFormat.js";
 import { timestamp } from "./runLog.js";
+import { colorForStatus } from "../utils/styling.js";
+import picocolors from "picocolors";
 
 export interface ReviewOutcomeCommandOptions {
   specsTasksDir: string;
@@ -106,7 +108,7 @@ export function reviewChangesCommand(
   updateTaskStatus(found.filePath, status);
 
   console.log(`Recorded review outcome: ${outcomePath}`);
-  console.log(`Updated: ${found.filePath.replace(options.cwd + "/", "")}\n  needs_review → ${status}`);
+  console.log(`Updated: ${found.filePath.replace(options.cwd + "/", "")}\n  ${colorForStatus("needs_review")("needs_review")} ${picocolors.yellow("→")} ${colorForStatus(status)(status)}`);
 }
 
 export function approveCommand(taskId: string, options: ReviewOutcomeCommandOptions): void {
@@ -132,5 +134,5 @@ export function approveCommand(taskId: string, options: ReviewOutcomeCommandOpti
   moveTaskFile(found.filePath, destination);
 
   console.log(`Recorded review outcome: ${outcomePath}`);
-  console.log(`Approved: ${taskId} → ${destination.replace(cwd + "/", "")}`);
+  console.log(`${picocolors.green("Approved:")} ${taskId} ${picocolors.yellow("→")} ${destination.replace(cwd + "/", "")}`);
 }

@@ -6,6 +6,8 @@ import type { Status } from "../constants.js";
 import { loadTasks } from "../specs/loadTasks.js";
 import type { TaskTier } from "../specs/loadTasks.js";
 import { formatYamlDocument } from "../utils/yamlFormat.js";
+import { colorForStatus } from "../utils/styling.js";
+import picocolors from "picocolors";
 
 const ACTIVE_STATUSES = new Set<Status>([
   "pending",
@@ -101,6 +103,6 @@ export function setStatusCommand(
   const updatedPath = shouldMove ? destination : found.filePath;
   console.log(
     `Updated: ${updatedPath.replace(cwd + "/", "")}\n` +
-      `  ${previousStatus} → ${newStatus}`
+      `  ${colorForStatus(String(previousStatus))(String(previousStatus))} ${picocolors.yellow("→")} ${colorForStatus(newStatus)(newStatus)}`
   );
 }

@@ -461,7 +461,7 @@ describe("assignr review subcommands", () => {
       reviewCommand(taskId, p.specsTasks, p.promptsGenerated, cwd);
     });
 
-    expect(log).toContain("Created review prompt:");
+    expect(log).toContain("Review prompt created");
     const reviewFile = join(p.promptsGenerated, `review-${taskId}.md`);
     expect(existsSync(reviewFile)).toBe(true);
   });
@@ -550,8 +550,8 @@ describe("assignr check subcommands", () => {
       checkDefaultCommand(ctx);
     });
 
-    // Doctor output
-    expect(log).toContain("Assignr Doctor");
+    // Doctor output (headerBanner adds the branded line)
+    expect(log).toContain("Assignr — A repo-native workflow layer");
     // Validate output
     expect(log).toContain("Checked:");
     // Lifecycle check output

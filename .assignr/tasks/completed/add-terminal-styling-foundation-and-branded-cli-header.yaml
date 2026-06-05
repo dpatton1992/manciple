@@ -1,0 +1,75 @@
+id: add-terminal-styling-foundation-and-branded-cli-header
+title: Add terminal styling foundation and branded CLI header
+status: complete
+type: implementation
+domain: core
+priority: medium
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - package.json
+  - pnpm-lock.yaml
+  - src/utils/styling.ts
+  - src/cli.ts
+forbidden_paths:
+  - src/commands/
+  - src/review/
+  - src/coordination/
+  - src/specs/
+  - src/constants.ts
+  - src/config.ts
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Install picocolors, create a shared styling utility module, add a branded ASCII
+  header on CLI startup, and customize commander help output with visual section
+  headings and inline examples.
+acceptance_criteria:
+  - picocolors is installed as a dependency (not devDependency)
+  - "src/utils/styling.ts exists and exports: colorForStatus(), colorForPriority(),
+    statusSymbol(), priorityBadge(), headerBanner(), styleCell(), and
+    styleHelpSection()"
+  - assignr --help shows a branded ASCII header ("Assignr — A repo-native workflow
+    layer") at the top
+  - assignr --help shows colorized section headings for Commands, Examples, and Notes
+    sections
+  - assignr --help --all appends legacy command examples to the existing help footer
+  - All exported utilities are unit-testable pure functions with no side effects
+  - pnpm typecheck passes
+  - pnpm test passes
+implementation_notes:
+  - picocolors is preferred over chalk/colorette because it has zero dependencies and is
+    ~5KB — matches the project's lightweight ethos
+  - headerBanner() must detect NO_COLOR env var and skip ANSI codes when set
+  - "statusSymbol() maps: pending=○, in_progress=▶, needs_review=◆, complete=✓,
+    blocked=⊘, failed=✕, partial=◐, archived=◻"
+  - "priorityBadge() maps: critical=[CRIT], high=[HIGH], medium=[MED], low=[LOW] — with
+    color via picocolors"
+  - colorForStatus() and colorForPriority() return raw picocolors chained functions
+    (e.g., picocolors.green, picocolors.yellow), not strings
+  - styleCell() pads and colors a cell value for table output — used by list and
+    coordinator tables
+  - styleHelpSection() wraps a section header string in bold+underline formatting
+  - The branded header should only appear on --help output (commander's
+    helpInformation), NOT on every command invocation
+  - Do NOT modify any command output files (list.ts, status.ts, etc.) in this task —
+    that is separate work
+  - Existing tests in tests/list.test.ts and others that spyOn console.log should still
+    pass unchanged since header only appears on --help
+  - Exported helpers must accept an optional 'options' bag with a 'noColor' override for
+    testing
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test -- list.test.ts
+    - node -e "import('./dist/utils/styling.js').then(m => {
+      console.log(Object.keys(m).sort().join(',')); })"
+    - pnpm run check:assignr-yaml
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes: []

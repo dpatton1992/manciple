@@ -49,6 +49,7 @@ import {
 } from "./commands/check.js";
 import type { CheckContext } from "./commands/check.js";
 import type { Status, TaskType, Priority } from "./constants.js";
+import { headerBanner, styleHelpSection } from "./utils/styling.js";
 
 function collect(value: string, previous: string[]): string[] {
   previous.push(value);
@@ -120,6 +121,8 @@ program
   .description("A repo-native workflow layer for existing coding agents.")
   .version(version);
 
+program.addHelpText("beforeAll", headerBanner());
+
 // init
 program
   .command("init")
@@ -128,8 +131,9 @@ program
   .option("--root <dir>", "Root directory for Assignr.", DEFAULT_ROOT)
   .option("--mcp", "Only set up MCP config (.mcp.json), skip directory creation and agents.", false)
   .option("--agents", "Only install packaged agent skills and agents, skip directory creation and MCP.", false)
-  .action(async (opts: { force: boolean; root: string; mcp: boolean; agents: boolean }) => {
-    await initCommand({ force: opts.force, cwd, root: opts.root, mcp: opts.mcp, agents: opts.agents });
+  .option("--verbose", "Show detailed per-directory and per-file output.", false)
+  .action(async (opts: { force: boolean; root: string; mcp: boolean; agents: boolean; verbose: boolean }) => {
+    await initCommand({ force: opts.force, cwd, root: opts.root, mcp: opts.mcp, agents: opts.agents, verbose: opts.verbose });
   });
 
 // install-assets
@@ -275,13 +279,22 @@ program
   .option("--completed", "Show completed tasks. Mutually exclusive with --archived and --all.")
   .option("--archived", "Show archived tasks. Mutually exclusive with --completed and --all.")
   .option("--all", "Show active, completed, and archived tasks. Mutually exclusive with --completed and --archived.")
-  .action((opts: { status?: string; domain?: string; completed?: boolean; archived?: boolean; all?: boolean }) => {
+  .option("--group-by <field>", 'Group tasks by "status", "domain", or "tier".')
+  .action((opts: {
+    status?: string;
+    domain?: string;
+    completed?: boolean;
+    archived?: boolean;
+    all?: boolean;
+    groupBy?: string;
+  }) => {
     listCommand(p.specsTasks, cwd, {
       status: opts.status,
       domain: opts.domain,
       completed: opts.completed,
       archived: opts.archived,
       all: opts.all,
+      groupBy: opts.groupBy as "status" | "domain" | "tier" | undefined,
     });
   });
 
@@ -669,12 +682,14 @@ review
   .option("--all", "In deep mode, include tasks that passed triage.", false)
   .option("--budget <tokens>", "Positive integer review budget estimate for queued packets.")
   .option("--deep-only <filter>", "In deep mode, emit only tasks matching the filter: risky.")
-  .action((opts: { mode: string; all: boolean; budget?: string; deepOnly?: string }) => {
+  .option("--machine", "Tab-delimited output for backward compatibility.", false)
+  .action((opts: { mode: string; all: boolean; budget?: string; deepOnly?: string; machine: boolean }) => {
     reviewQueueCommand(p.tasksActive, cwd, {
       mode: opts.mode as "triage" | "deep",
       all: opts.all,
       budget: opts.budget,
       deepOnly: opts.deepOnly,
+      machine: opts.machine,
       generatedDir: p.promptsGenerated,
       activeDir: p.tasksActive,
       completedDir: p.tasksCompleted,
@@ -686,9 +701,11 @@ review
   .command("check [task-id]")
   .description("Check review readiness (same as `assignr review-check`).")
   .option("--deterministic", "Run local deterministic review gate checks.", false)
-  .action((taskId: string | undefined, opts: { deterministic: boolean }) => {
+  .option("--machine", "Tab-delimited output for backward compatibility.", false)
+  .action((taskId: string | undefined, opts: { deterministic: boolean; machine: boolean }) => {
     reviewCheckCommand(p.tasksActive, cwd, taskId, {
       deterministic: opts.deterministic,
+      machine: opts.machine,
       generatedDir: p.promptsGenerated,
       activeDir: p.tasksActive,
       completedDir: p.tasksCompleted,
@@ -749,9 +766,11 @@ program
   .command("review-check [task-id]")
   .description("Check review readiness evidence for active needs_review tasks.")
   .option("--deterministic", "Run local deterministic review gate checks.", false)
-  .action((taskId: string | undefined, opts: { deterministic: boolean }) => {
+  .option("--machine", "Tab-delimited output for backward compatibility.", false)
+  .action((taskId: string | undefined, opts: { deterministic: boolean; machine: boolean }) => {
     reviewCheckCommand(p.tasksActive, cwd, taskId, {
       deterministic: opts.deterministic,
+      machine: opts.machine,
       generatedDir: p.promptsGenerated,
       activeDir: p.tasksActive,
       completedDir: p.tasksCompleted,
@@ -767,12 +786,14 @@ program
   .option("--all", "In deep mode, include tasks that passed triage.", false)
   .option("--budget <tokens>", "Positive integer review budget estimate for queued packets.")
   .option("--deep-only <filter>", "In deep mode, emit only tasks matching the filter: risky.")
-  .action((opts: { mode: string; all: boolean; budget?: string; deepOnly?: string }) => {
+  .option("--machine", "Tab-delimited output for backward compatibility.", false)
+  .action((opts: { mode: string; all: boolean; budget?: string; deepOnly?: string; machine: boolean }) => {
     reviewQueueCommand(p.tasksActive, cwd, {
       mode: opts.mode as "triage" | "deep",
       all: opts.all,
       budget: opts.budget,
       deepOnly: opts.deepOnly,
+      machine: opts.machine,
       generatedDir: p.promptsGenerated,
       activeDir: p.tasksActive,
       completedDir: p.tasksCompleted,
@@ -887,8 +908,27 @@ program.helpInformation = () => {
 
   if (showAllCommands) {
     help = help.replace("Commands:", "All commands (primary and legacy):");
+
+    // Append legacy command examples to the help footer
+    help += "\nLegacy command examples:\n";
+    for (const [old, replacement] of DEPRECATED_COMMANDS) {
+      help += `  assignr ${old.padEnd(20)} → assignr ${replacement}\n`;
+    }
   } else {
     help += "\nRun `assignr --help --all` to show all commands, including legacy/deprecated ones.\n";
+  }
+
+  // Colorize section headings.
+  // styleHelpSection handles NO_COLOR internally via picocolors.
+  const sections = [
+    "All commands (primary and legacy):",
+    "Commands:",
+    "Options:",
+    "Examples:",
+    "Notes:",
+  ];
+  for (const section of sections) {
+    help = help.replace(section, styleHelpSection(section));
   }
 
   return help;

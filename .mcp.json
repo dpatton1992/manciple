@@ -6,6 +6,15 @@
         "/Users/danielpatton/Documents/GitHub/promptops/bin/assignr-mcp.js"
       ],
       "cwd": "/Users/danielpatton/Documents/GitHub/promptops"
+    },
+    "assignr": {
+      "command": "npx",
+      "args": [
+        "--yes",
+        "--package",
+        "@dpatt/assignr",
+        "assignr-mcp"
+      ]
     }
   }
 }

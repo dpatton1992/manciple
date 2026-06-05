@@ -4,6 +4,8 @@ import { parse } from "yaml";
 import { loadTasks } from "../specs/loadTasks.js";
 import type { TaskTier } from "../specs/loadTasks.js";
 import { formatYamlDocument } from "../utils/yamlFormat.js";
+import { colorForStatus } from "../utils/styling.js";
+import picocolors from "picocolors";
 
 export interface ReopenCommandOptions {
   specsTasksDir: string;
@@ -51,5 +53,5 @@ export function reopenCommand(taskId: string, options: ReopenCommandOptions): vo
   writeFileSync(found.filePath, formatYamlDocument(parsed), "utf-8");
   moveTaskFile(found.filePath, destination);
 
-  console.log(`Reopened: ${taskId} (from ${found.tier}) → ${destination.replace(cwd + "/", "")}`);
+  console.log(`${picocolors.blue("Reopened:")} ${taskId} ${picocolors.yellow("→")} ${colorForStatus("in_progress")(destination.replace(cwd + "/", ""))}`);
 }

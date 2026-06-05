@@ -1,0 +1,91 @@
+id: restructure-init-output-as-success-summary-with-workflow-first-layout-and-verbose-mode
+title: Restructure init output as success-summary with workflow-first layout and verbose mode
+status: needs_review
+type: implementation
+domain: core
+priority: high
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/commands/init.ts
+  - src/commands/mcpConfig.ts
+  - src/commands/installAssets.ts
+forbidden_paths:
+  - dist/
+  - node_modules/
+  - .assignr/
+  - docs/
+  - AGENTS.md
+  - README.md
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: The `assignr init` output is restructured so the first thing a user sees is a
+  success summary with status checks and a workflow guide, while implementation details
+  (directory/file listings) are collapsed into a summary count or hidden behind
+  `--verbose`.
+acceptance_criteria:
+  - The first output block is the branded header banner, followed immediately by a
+    success summary with high-level completion checks (e.g., "✓ Repo structure created",
+    "✓ MCP configured", "✓ Agent skills installed") — not a directory listing.
+  - Below the success summary, a "Workflow" or "Next Steps" block shows the three-step
+    workflow (Plan, Execute, Review) with `$`-prefixed commands, matching the style
+    described in the user feedback.
+  - Individual directory creation lines (all 12+ directories) are NOT printed by default
+    — replaced by a single summary line like "Created 14 directories, created 7 files"
+    at the bottom of the output.
+  - A `--verbose` flag is added to the init command; when passed, the detailed
+    per-directory and per-file listing is shown. If `--verbose` is not passed, only the
+    summary counts appear.
+  - Agent Assets section shows human-readable labels per skill directory (e.g., "✓
+    Claude Code skills installed", "✓ Codex skills installed", "✓ OpenCode agents
+    installed") instead of bare path names.
+  - MCP section still shows config details but labeled as a success check item ("✓ MCP
+    configured") in the summary, with path details visible in the detailed section.
+  - Skipped files section (re-run scenario) is collapsed into a brief note (e.g., "3
+    files skipped, use --force to overwrite") unless --verbose is passed.
+  - The init command still works identically for all existing flags (--force, --root,
+    --mcp, --agents) — no behavioral changes, only output restructuring.
+  - All styling (picocolors, headerBanner, section headers) from the previous styling
+    pass is preserved and extended to the new output structure.
+  - All NO_COLOR / picocolors best-effort color support is preserved.
+  - pnpm typecheck passes, pnpm test passes.
+implementation_notes:
+  - The previous styling pass (by task
+    style-the-init-command-output-with-visual-flair-and-branded-welcome) added
+    picocolors, headerBanner, sectionHeader(), and basic section structure. This task
+    restructures the OUTPUT ORDER and CONTENT, not just the formatting.
+  - "User's preferred output shape (paraphrased from feedback): first banner, then a
+    success summary (✓ Repo structure created, ✓ MCP configured, ✓ Agent skills
+    installed), then the Workflow/Next Steps block, then the summary counts line at the
+    bottom."
+  - The --verbose flag should show the expanded per-directory and per-file listing that
+    the current version shows by default. The default (no --verbose) shows only summary
+    counts.
+  - "Agent asset labels must be human-readable: map .claude/skills → 'Claude Code
+    skills', .codex/skills → 'Codex skills', .opencode/agents → 'OpenCode agents'."
+  - "The workflow block should use the explicit format from the user feedback: numbered
+    steps with $ prefixed commands shown below each step label."
+  - The "Need help?" / "assignr help" footer is a nice touch from the feedback — include
+    it unless it conflicts with the existing Next Steps section.
+  - For re-runs (skipped files), show a terse dimmed line like "14 dirs, 7 files — use
+    --force to overwrite existing" at the bottom instead of the current yellow skipped
+    section.
+  - If --mcp or --agents flags are used (subset modes), the success summary should only
+    show the relevant checks (e.g., only "✓ MCP configured" when --mcp is passed).
+  - Do not change behavior of setupMcpConfig or installAssetsCommand — only change how
+    their results are REPORTED in the init context. Use return values or wrapper
+    functions rather than modifying sub-function signatures if possible.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test
+    - tsx src/cli.ts init --help
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes: []

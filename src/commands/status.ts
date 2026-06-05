@@ -2,6 +2,7 @@ import { loadTasks } from "../specs/loadTasks.js";
 import { STATUSES } from "../constants.js";
 import type { Status } from "../constants.js";
 import type { LoadedTaskWithTier } from "../specs/loadTasks.js";
+import { colorForStatus, statusSymbol, priorityBadge, headerBanner } from "../utils/styling.js";
 
 function pad(str: string, width: number): string {
   return str.padEnd(width);
@@ -79,19 +80,19 @@ export function statusCommand(specsTasksDir: string, cwd: string): void {
     counts[spec.status] = (counts[spec.status] ?? 0) + 1;
   }
 
-  console.log("Assignr Status");
-  console.log("────────────────");
+  console.log(headerBanner().trimEnd());
   console.log("Active tasks:");
   for (const status of STATUSES) {
     if (status === "complete" && counts[status] === 0) continue;
-    console.log(`  ${pad(status + ":", 14)} ${counts[status]}`);
+    const coloredLabel = colorForStatus(status)(pad(status + ":", 14));
+    console.log(`  ${statusSymbol(status)} ${coloredLabel} ${counts[status]}`);
   }
   console.log(`\nCompleted lifecycle tasks: ${completedLifecycleCount}`);
 
   const { task: next, reason } = findNextTask(tasks);
   console.log("\nNext suggested task:");
   if (next) {
-    console.log(`  ${next.spec.id} [${next.spec.priority ?? "medium"}]`);
+    console.log(`  ${next.spec.id} ${priorityBadge(next.spec.priority ?? "medium")}`);
     if (reason) {
       console.log(`  ⚠ ${reason}`);
     }

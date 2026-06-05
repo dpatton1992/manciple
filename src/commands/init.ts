@@ -1,13 +1,23 @@
-import { mkdirSync, writeFileSync, existsSync, readFileSync, appendFileSync } from "fs";
-import { join, relative } from "path";
-import { getPaths } from "../utils/paths.js";
 import {
-  IMPLEMENTATION_TEMPLATE,
-  REVIEW_TEMPLATE,
-  TEST_TEMPLATE,
-} from "../templates/renderTemplate.js";
-import { setupMcpConfig } from "./mcpConfig.js";
-import { installAssetsCommand } from "./installAssets.js";
+	mkdirSync,
+	writeFileSync,
+	existsSync,
+	readFileSync,
+	appendFileSync,
+	readdirSync,
+	statSync,
+} from 'fs';
+import { join, relative } from 'path';
+import { getPaths } from '../utils/paths.js';
+import picocolors from 'picocolors';
+import { headerBanner } from '../utils/styling.js';
+import {
+	IMPLEMENTATION_TEMPLATE,
+	REVIEW_TEMPLATE,
+	TEST_TEMPLATE,
+} from '../templates/renderTemplate.js';
+import { setupMcpConfig } from './mcpConfig.js';
+import { installAssetsCommand } from './installAssets.js';
 
 const CONFIG_YAML = `# Assignr configuration
 root: .assignr
@@ -44,111 +54,239 @@ assignr review my-task-title
 \`\`\`
 `;
 
-function updateGitignore(cwd: string, root: string): void {
-  const gitignorePath = join(cwd, ".gitignore");
-  const entriesToAdd = [
-    `${root}/prompts/generated/`,
-    `${root}/runs/`,
-  ];
-  const header = "# assignr";
+const ASSET_LABELS: Record<string, string> = {
+	'.claude/skills': 'Claude Code skills',
+	'.codex/skills': 'Codex skills',
+	'.opencode/agents': 'OpenCode agents',
+};
 
-  let existing = "";
-  if (existsSync(gitignorePath)) {
-    existing = readFileSync(gitignorePath, "utf-8");
-  }
+function updateGitignore(cwd: string, root: string, quiet: boolean = false): void {
+	const gitignorePath = join(cwd, '.gitignore');
+	const entriesToAdd = [`${root}/prompts/generated/`, `${root}/runs/`];
+	const header = '# assignr';
 
-  const missing = entriesToAdd.filter((e) => !existing.includes(e));
-  if (missing.length === 0) return;
+	let existing = '';
+	if (existsSync(gitignorePath)) {
+		existing = readFileSync(gitignorePath, 'utf-8');
+	}
 
-  const block = `\n${header}\n${missing.join("\n")}\n`;
-  appendFileSync(gitignorePath, block, "utf-8");
+	const missing = entriesToAdd.filter((e) => !existing.includes(e));
+	if (missing.length === 0) return;
 
-  const action = existing === "" ? "Created" : "Updated";
-  console.log(`  ✓ .gitignore ${action.toLowerCase()} (added ${missing.length} assignr entr${missing.length === 1 ? "y" : "ies"})`);
+	const block = `\n${header}\n${missing.join('\n')}\n`;
+	appendFileSync(gitignorePath, block, 'utf-8');
+
+	if (!quiet) {
+		const action = existing === '' ? 'Created' : 'Updated';
+		console.log(
+			`  ${picocolors.green('✓')} ${picocolors.dim('.gitignore')} ${action.toLowerCase()} (added ${missing.length} assignr entr${missing.length === 1 ? 'y' : 'ies'})`,
+		);
+	}
+}
+
+function sectionHeader(label: string): string {
+	return picocolors.bold(picocolors.dim(`── ${label} ──`));
+}
+
+/**
+ * Run a function with console.log suppressed.
+ * Used to quietly invoke sub-commands that log their own output
+ * so the init command can format a unified summary instead.
+ */
+function runQuietly<T>(fn: () => T): T {
+	const origLog = console.log;
+	console.log = () => {};
+	try {
+		return fn();
+	} finally {
+		console.log = origLog;
+	}
+}
+
+/**
+ * Recursively count files under a directory.
+ */
+function countFilesRecursive(dirPath: string): number {
+	if (!existsSync(dirPath)) return 0;
+	let count = 0;
+	try {
+		const entries = readdirSync(dirPath);
+		for (const entry of entries) {
+			const fullPath = join(dirPath, entry);
+			if (statSync(fullPath).isDirectory()) {
+				count += countFilesRecursive(fullPath);
+			} else {
+				count++;
+			}
+		}
+	} catch {
+		// skip inaccessible entries
+	}
+	return count;
 }
 
 // ── Init command ────────────────────────────────────────────────────────
 
 export async function initCommand(options: {
-  force: boolean;
-  cwd: string;
-  root: string;
-  mcp?: boolean;
-  agents?: boolean;
+	force: boolean;
+	cwd: string;
+	root: string;
+	mcp?: boolean;
+	agents?: boolean;
+	verbose?: boolean;
 }): Promise<void> {
-  const { force, cwd, root, mcp = false, agents = false } = options;
-  const runFullSetup = !mcp && !agents;
-  const p = getPaths(cwd, root);
+	const { force, cwd, root, mcp = false, agents = false, verbose = false } = options;
+	const runFullSetup = !mcp && !agents;
+	const p = getPaths(cwd, root);
 
-  if (runFullSetup) {
-    const dirs = [
-      p.root,
-      p.specs,
-      p.specsDomains,
-      p.specsContracts,
-      p.tasksActive,
-      p.tasksCompleted,
-      p.tasksArchived,
-      p.prompts,
-      p.promptsTemplates,
-      p.promptsGenerated,
-      p.runs,
-      p.state,
-      p.commands,
-    ];
+	let dirs: string[] = [];
+	const created: string[] = [];
+	const skipped: string[] = [];
 
-    for (const dir of dirs) {
-      if (!existsSync(dir)) {
-        mkdirSync(dir, { recursive: true });
-      }
-    }
+	// ── Execute all work first (quiet) ──────────────────────────────────
 
-    const filesToCreate: Array<{ path: string; content: string }> = [
-      { path: p.config, content: CONFIG_YAML },
-      { path: `${p.specsDomains}/core.yaml`, content: CORE_DOMAIN_YAML },
-      { path: `${p.promptsTemplates}/implementation.md`, content: IMPLEMENTATION_TEMPLATE },
-      { path: `${p.promptsTemplates}/review.md`, content: REVIEW_TEMPLATE },
-      { path: `${p.promptsTemplates}/test.md`, content: TEST_TEMPLATE },
-      { path: p.stateFile, content: STATE_JSON },
-      { path: `${p.commands}/README.md`, content: COMMANDS_README },
-    ];
+	if (runFullSetup) {
+		dirs = [
+			p.root,
+			p.specs,
+			p.specsDomains,
+			p.specsContracts,
+			p.tasksActive,
+			p.tasksCompleted,
+			p.tasksArchived,
+			p.prompts,
+			p.promptsTemplates,
+			p.promptsGenerated,
+			p.runs,
+			p.state,
+			p.commands,
+		];
 
-    const created: string[] = [];
-    const skipped: string[] = [];
+		for (const dir of dirs) {
+			if (!existsSync(dir)) {
+				mkdirSync(dir, { recursive: true });
+			}
+		}
 
-    for (const { path, content } of filesToCreate) {
-      const isCoreDomain = path === `${p.specsDomains}/core.yaml`;
-      if (existsSync(path) && (!force || isCoreDomain)) {
-        skipped.push(path);
-      } else {
-        writeFileSync(path, content, "utf-8");
-        created.push(path);
-      }
-    }
+		const filesToCreate: Array<{ path: string; content: string }> = [
+			{ path: p.config, content: CONFIG_YAML },
+			{ path: `${p.specsDomains}/core.yaml`, content: CORE_DOMAIN_YAML },
+			{
+				path: `${p.promptsTemplates}/implementation.md`,
+				content: IMPLEMENTATION_TEMPLATE,
+			},
+			{ path: `${p.promptsTemplates}/review.md`, content: REVIEW_TEMPLATE },
+			{ path: `${p.promptsTemplates}/test.md`, content: TEST_TEMPLATE },
+			{ path: p.stateFile, content: STATE_JSON },
+			{ path: `${p.commands}/README.md`, content: COMMANDS_README },
+		];
 
-    for (const dir of dirs) {
-      console.log(`  ✓ ${dir.replace(cwd + "/", "")}/`);
-    }
-    for (const f of created) {
-      console.log(`  ✓ ${f.replace(cwd + "/", "")}`);
-    }
-    if (skipped.length > 0) {
-      console.log(`\n  Skipped (already exist):`);
-      for (const f of skipped) {
-        console.log(`  - ${f.replace(cwd + "/", "")}`);
-      }
-    }
+		for (const { path, content } of filesToCreate) {
+			const isCoreDomain = path === `${p.specsDomains}/core.yaml`;
+			if (existsSync(path) && (!force || isCoreDomain)) {
+				skipped.push(path);
+			} else {
+				writeFileSync(path, content, 'utf-8');
+				created.push(path);
+			}
+		}
 
-    updateGitignore(cwd, root);
-  }
+		updateGitignore(cwd, root, true);
+	}
 
-  if (mcp || runFullSetup) {
-    setupMcpConfig(cwd, force);
-  }
+	// MCP setup (quiet — output formatted later)
+	if (mcp || runFullSetup) {
+		runQuietly(() => setupMcpConfig(cwd, force));
+	}
 
-  if (agents || runFullSetup) {
-    installAssetsCommand({ cwd, force });
-  }
+	// Agent assets install (quiet — output formatted later)
+	if (agents || runFullSetup) {
+		runQuietly(() => installAssetsCommand({ cwd, force }));
+	}
 
-  console.log(`\nAssignr initialized at ${root}/`);
+	// ── 1. Branded header banner ────────────────────────────────────────
+
+	console.log(headerBanner().trimEnd());
+
+	// ── 2. Success summary ──────────────────────────────────────────────
+
+	console.log(`\n  ${sectionHeader('Setup Summary')}`);
+	if (runFullSetup) {
+		console.log(`  ${picocolors.green('✓')} ${picocolors.bold('Repo structure created')}`);
+	}
+	if (mcp || runFullSetup) {
+		console.log(`  ${picocolors.green('✓')} ${picocolors.bold('MCP configured')}`);
+	}
+	if (agents || runFullSetup) {
+		console.log(`  ${picocolors.green('✓')} ${picocolors.bold('Agent skills installed')}`);
+	}
+
+	// ── 3. Workflow / Next Steps ────────────────────────────────────────
+
+	console.log(`\n  ${sectionHeader('Workflow')}`);
+	console.log(`  ${picocolors.bold('1.')} Plan work:`);
+	console.log(`     ${picocolors.cyan('$ assignr task new "My task" --type implementation')}`);
+	console.log(`  ${picocolors.bold('2.')} Execute work:`);
+	console.log(`     ${picocolors.cyan('$ assignr handoff my-task')}`);
+	console.log(`  ${picocolors.bold('3.')} Review results:`);
+	console.log(`     ${picocolors.cyan('$ assignr review')}`);
+	console.log('');
+	console.log(`  ${picocolors.dim('Using Claude Code, Codex, or OpenCode?')}`);
+	console.log(`     ${picocolors.cyan('$ assignr-task-planner')}`);
+	console.log(`     ${picocolors.cyan('$ assignr-agents')}`);
+	console.log('');
+	console.log(`  ${picocolors.dim('Need help? Run')} ${picocolors.cyan('assignr --help')}`);
+
+	// ── 4. Detailed sections (verbose only) ─────────────────────────────
+
+	if (verbose) {
+		if (runFullSetup) {
+			console.log(`\n  ${sectionHeader('Directories')}`);
+			for (const dir of dirs) {
+				console.log(`  ${picocolors.green('✓')} ${picocolors.bold(dir.replace(cwd + '/', '') + '/')}`);
+			}
+
+			console.log(`\n  ${sectionHeader('Files')}`);
+			for (const f of created) {
+				console.log(`  ${picocolors.green('✓')} ${f.replace(cwd + '/', '')}`);
+			}
+
+			if (skipped.length > 0) {
+				console.log(`\n  ${picocolors.yellow('Skipped (already exist):')}`);
+				for (const f of skipped) {
+					console.log(`  ${picocolors.dim('-')} ${picocolors.dim(f.replace(cwd + '/', ''))}`);
+				}
+			}
+		}
+
+		if (mcp || runFullSetup) {
+			console.log(`\n  ${sectionHeader('MCP Config')}`);
+			setupMcpConfig(cwd, force);
+		}
+
+		if (agents || runFullSetup) {
+			console.log(`\n  ${sectionHeader('Agent Assets')}`);
+			for (const [targetPath, label] of Object.entries(ASSET_LABELS)) {
+				const fullPath = join(cwd, targetPath);
+				const fileCount = countFilesRecursive(fullPath);
+				if (fileCount > 0) {
+					console.log(`  ${picocolors.green('✓')} ${picocolors.bold(label)} (${fileCount} file${fileCount === 1 ? '' : 's'})`);
+				} else {
+					console.log(`  ${picocolors.dim('-')} ${picocolors.dim(label)} (not available)`);
+				}
+			}
+		}
+	}
+
+	// ── 5. Re-run skipped note (non-verbose) ────────────────────────────
+
+	if (!verbose && skipped.length > 0) {
+		console.log(`\n  ${picocolors.dim(`${skipped.length} file${skipped.length === 1 ? '' : 's'} skipped, use --force to overwrite`)}`);
+	}
+
+	// ── 6. Summary counts at bottom ─────────────────────────────────────
+
+	if (runFullSetup) {
+		console.log(`\n  ${picocolors.dim(`Created ${dirs.length} director${dirs.length === 1 ? 'y' : 'ies'}, created ${created.length} file${created.length === 1 ? '' : 's'}`)}`);
+	}
 }

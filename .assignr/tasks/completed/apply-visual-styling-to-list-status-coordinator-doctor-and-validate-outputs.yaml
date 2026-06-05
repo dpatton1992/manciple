@@ -1,0 +1,102 @@
+id: apply-visual-styling-to-list-status-coordinator-doctor-and-validate-outputs
+title: Apply visual styling to list, status, coordinator, doctor, and validate outputs
+status: complete
+type: implementation
+domain: core
+priority: medium
+depends_on:
+  - add-terminal-styling-foundation-and-branded-cli-header
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/commands/list.ts
+  - src/commands/status.ts
+  - src/commands/coordinator.ts
+  - src/commands/doctor.ts
+  - src/commands/validate.ts
+  - src/commands/compile.ts
+  - src/commands/setStatus.ts
+  - src/commands/approve.ts
+  - src/commands/complete.ts
+  - src/commands/archive.ts
+  - src/commands/reopen.ts
+  - src/commands/requestChanges.ts
+  - src/commands/blockReview.ts
+  - tests/
+forbidden_paths:
+  - src/commands/reviewCheck.ts
+  - src/commands/reviewQueue.ts
+  - src/commands/handoff.ts
+  - src/commands/submit.ts
+  - src/review/
+  - src/coordination/
+  - src/specs/
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Apply the shared styling utility to all output-producing CLI commands so statuses
+  are color-coded, priorities have visual badges, tables have progress markers, and
+  command outputs are visually enriched with emoji symbols.
+acceptance_criteria:
+  - assignr list shows colorized status values and priority badges using picocolors via
+    the styling utility
+  - assignr list shows a colored header row with ID/TITLE/STATUS/DEPS columns
+  - assignr status shows color-coded per-status counts and a visual next-task suggestion
+    with priority badge
+  - assignr coordinator shows color-coded queue sections (runnable=green, blocked=red,
+    etc.) with visual separators
+  - assignr doctor shows ✓/✕ results with colorized icons (green/gray/red) and package
+    version in a styled header
+  - assignr validate shows ✓/✕/⚠ results with colorized icons and styled summary line
+  - Compile, set-status, approve, archive, and reopen commands show colorized
+    status-transition arrows (old → new)
+  - All consoles still output meaningful plain text when piped or when NO_COLOR is set
+  - pnpm typecheck passes
+  - pnpm test passes
+implementation_notes:
+  - Import and use the utilities from ../utils/styling.js (from the foundation task) —
+    do not redefine or duplicate color/badge logic
+  - "list.ts: apply colorForStatus() to the STATUS column values, priorityBadge() to an
+    optional priority column, and styleCell() to the header row. Use statusSymbol()
+    prefix on each task ID or status value"
+  - "status.ts: apply colorForStatus() to each status label in the count summary. Use
+    statusSymbol() prefix on status lines. Use priorityBadge() for the next-task
+    suggestion. Keep the header banner if it was added"
+  - "coordinator.ts: apply colorForStatus() to the STATUS column values. Colorize
+    section labels (runnable=green, needs_review=blue, blocked=red, waiting=gray,
+    rework-needed=yellow). Add emoji section bullets"
+  - "doctor.ts: Apply colorForStatus()-like coloring: green checkmarks for pass, red X
+    for fail, gray for warnings. Use the headerBanner()-style output for the title"
+  - "validate.ts: Use statusSymbol icons (✓/✕/⚠) alongside the existing text, colorize
+    the summary counts at the end"
+  - "compile.ts: Colorize the ✓ Compiled: prefix line. Show status transition arrows for
+    derived state changes"
+  - "setStatus.ts: Colorize the status transition arrow and both old/new status values"
+  - "approve.ts: Colorize the status transition (needs_review → complete) and the
+    'Approved:' prefix"
+  - All styling must respect the NO_COLOR environment variable — use
+    picocolors.isColorSupported or the utility's options bag
+  - Do not change the structure or behavior of tab-delimited output used by
+    reviewCheck.ts or reviewQueue.ts — those are machine-parseable formats
+  - Update relevant tests if console.log mocking needs adjustment for ANSI codes (use
+    strip-ansi if needed in test assertions, or update snapshots)
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test
+    - NO_COLOR=1 pnpm run build && node -e "import('./dist/commands/list.js')" 2>&1 |
+      head -5
+    - pnpm run check:assignr-yaml
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes:
+  - This task touches all output-producing commands. Each file change is small (import +
+    wrap + colorize) so the overall blast radius is manageable.
+  - reviewCheck.ts and reviewQueue.ts output tab-delimited machine-parseable lines — do
+    NOT add ANSI codes to those outputs.
+  - If a test mocks console.log and checks exact string output, the test may need an
+    update to strip-ansi or match the new formatted output.

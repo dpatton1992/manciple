@@ -14,6 +14,11 @@ import type { TaskSpec } from "../specs/schema.js";
 import {
   readLatestRunLogContent,
 } from "../review/evidence.js";
+import {
+  headerBanner,
+  colorForStatus,
+  statusSymbol,
+} from "../utils/styling.js";
 
 function formatList(items: string[] | undefined): string {
   if (!items || items.length === 0) return "_None specified._";
@@ -232,10 +237,23 @@ export function reviewCommand(
   options?: RenderReviewPromptOptions
 ): void {
   const outPath = createReviewPrompt(taskId, specsTasksDir, generatedDir, cwd, options);
+  const relPath = outPath.replace(cwd + "/", "");
 
-  console.log(`Created review prompt: ${outPath.replace(cwd + "/", "")}`);
+  const { tasks } = loadTasks(specsTasksDir, "all");
+  const found = tasks.find((t) => t.spec.id === taskId);
+
+  console.log(headerBanner().trimEnd());
+  console.log(`  ${colorForStatus("complete")("✓")} Review prompt created\n`);
+  if (found) {
+    const sym = statusSymbol(found.spec.status);
+    console.log(`  Task:   ${found.spec.id}`);
+    console.log(`  Status: ${colorForStatus(found.spec.status)(sym + " " + found.spec.status)}`);
+  } else {
+    console.log(`  Task:   ${taskId}`);
+  }
+  console.log(`  File:   ${relPath}\n`);
   console.log(
-    `Review prompts are separate from compiled implementation prompts, which use ${join(
+    `  Note: Review prompts are separate from compiled implementation prompts, which use ${join(
       generatedDir,
       implementationPromptFilename(taskId)
     ).replace(cwd + "/", "")}.`

@@ -1,0 +1,81 @@
+id: style-the-init-command-output-with-visual-flair-and-branded-welcome
+title: Style the init command output with visual flair and branded welcome
+status: needs_review
+type: implementation
+domain: core
+priority: high
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/commands/init.ts
+  - src/commands/mcpConfig.ts
+  - src/commands/installAssets.ts
+forbidden_paths:
+  - dist/
+  - node_modules/
+  - .assignr/
+  - docs/
+  - AGENTS.md
+  - README.md
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: The `assignr init` output is transformed from a plain log dump into a visually
+  branded, sectioned, colorized welcome experience that sets the tone for the rest of
+  the CLI.
+acceptance_criteria:
+  - The init output starts with the branded header banner (headerBanner() from
+    src/utils/styling.ts), matching the style of doctor, status, and validate commands.
+  - Directory creation lines use picocolors for checkmarks (green ✓) and directory names
+    (bold or dim for contrast).
+  - File creation lines use picocolors for checkmarks (green ✓) and file paths.
+  - Skipped files section uses a distinct color (yellow or dim) to differentiate from
+    created items.
+  - The duplicate 'Assignr initialized!' on line 163 is removed — only one completion
+    message remains, styled consistently.
+  - The 'Next steps' section uses picocolors formatting (bold task numbers, colored
+    action references) and is visually separated from the setup output.
+  - MCP config output lines (from setupMcpConfig in mcpConfig.ts) use testable
+    ASCII-bounded entries — each line starts with a colored prefix, and the overall
+    section is visually distinct.
+  - Agent asset install output lines (from installAssetsCommand in installAssets.ts) use
+    colored prefixes and a summary line that matches the init style.
+  - All styling respects NO_COLOR environment variable (picocolors handles this
+    internally).
+  - TypeScript compiles without errors (pnpm typecheck passes).
+  - Existing tests still pass (pnpm test passes).
+implementation_notes:
+  - This is the user's first impression of Assignr — invest in visual quality. Use
+    picocolors throughout; import from picocolors and from src/utils/styling.ts
+    (headerBanner, styleCell, etc.).
+  - 'Section organization (use dimmed separator lines or bold section labels): "──
+    Directories ──", "── Files ──", "── MCP Config ──", "── Agent Assets ──", then a
+    distinct "── Welcome ──" or "── Next Steps ──" block.'
+  - The output is printed to stdout, not returned. Use console.log for all output.
+  - DO NOT change directory/file creation logic, MCP config logic, or asset install
+    logic — only the output formatting.
+  - The mcpConfig.ts and installAssets.ts files are authored by init via call; style
+    their console.log output lines to match the init section style.
+  - If the --mcp or --agents flags are used, the output should still feel cohesive (it's
+    a subset of the full init flow).
+  - Keep the output relevant for both first-time runs (lots of ✓ lines) and re-runs
+    (lots of skipped lines).
+  - Consider an animated or emoji-free (per project convention) visual cue to celebrate
+    initialization. The existing headerBanner already uses cyan bold; build on that
+    vibe.
+  - Do not introduce new dependencies. picocolors is already in package.json.
+  - The existing completed task 'add-mcp-and-agents-flags-to-init-command' added the
+    --mcp and --agents flags. Do not break that interface.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test
+    - tsx src/cli.ts init --help
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes: []

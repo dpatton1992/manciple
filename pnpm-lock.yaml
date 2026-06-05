@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@dpatt/assignr':
+        specifier: ^0.4.0
+        version: 0.4.0
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
         version: 1.29.0(zod@3.25.76)
@@ -17,6 +20,9 @@ importers:
       fs-extra:
         specifier: ^11.2.0
         version: 11.3.5
+      picocolors:
+        specifier: ^1.1.1
+        version: 1.1.1
       yaml:
         specifier: ^2.7.0
         version: 2.9.0
@@ -41,6 +47,11 @@ importers:
         version: 2.1.9(@types/node@22.19.19)
 
 packages:
+
+  '@dpatt/assignr@0.4.0':
+    resolution: {integrity: sha512-LIaapnAMoMf+czNlFceRdKP5WUMdgmVl6Af7hSvA/AyVbZdnUkQgAxGsIV3OLnI5laDgMEluWm2cSvE1/yRLPw==}
+    engines: {node: '>=18.0.0'}
+    hasBin: true
 
   '@esbuild/aix-ppc64@0.21.5':
     resolution: {integrity: sha512-1SDgH6ZSPTlggy1yI6+Dbkiz8xzpHJEVAlF/AM1tHPLsf5STom9rwtjE4hKAF20FfXXNTFqEYXyJNWh1GiZedQ==}
@@ -1100,6 +1111,17 @@ packages:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
 snapshots:
+
+  '@dpatt/assignr@0.4.0':
+    dependencies:
+      '@modelcontextprotocol/sdk': 1.29.0(zod@3.25.76)
+      commander: 12.1.0
+      fs-extra: 11.3.5
+      yaml: 2.9.0
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@cfworker/json-schema'
+      - supports-color
 
   '@esbuild/aix-ppc64@0.21.5':
     optional: true

@@ -1,6 +1,6 @@
 id: add-cli-workflow-tests-for-new-command-groups-and-deprecation
 title: Add CLI workflow tests for new command groups and deprecation
-status: needs_review
+status: complete
 type: test
 domain: core
 priority: medium

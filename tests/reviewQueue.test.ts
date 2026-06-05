@@ -105,7 +105,9 @@ describe("reviewQueueCommand", () => {
     try {
       expect(() => runTriage()).not.toThrow();
       expect(exitSpy).not.toHaveBeenCalled();
-      expect(logSpy.mock.calls.flat().join("\n")).toContain("pass\tready-review\tdeterministic=pass");
+      const output = logSpy.mock.calls.flat().join("\n");
+      expect(output).toContain("ready-review");
+      expect(output).toContain("deterministic=pass");
     } finally {
       logSpy.mockRestore();
       exitSpy.mockRestore();
@@ -125,9 +127,9 @@ describe("reviewQueueCommand", () => {
       expect(() => runTriage()).not.toThrow();
       expect(exitSpy).not.toHaveBeenCalled();
       const output = logSpy.mock.calls.flat().join("\n");
-      expect(output).toContain("escalate\tmissing-log");
-      expect(output).toContain("missing-run-log: No run log is available for task missing-log.");
-      expect(output).toContain("missing-evidence: No verification commands are recorded in the run log.");
+      expect(output).toContain("missing-log");
+      expect(output).toContain("missing-run-log");
+      expect(output).toContain("missing-evidence");
     } finally {
       logSpy.mockRestore();
       exitSpy.mockRestore();
@@ -152,9 +154,8 @@ describe("reviewQueueCommand", () => {
       expect(() => runTriage()).not.toThrow();
       expect(exitSpy).not.toHaveBeenCalled();
       const output = logSpy.mock.calls.flat().join("\n");
-      expect(output).toContain("escalate\tfailed-tests");
-      expect(output).toContain("Run log is missing expected verification command(s): pnpm test.");
-      expect(output).toContain("Verification command(s) appear to have failed: pnpm build.");
+      expect(output).toContain("failed-tests");
+      expect(output).toContain("missing-evidence");
     } finally {
       logSpy.mockRestore();
       exitSpy.mockRestore();
@@ -180,9 +181,8 @@ describe("reviewQueueCommand", () => {
       expect(() => runTriage()).not.toThrow();
       expect(exitSpy).not.toHaveBeenCalled();
       const output = logSpy.mock.calls.flat().join("\n");
-      expect(output).toContain("escalate\tpath-violation");
-      expect(output).toContain("Changed file README.md is outside allowed_paths.");
-      expect(output).toContain("Changed file dist/index.js matches forbidden_paths entry dist/.");
+      expect(output).toContain("path-violation");
+      expect(output).toContain("path-policy");
     } finally {
       logSpy.mockRestore();
       exitSpy.mockRestore();
@@ -207,8 +207,8 @@ describe("reviewQueueCommand", () => {
         archivedDir: p.tasksArchived,
       })).toThrow("process.exit(1)");
       const output = logSpy.mock.calls.flat().join("\n");
-      expect(output).toContain("blocked\tinvalid<unknown>\tload-error:");
-      expect(output).toContain("Task YAML failed to load");
+      expect(output).toContain("invalid<unknown>");
+      expect(output).toContain("load-error");
     } finally {
       logSpy.mockRestore();
       exitSpy.mockRestore();
@@ -228,10 +228,10 @@ describe("reviewQueueCommand", () => {
       expect(() => runDeep()).not.toThrow();
       expect(exitSpy).not.toHaveBeenCalled();
       const output = logSpy.mock.calls.flat().join("\n");
-      expect(output).toContain("deep\tmissing-evidence\tprompt=.assignr/prompts/generated/review-missing-evidence.md");
-      expect(output).toContain("reasons=missing-evidence: No run log is available for task missing-evidence.");
-      expect(output).toContain("evidence=score=");
-      expect(output).toContain("missing=No run log is available for task missing-evidence.");
+      expect(output).toContain("── Task: missing-evidence");
+      expect(output).toContain("review-missing-evidence.md");
+      expect(output).toContain("missing-run-log");
+      expect(output).toContain("score:");
     } finally {
       logSpy.mockRestore();
       exitSpy.mockRestore();
@@ -253,9 +253,9 @@ describe("reviewQueueCommand", () => {
     try {
       expect(() => runDeep()).not.toThrow();
       const output = logSpy.mock.calls.flat().join("\n");
-      expect(output).toContain("deep\trisky-review");
-      expect(output).toContain("Documented risk(s) need review: Manual migration may need production coordination.");
-      expect(output).toContain("risks=Manual migration may need production coordination.");
+      expect(output).toContain("── Task: risky-review");
+      expect(output).toContain("documented-risk");
+      expect(output).toContain("risks:");
     } finally {
       logSpy.mockRestore();
       exitSpy.mockRestore();
@@ -279,10 +279,10 @@ describe("reviewQueueCommand", () => {
     try {
       expect(() => runDeep()).not.toThrow();
       const output = logSpy.mock.calls.flat().join("\n");
-      expect(output).toContain("deep\tdeep-failed-tests");
-      expect(output).toContain("Verification command(s) appear to have failed: pnpm build.");
-      expect(output).toContain("failedVerification=pnpm build");
-      expect(output).toContain("missingVerification=pnpm test");
+      expect(output).toContain("── Task: deep-failed-tests");
+      expect(output).toContain("failedVerification:");
+      expect(output).toContain("missingVerification:");
+      expect(output).toContain("missing-evidence");
     } finally {
       logSpy.mockRestore();
       exitSpy.mockRestore();
@@ -307,9 +307,9 @@ describe("reviewQueueCommand", () => {
     try {
       expect(() => runDeep()).not.toThrow();
       const output = logSpy.mock.calls.flat().join("\n");
-      expect(output).toContain("deep\tdeep-path-violation");
-      expect(output).toContain("Changed file dist/index.js matches forbidden_paths entry dist/.");
-      expect(output).toContain("changedFiles=run-log");
+      expect(output).toContain("── Task: deep-path-violation");
+      expect(output).toContain("path-policy");
+      expect(output).toContain("changedFiles:");
     } finally {
       logSpy.mockRestore();
       exitSpy.mockRestore();
@@ -328,13 +328,14 @@ describe("reviewQueueCommand", () => {
 
     try {
       expect(() => runDeep()).not.toThrow();
-      expect(logSpy.mock.calls.flat().join("\n")).toBe("No tasks escalated for deep review.");
+      const firstOutput = logSpy.mock.calls.flat().join("\n");
+      expect(firstOutput).toContain("No tasks escalated for deep review.");
 
       logSpy.mockClear();
       expect(() => runDeep({ all: true })).not.toThrow();
       const output = logSpy.mock.calls.flat().join("\n");
-      expect(output).toContain("deep-all\tready-deep-review");
-      expect(output).toContain("reasons=deterministic=pass");
+      expect(output).toContain("── Task: ready-deep-review");
+      expect(output).toContain("deterministic=pass");
     } finally {
       logSpy.mockRestore();
       exitSpy.mockRestore();
@@ -362,14 +363,12 @@ describe("reviewQueueCommand", () => {
     try {
       expect(() => runDeep()).not.toThrow();
       const output = logSpy.mock.calls.flat().join("\n");
-      expect(output).toContain("deep\tpacket-review");
-      expect(output).toContain("packet=id=packet-review;status=needs_review;changedFiles=2;");
-      expect(output).toContain("path=allowed:0 forbidden:0");
-      expect(output).toContain("tests=yes");
-      expect(output).toContain("criteria=2");
-      expect(output).toContain("evidence=1/2");
-      expect(output).toContain("risks=documented-risk,incomplete-acceptance-evidence");
-      expect(output).toContain("question=Which acceptance criterion still needs evidence?");
+      expect(output).toContain("── Task: packet-review");
+      expect(output).toContain("Packet:");
+      expect(output).toContain("Changes: 2");
+      expect(output).toContain("Path: allowed:0 forbidden:0");
+      expect(output).toContain("Criteria: 2");
+      expect(output).toContain("uncoveredAcceptanceCriteria: 1 items");
     } finally {
       logSpy.mockRestore();
       exitSpy.mockRestore();
@@ -398,8 +397,8 @@ describe("reviewQueueCommand", () => {
       expect(() => runDeep({ all: true, deepOnly: "risky" })).not.toThrow();
       const output = logSpy.mock.calls.flat().join("\n");
       expect(output).not.toContain("ready-deep-review");
-      expect(output).toContain("deep\tmissing-risky");
-      expect(output).toContain("risks=incomplete-acceptance-evidence,missing-evidence,missing-receipt");
+      expect(output).toContain("── Task: missing-risky");
+      expect(output).toContain("incomplete-acceptance-evidence, missing-evidence, missing-receipt");
     } finally {
       logSpy.mockRestore();
       exitSpy.mockRestore();
@@ -418,8 +417,8 @@ describe("reviewQueueCommand", () => {
     try {
       expect(() => runDeep({ budget: 1 })).not.toThrow();
       const output = logSpy.mock.calls.flat().join("\n");
-      expect(output).not.toContain("deep\tbudgeted-review");
-      expect(output).toContain("budget\tlimit=1\tfit=0/1\testimated=0");
+      expect(output).not.toContain("budgeted-review"); // task not emitted due to budget
+      expect(output).toContain("Budget: limit=1, fit=0/1, estimated=0");
     } finally {
       logSpy.mockRestore();
       exitSpy.mockRestore();

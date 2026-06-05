@@ -1,0 +1,68 @@
+id: add-group-by-sections-to-assignr-list-command
+title: Add group-by sections to assignr list command
+status: needs_review
+type: implementation
+domain: core
+priority: medium
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/commands/list.ts
+  - tests/list.test.ts
+forbidden_paths:
+  - src/commands/review.ts
+  - src/commands/reviewCheck.ts
+  - src/commands/reviewQueue.ts
+  - src/review/
+  - src/coordination/
+  - src/specs/
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Add a --group-by flag to the list command that groups tasks into colored sections
+  by status, domain, or tier instead of showing a single flat table.
+acceptance_criteria:
+  - assignr list --group-by status groups tasks by their status value with a styled
+    section header per group
+  - assignr list --group-by domain groups tasks by domain with a styled section header
+    per group
+  - assignr list --group-by tier groups tasks by active/completed/archived tier (when
+    combined with --all) with a styled section header per group
+  - assignr list without --group-by still shows the existing flat table format unchanged
+  - assignr list --group-by combined with --status and --domain filters still respects
+    those filters before grouping
+  - The section header uses styleHelpSection() or similar bold/underline formatting
+  - All output respects NO_COLOR env var
+  - pnpm typecheck passes
+  - pnpm test passes
+implementation_notes:
+  - Add a 'groupBy' option to the ListCommandOptions interface with type 'status' |
+    'domain' | 'tier' | undefined
+  - "Import and use existing styling utilities: styleHelpSection, colorForStatus,
+    statusSymbol, styleCell"
+  - "Group header format: a styled header line like '── Status: pending ──────────' with
+    the group key and a count"
+  - Tasks within each group use the existing formatRows output but indented or without
+    the header row repeated
+  - When --group-by is not specified, behavior is identical to current — no regression
+    for non-grouped output
+  - Use --group-by tier only makes sense with --all or --completed/--archived flags;
+    document this
+  - The existing --status and --domain filters should apply before grouping
+    (applyFilters then group)
+  - Update existing list tests to verify the flat table is unchanged when --group-by is
+    not used, and add new tests for grouped output
+  - Invalid --group-by values should produce a clear error message listing valid options
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test -- list.test.ts
+    - pnpm run check:assignr-yaml
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes: []

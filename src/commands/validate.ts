@@ -5,6 +5,8 @@ import type { ValidationCounts } from "../specs/validateTasks.js";
 import type { TaskSpec } from "../specs/schema.js";
 import { getPaths } from "../utils/paths.js";
 import { dirname, relative } from "path";
+import { statusSymbol } from "../utils/styling.js";
+import picocolors from "picocolors";
 
 function formatCount(count: number, singular: string): string {
   return `${count} ${singular}${count === 1 ? "" : "s"}`;
@@ -78,12 +80,12 @@ export function validateCommand(
 
   // Report load errors first
   for (const { filePath, error } of loadErrors) {
-    console.error(`  ✕ ${relative(cwd, filePath)}`);
+    console.error(`  ${picocolors.red("✕")} ${relative(cwd, filePath)}`);
     console.error(`    ${error}`);
   }
 
   if (tasks.length === 0 && loadErrors.length === 0) {
-    console.warn(`  ⚠ No tasks found. Run "assignr new" to create your first task.`);
+    console.warn(`  ${picocolors.yellow("⚠")} No tasks found. Run "assignr new" to create your first task.`);
   }
 
   const result = validateTasks(tasks, {
@@ -103,7 +105,7 @@ export function validateCommand(
 
   for (const { filePath, errors } of invalid) {
     totalErrors++;
-    console.error(`  ✕ ${relative(cwd, filePath)}`);
+    console.error(`  ${picocolors.red("✕")} ${relative(cwd, filePath)}`);
     for (const issue of errors) {
       console.error(`    [${issue.field}] ${issue.message}`);
     }
@@ -111,21 +113,21 @@ export function validateCommand(
 
   for (const warning of warnings) {
     totalWarnings++;
-    console.warn(`  ⚠ ${relative(cwd, warning.filePath)} [${warning.field}] ${warning.message}`);
+    console.warn(`  ${picocolors.yellow("⚠")} ${relative(cwd, warning.filePath)} [${warning.field}] ${warning.message}`);
   }
 
   const totalValid = valid.length;
 
-  console.log(`\nAssignr Validate`);
-  console.log(`─────────────────`);
+  console.log(`\n${picocolors.bold("Assignr Validate")}`);
+  console.log(`${picocolors.dim("─────────────────")}`);
   console.log(
-    `  Checked: ${formatCount(checkedCounts.tasksChecked, "task")}, ` +
-      `${formatCount(checkedCounts.domainsChecked, "domain")}, ` +
-      `${formatCount(checkedCounts.contractsChecked, "contract")}`
+    `  Checked: ${picocolors.bold(formatCount(checkedCounts.tasksChecked, "task"))}, ` +
+      `${picocolors.bold(formatCount(checkedCounts.domainsChecked, "domain"))}, ` +
+      `${picocolors.bold(formatCount(checkedCounts.contractsChecked, "contract"))}`
   );
-  if (totalValid > 0) console.log(`  ✓ ${totalValid} valid task${totalValid === 1 ? "" : "s"}`);
-  if (totalWarnings > 0) console.log(`  ⚠ ${totalWarnings} warning${totalWarnings === 1 ? "" : "s"}`);
-  if (totalErrors > 0) console.log(`  ✕ ${totalErrors} invalid task${totalErrors === 1 ? "" : "s"}`);
+  if (totalValid > 0) console.log(`  ${picocolors.green("✓")} ${picocolors.bold(String(totalValid))} valid task${totalValid === 1 ? "" : "s"}`);
+  if (totalWarnings > 0) console.log(`  ${picocolors.yellow("⚠")} ${picocolors.bold(String(totalWarnings))} warning${totalWarnings === 1 ? "" : "s"}`);
+  if (totalErrors > 0) console.log(`  ${picocolors.red("✕")} ${picocolors.bold(String(totalErrors))} invalid task${totalErrors === 1 ? "" : "s"}`);
 
   if (totalErrors > 0) {
     process.exit(1);

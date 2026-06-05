@@ -1,6 +1,6 @@
 id: add-handoff-check-and-review-command-groups-for-human-cli
 title: Add handoff check and review command groups for human CLI
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: high

@@ -1,6 +1,8 @@
 import { loadTasks } from "../specs/loadTasks.js";
 import { buildCoordinatorQueue } from "../coordination/reviewQueue.js";
 import type { CoordinatorQueueRow } from "../coordination/reviewQueue.js";
+import { colorForStatus, styleCell, statusSymbol } from "../utils/styling.js";
+import picocolors from "picocolors";
 
 function pad(value: string, width: number): string {
   return value.padEnd(width);
@@ -11,9 +13,29 @@ function truncate(value: string, width: number): string {
   return `${value.slice(0, width - 3)}...`;
 }
 
+const SECTION_COLORS: Record<string, (s: string) => string> = {
+  runnable: picocolors.green,
+  waiting: picocolors.gray,
+  needs_review: picocolors.blue,
+  "complete-ready": picocolors.green,
+  blocked: picocolors.red,
+  "rework-needed": picocolors.yellow,
+};
+
+const SECTION_BULLETS: Record<string, string> = {
+  runnable: "▶",
+  waiting: "○",
+  needs_review: "◆",
+  "complete-ready": "✓",
+  blocked: "⊘",
+  "rework-needed": "◐",
+};
+
 function printSection(label: string, rows: CoordinatorQueueRow[]): void {
-  console.log(`\n${label}`);
-  console.log("-".repeat(label.length));
+  const sectionColor = SECTION_COLORS[label] ?? picocolors.white;
+  const bullet = SECTION_BULLETS[label] ?? "•";
+  console.log(`\n${sectionColor(`${bullet} ${label}`)}`);
+  console.log(sectionColor("-".repeat(label.length + 2)));
 
   if (rows.length === 0) {
     console.log("  none");
@@ -25,11 +47,12 @@ function printSection(label: string, rows: CoordinatorQueueRow[]): void {
   const priorityWidth = Math.max("PRIORITY".length, ...rows.map((item) => item.priority.length));
 
   console.log(
-    `  ${pad("ID", idWidth)}  ${pad("STATUS", statusWidth)}  ${pad("PRIORITY", priorityWidth)}  REASON`
+    `  ${styleCell("ID", undefined, idWidth)}  ${styleCell("STATUS", undefined, statusWidth)}  ${styleCell("PRIORITY", undefined, priorityWidth)}  REASON`
   );
   for (const row of rows) {
+    const coloredStatus = colorForStatus(row.status)(pad(row.status, statusWidth));
     console.log(
-      `  ${pad(row.id, idWidth)}  ${pad(row.status, statusWidth)}  ${pad(row.priority, priorityWidth)}  ${truncate(row.reason, 96)}`
+      `  ${pad(row.id, idWidth)}  ${coloredStatus}  ${pad(row.priority, priorityWidth)}  ${truncate(row.reason, 96)}`
     );
   }
 }

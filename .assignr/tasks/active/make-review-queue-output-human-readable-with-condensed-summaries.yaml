@@ -1,0 +1,77 @@
+id: make-review-queue-output-human-readable-with-condensed-summaries
+title: Make review queue output human-readable with condensed summaries
+status: needs_review
+type: implementation
+domain: core
+priority: high
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/commands/reviewQueue.ts
+  - tests/reviewQueue.test.ts
+forbidden_paths:
+  - src/review/
+  - src/coordination/
+  - src/specs/
+  - src/commands/list.ts
+  - src/commands/review.ts
+  - src/commands/reviewCheck.ts
+  - src/commands/coordinator.ts
+  - src/commands/doctor.ts
+  - src/commands/validate.ts
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Replace the wall-of-text DETAILS column in review-queue triage and dense
+  single-line evidence in deep mode with condensed summaries, categorized counts, and
+  multi-line human-friendly output.
+acceptance_criteria:
+  - assignr review-queue --mode triage no longer shows every individual blocker reason
+    inline in the DETAILS column — instead shows a compact summary like "4
+    missing-evidence, 12 path-policy, 1 missing-review-log"
+  - assignr review-queue --mode triage fully verbose details are available via --verbose
+    flag
+  - "assignr review-queue --mode deep shows the packet as multi-line key: value pairs
+    (one per line) instead of a single semicolon-separated line"
+  - assignr review-queue --mode deep shows evidence fields on separate indented lines
+    instead of one dense line
+  - assignr review-queue --mode deep --verbose shows the full detail for each piece of
+    evidence
+  - All formatted output still produces meaningful plain text when piped or when
+    NO_COLOR is set
+  - assignr review-queue --machine preserves the original tab-delimited machine output
+    unchanged
+  - pnpm typecheck passes
+  - pnpm test passes
+implementation_notes:
+  - src/commands/reviewQueue.ts is the only file that needs modification
+  - In triage mode (runTriageMode), add a summarizeBlockers() helper that groups
+    blockers by kind and returns something like '4 missing-evidence, 12 path-policy'
+    rather than listing each blocker reason
+  - "In deep mode (runDeepMode), replace the single-line Packet: output with multi-line
+    indented key-value pairs: Changes, Path, Criteria, Risks, Question — each on its own
+    line"
+  - "In deep mode, replace the single-line Evidence: output with multi-line indented
+    per-field evidence"
+  - Add a --verbose flag to ReviewQueueCommandOptions that, when set, shows the full
+    detailed reasons/evidence in triage deep modes
+  - The --machine=false default must now use the human-friendly output; --machine=true
+    preserves the existing tab-delimited format
+  - Import and use existing styling utilities (colorForStatus, statusSymbol, styleCell)
+    — do not redefine
+  - All output must respect NO_COLOR env var
+  - Update tests in tests/reviewQueue.test.ts to match the new output format
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test -- reviewQueue.test.ts
+    - pnpm test -- list.test.ts
+    - pnpm run check:assignr-yaml
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes: []

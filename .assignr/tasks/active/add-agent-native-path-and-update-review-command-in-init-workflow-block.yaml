@@ -1,0 +1,54 @@
+id: add-agent-native-path-and-update-review-command-in-init-workflow-block
+title: Add agent-native path and update review command in init workflow block
+status: needs_review
+type: implementation
+domain: core
+priority: medium
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/commands/init.ts
+forbidden_paths:
+  - dist/
+  - node_modules/
+  - .assignr/
+  - docs/
+  - AGENTS.md
+  - README.md
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: The init output's Workflow section is updated to include an agent-native
+  integration path (for Claude Code, Codex, OpenCode users) and to use `assignr review`
+  instead of `assignr review my-task` as the default review command.
+acceptance_criteria:
+  - The Workflow section shows `assignr review` (not `assignr review my-task`) as the
+    review step command.
+  - Below the CLI workflow, a small "Using Claude Code, Codex, or OpenCode?" section
+    lists `assignr-task-planner` and `assignr-agents` as agent-native commands.
+  - The agent-native section is visually distinct but cohesive with the overall output
+    style (same color palette, dimmed sub-header).
+  - All existing flags (--force, --root, --mcp, --agents, --verbose) work unchanged.
+  - pnpm typecheck passes, pnpm test passes.
+implementation_notes:
+  - Only src/commands/init.ts needs to change — the Workflow section block around lines
+    226-234.
+  - "The agent-native block should feel like a natural extension, not a separate ad: use
+    dimmed section-like formatting consistent with the rest of the output."
+  - 'Styled example from user feedback: "Using Claude Code, Codex, or OpenCode?" as a
+    sub-label, then "$ assignr-task-planner" and "$ assignr-agents" with the same $
+    prefix and cyan color as the workflow commands.'
+  - Do not change the existing --mcp or --agents flag behavior.
+  - Keep the "Need help? Run assignr --help" line unchanged.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes: []

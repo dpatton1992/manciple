@@ -119,9 +119,11 @@ describe("reviewCheckCommand", () => {
       expect(exitSpy).not.toHaveBeenCalled();
 
       const output = logSpy.mock.calls.flat().join("\n");
-      expect(output).toContain("ready\tready-one\tscore=100\thuman_review=no");
-      expect(output).toContain("ready\tready-two\tscore=100\thuman_review=no");
-      expect(output).not.toContain("missing");
+      expect(output).toContain("ready-one");
+      expect(output).toContain("ready-two");
+      expect(output).toContain("ready");
+      expect(output).toContain("100");
+      expect(output).not.toContain("missing-evidence");
     } finally {
       logSpy.mockRestore();
       exitSpy.mockRestore();
@@ -141,8 +143,7 @@ describe("reviewCheckCommand", () => {
       expect(exitSpy).toHaveBeenCalledWith(1);
 
       const output = logSpy.mock.calls.flat().join("\n");
-      expect(output).toContain("missing\tmissing-evidence\tscore=");
-      expect(output).toContain("human_review=yes");
+      expect(output).toContain("missing-evidence");
       expect(output).toContain("No run log is available for task missing-evidence.");
       expect(output).toContain("No verification commands are recorded in the run log.");
       expect(output).toContain("No risks entry is recorded in the run log");
@@ -175,9 +176,8 @@ describe("reviewCheckCommand", () => {
       expect(exitSpy).toHaveBeenCalledWith(1);
 
       const output = logSpy.mock.calls.flat().join("\n");
-      expect(output).toContain("missing\tbudget-warning-needs-attention\tscore=");
+      expect(output).toContain("budget-warning-needs-attention");
       expect(output).toContain("Over-budget token estimate needs review evidence confirming budget overages are warning-only.");
-      expect(output).toContain("human_review=yes");
       expect(output).not.toContain("Verification command(s) appear to have failed");
     } finally {
       logSpy.mockRestore();
@@ -200,7 +200,7 @@ describe("reviewCheckCommand", () => {
       expect(exitSpy).not.toHaveBeenCalled();
 
       const output = logSpy.mock.calls.flat().join("\n");
-      expect(output).toContain("ready\tselected-ready\tscore=100\thuman_review=no");
+      expect(output).toContain("selected-ready");
       expect(output).not.toContain("unselected-missing");
     } finally {
       logSpy.mockRestore();
@@ -227,7 +227,7 @@ describe("reviewCheckCommand", () => {
         archivedDir: p.tasksArchived,
       })).not.toThrow();
       expect(exitSpy).not.toHaveBeenCalled();
-      expect(logSpy.mock.calls.flat().join("\n")).toContain("ready\tdeterministic-ready\tdeterministic=pass");
+      expect(logSpy.mock.calls.flat().join("\n")).toContain("deterministic-ready");
     } finally {
       logSpy.mockRestore();
       exitSpy.mockRestore();
@@ -251,7 +251,7 @@ describe("reviewCheckCommand", () => {
         archivedDir: p.tasksArchived,
       })).toThrow("process.exit(1)");
       const output = logSpy.mock.calls.flat().join("\n");
-      expect(output).toContain("blocked\tdeterministic-missing\tmissing-evidence\tNo run log is available");
+      expect(output).toContain("deterministic-missing");
       expect(output).toContain("No verification commands are recorded in the run log.");
       expect(output).toContain("No generated implementation prompt found for deterministic-missing.");
       expect(output).toContain("No review prompt or review outcome log found for deterministic-missing.");

@@ -2,6 +2,8 @@ import { createRequire } from "module";
 import { existsSync, readdirSync, readFileSync, statSync } from "fs";
 import { resolve } from "path";
 import { getPaths } from "../utils/paths.js";
+import { colorForStatus, headerBanner } from "../utils/styling.js";
+import picocolors from "picocolors";
 
 const require = createRequire(import.meta.url);
 const { version } = require("../../package.json") as { version: string };
@@ -59,27 +61,27 @@ export function doctorCommand(cwd: string, root: string): void {
   results.push(check("tasks/completed/ exists", directoryExists(p.tasksCompleted)));
   results.push(check("tasks/archived/ exists", directoryExists(p.tasksArchived)));
 
-  console.log("Assignr Doctor");
-  console.log("────────────────");
-  console.log(`  Project root: ${projectRoot}`);
-  console.log(`  Assignr root: ${p.root}`);
-  console.log(`  Package version: ${version}`);
-  console.log(`  Active tasks: ${activeTaskCount}`);
+  console.log(headerBanner().trimEnd());
+  console.log(`  Project root: ${picocolors.bold(projectRoot)}`);
+  console.log(`  Assignr root: ${picocolors.bold(p.root)}`);
+  console.log(`  Package version: ${picocolors.bold(version)}`);
+  console.log(`  Active tasks: ${picocolors.bold(String(activeTaskCount))}`);
   console.log();
 
   let allOk = true;
   for (const r of results) {
     const icon = r.ok ? "✓" : "✕";
-    const detail = r.detail ? `  (${r.detail})` : "";
-    console.log(`  ${icon} ${r.label}${detail}`);
+    const coloredIcon = r.ok ? picocolors.green(icon) : picocolors.red(icon);
+    const detail = r.detail ? `  (${picocolors.gray(r.detail)})` : "";
+    console.log(`  ${coloredIcon} ${r.label}${detail}`);
     if (!r.ok) allOk = false;
   }
 
   console.log();
   if (allOk) {
-    console.log("All checks passed. Assignr is configured correctly.");
+    console.log(picocolors.green("All checks passed. Assignr is configured correctly."));
   } else {
-    console.log(`Some checks failed. Run "assignr init" to fix missing structure under ${relativeToCwd(projectRoot, p.root)}/.`);
+    console.log(picocolors.red(`Some checks failed. Run "assignr init" to fix missing structure under ${relativeToCwd(projectRoot, p.root)}/.`));
     process.exit(1);
   }
 }

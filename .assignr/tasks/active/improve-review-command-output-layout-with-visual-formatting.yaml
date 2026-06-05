@@ -1,0 +1,84 @@
+id: improve-review-command-output-layout-with-visual-formatting
+title: Improve review command output layout with visual formatting
+status: needs_review
+type: implementation
+domain: core
+priority: medium
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/commands/review.ts
+  - src/commands/reviewCheck.ts
+  - src/commands/reviewQueue.ts
+  - tests/reviewCheck.test.ts
+  - tests/reviewQueue.test.ts
+forbidden_paths:
+  - src/review/
+  - src/coordination/
+  - src/specs/
+  - src/commands/list.ts
+  - src/commands/coordinator.ts
+  - src/commands/doctor.ts
+  - src/commands/validate.ts
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Format review, review-check, and review-queue command output with styled tables,
+  colorized statuses, and visual sections instead of raw tab-delimited or plain-text
+  blocks.
+acceptance_criteria:
+  - assignr review <task-id> prints a cleanly formatted output instead of just a file
+    path and one-liner
+  - assignr review-check prints a visually formatted table with colorized statuses and
+    review-readiness scores instead of tab-separated rows
+  - assignr review-check --deterministic prints colorized ready or blocked indicators
+    with clear formatting, not tab-separated lines
+  - assignr review-queue triage prints tasks grouped or formatted with status symbols
+    and color for each decision (pass/escalate/blocked)
+  - assignr review-queue deep prints formatted entries with visible separation between
+    tasks
+  - All formatted output still produces meaningful plain text when piped or when
+    NO_COLOR is set
+  - Existing review check and review queue tests continue to pass (or are updated to
+    match new output format)
+  - pnpm typecheck passes
+  - pnpm test passes
+implementation_notes:
+  - Import and use existing styling utilities from ../utils/styling.js — colorForStatus,
+    statusSymbol, priorityBadge, styleCell — do not redefine them
+  - The review.ts createReviewPrompt function internally writes a file — its console
+    output should be improved with the banner and formatted summary, not just a file
+    path
+  - reviewCheck.ts output is currently tab-delimited (ready\t<id>\tscore=...) — replace
+    with styled table rows using styleCell and colorForStatus
+  - reviewCheck.ts --deterministic output is currently tab-delimited
+    (ready|blocked\t<id>...) — replace with colorized decision badges
+  - reviewQueue.ts triage output is tab-delimited
+    (pass|escalate|blocked\t<id>\t<reason>) — format into a table with colorized
+    decision column and wrapped reason
+  - reviewQueue.ts deep mode output is tab-delimited with long inline evidence — format
+    with clear section separators between tasks
+  - All formatting must respect NO_COLOR env var — check picocolors.isColorSupported or
+    pass through to styling utilities
+  - Do NOT change the structure or behavior of the written review prompt files
+    themselves (the .md file written to prompts/generated/) — only the console output
+  - Update existing tests that assert on the exact text output of these commands to
+    match the new formatted output
+  - reviewCheck.ts and reviewQueue.ts machine-parseable output users (coordinator/review
+    scripts) may depend on tab-delimited format — consider adding a --machine flag for
+    backward compat if needed
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test -- reviewCheck.test.ts
+    - pnpm test -- reviewQueue.test.ts
+    - pnpm test -- list.test.ts
+    - pnpm run check:assignr-yaml
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes: []

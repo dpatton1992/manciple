@@ -1,6 +1,6 @@
 id: add-task-and-submit-command-groups-for-human-cli
 title: Add task and submit command groups for human CLI
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: high

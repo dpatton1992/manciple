@@ -1,6 +1,6 @@
 id: restructure-cli-help-system-and-add-legacy-deprecation-notices
 title: Restructure CLI help system and add legacy deprecation notices
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: high

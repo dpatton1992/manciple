@@ -69,12 +69,14 @@ export function registerTaskCommands(program: Command, p: AssignrPaths, cwd: str
     .option("--completed", "Show completed tasks. Mutually exclusive with --archived and --all.")
     .option("--archived", "Show archived tasks. Mutually exclusive with --completed and --all.")
     .option("--all", "Show active, completed, and archived tasks. Mutually exclusive with --completed and --archived.")
+    .option("--group-by <field>", 'Group tasks by "status", "domain", or "tier".')
     .action((opts: {
       status?: string;
       domain?: string;
       completed?: boolean;
       archived?: boolean;
       all?: boolean;
+      groupBy?: string;
     }) => {
       listCommand(p.specsTasks, cwd, {
         status: opts.status,
@@ -82,6 +84,7 @@ export function registerTaskCommands(program: Command, p: AssignrPaths, cwd: str
         completed: opts.completed,
         archived: opts.archived,
         all: opts.all,
+        groupBy: opts.groupBy as "status" | "domain" | "tier" | undefined,
       });
     });
 

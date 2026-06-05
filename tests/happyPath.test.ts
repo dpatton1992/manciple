@@ -581,10 +581,9 @@ describe("assignr review", () => {
         ".assignr/prompts/generated/license-expiration-reminders.md";
 
       expect(existsSync(reviewPromptFile)).toBe(true);
-      expect(logSpy).toHaveBeenCalledWith(
-        "Created review prompt: .assignr/prompts/generated/review-license-expiration-reminders.md"
-      );
-      expect(logSpy).toHaveBeenCalledWith(
+      const logOutput = logSpy.mock.calls.flat().join("\n");
+      expect(logOutput).toContain("Review prompt created");
+      expect(logOutput).toContain(
         `Review prompts are separate from compiled implementation prompts, which use ${implementationPromptPath}.`
       );
 
@@ -927,11 +926,11 @@ describe("assignr status", () => {
 
       const output = logSpy.mock.calls.flat().join("\n");
       expect(output).toContain("Active tasks:");
-      expect(output).toContain("pending:       1");
+      expect(output).toContain("○ pending:       1");
       expect(output).not.toContain("complete:      0");
       expect(output).toContain("Completed lifecycle tasks: 1");
-      expect(output).toContain("active-task [high]");
-      expect(output).not.toContain("done-task [medium]");
+      expect(output).toContain("active-task [HIGH]");
+      expect(output).not.toContain("done-task [MED]");
     } finally {
       logSpy.mockRestore();
     }

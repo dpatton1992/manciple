@@ -1,6 +1,6 @@
 id: add-mcp-and-agents-flags-to-init-command
 title: Add --mcp and --agents flags to init command
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: high

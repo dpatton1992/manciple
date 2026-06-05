@@ -3,6 +3,8 @@ import { join } from "path";
 import { parse } from "yaml";
 import { loadTasks } from "../specs/loadTasks.js";
 import { formatYamlDocument } from "../utils/yamlFormat.js";
+import { colorForStatus } from "../utils/styling.js";
+import picocolors from "picocolors";
 
 export interface CompleteCommandOptions {
   specsTasksDir: string;
@@ -48,5 +50,5 @@ export function completeCommand(taskId: string, options: CompleteCommandOptions)
   writeFileSync(found.filePath, formatYamlDocument(parsed), "utf-8");
   moveTaskFile(found.filePath, destination);
 
-  console.log(`Completed: ${taskId} → ${destination.replace(cwd + "/", "")}`);
+  console.log(`${picocolors.green("Completed:")} ${taskId} ${picocolors.yellow("→")} ${colorForStatus("complete")(destination.replace(cwd + "/", ""))}`);
 }
