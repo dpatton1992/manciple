@@ -1,6 +1,6 @@
 id: publish-first-github-release-from-latest-tag
 title: Publish first GitHub release from latest tag
-status: pending
+status: needs_review
 type: hardening
 domain: core
 priority: high

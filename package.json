@@ -48,6 +48,7 @@
 	"scripts": {
 		"build": "tsc",
 		"dev": "tsx src/cli.ts",
+		"release": "tsx scripts/release.ts",
 		"format:yaml": "tsx scripts/formatAssignrYaml.ts",
 		"check:assignr-yaml": "tsx scripts/formatAssignrYaml.ts --check",
 		"check:assignr-lifecycle": "tsx scripts/checkAssignrLifecycle.ts",

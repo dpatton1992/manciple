@@ -1,0 +1,84 @@
+id: add-assignr-release-command-for-versioned-npm-publish
+title: Add assignr release command for versioned npm publish
+status: needs_review
+type: implementation
+domain: core
+priority: high
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/commands/release.ts
+  - src/cli.ts
+  - package.json
+forbidden_paths:
+  - tests/**
+  - dist/**
+  - bin/**
+  - .assignr/**
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: A single assignr release command that bumps the version, publishes to npm, creates
+  a git tag, and creates a GitHub release with generated release notes.
+acceptance_criteria:
+  - assignr release patch bumps the version from x.y.z to x.y.z+1 in package.json and
+    creates a git tag.
+  - assignr release minor bumps the version from x.y.z to x.y+1.0.
+  - assignr release major bumps the version from x.y.z to x+1.0.0.
+  - assignr release --otp <code> passes the OTP to npm publish for 2FA accounts.
+  - assignr release --dry-run prints what would happen without making changes.
+  - Running assignr release runs pnpm typecheck, pnpm test, and pnpm build before any
+    publish operation.
+  - The command creates a GitHub release via gh release create with release notes
+    generated from git log between the last tag and the new tag.
+  - The command creates an annotated git tag matching the new version and pushes it to
+    origin.
+  - The command is registered as a primary CLI command (visible in assignr --help, not
+    hidden).
+  - pnpm typecheck, pnpm test, and pnpm build all pass after the implementation.
+implementation_notes:
+  - Create src/commands/release.ts with an exported releaseCommand function.
+  - "The command signature should accept: bump type ('patch'|'minor'|'major'), optional
+    explicit version string, optional --otp string, optional --dry-run flag."
+  - Read the current version from package.json using createRequire or
+    JSON.parse(readFileSync).
+  - For version bumping, modify package.json directly with writeFileSync rather than
+    shelling out to npm version (which also creates a tag we want to control ourselves).
+  - Generate release notes by running git log --oneline --no-decorate <last-tag>..HEAD
+    and formatting into markdown. Find the last tag with git describe --tags --abbrev=0
+    or similar.
+  - "The step order should be: (1) dry-run check, (2) typecheck+test, (3) bump version,
+    (4) build, (5) npm publish, (6) create git tag, (7) push tag, (8) create GitHub
+    release."
+  - If --dry-run is set, print all planned steps without executing them. Do not commit
+    the version bump to git — the publish process should not create a git commit.
+  - Use the existing shellCommandRunner from verify.ts for command execution where
+    possible, or spawnSync for simpler commands.
+  - "Handle errors gracefully: if a step fails, print the error and exit without
+    proceeding to later steps."
+  - Do not commit the version bump — only create a tag. The version bump is a file
+    change that should be committed separately or as part of the release.
+  - The command should be registered in cli.ts as a primary (visible) command. Add
+    'release' to the PRIMARY_COMMANDS set.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test
+    - pnpm build
+    - node bin/assignr.js release --help
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes:
+  - This implementation should NOT be tested by actually publishing — use --dry-run for
+    verification.
+  - "The release notes format should be: a header with version and date, followed by
+    bullet points from git log commits."
+  - Do not use npm version because it creates a git commit and tag as a side effect — we
+    need to control tag creation separately.
+  - Consider adding a --preview flag that shows generated release notes without
+    publishing.
