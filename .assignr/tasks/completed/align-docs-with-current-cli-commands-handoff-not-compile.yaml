@@ -1,6 +1,6 @@
 id: align-docs-with-current-cli-commands-handoff-not-compile
 title: Align docs with current CLI commands (handoff not compile)
-status: needs_review
+status: complete
 type: docs
 domain: core
 priority: high

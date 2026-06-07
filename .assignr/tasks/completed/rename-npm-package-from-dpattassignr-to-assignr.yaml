@@ -1,6 +1,6 @@
 id: rename-npm-package-from-dpattassignr-to-assignr
 title: Rename npm package from @dpatt/assignr to assignr
-status: needs_review
+status: complete
 type: hardening
 domain: core
 priority: high

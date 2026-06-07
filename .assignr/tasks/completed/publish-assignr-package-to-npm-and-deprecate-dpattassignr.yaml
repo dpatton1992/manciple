@@ -1,6 +1,6 @@
 id: publish-assignr-package-to-npm-and-deprecate-dpattassignr
 title: Publish assignr package to npm and deprecate dpatt/assignr
-status: needs_review
+status: complete
 type: hardening
 domain: core
 priority: high
