@@ -1,0 +1,64 @@
+id: add-contributingmd-and-github-issue-templates
+title: Add CONTRIBUTING.md and GitHub issue templates
+status: needs_review
+type: docs
+domain: core
+priority: medium
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - CONTRIBUTING.md
+  - .github/ISSUE_TEMPLATE/
+forbidden_paths:
+  - src/**
+  - tests/**
+  - bin/**
+  - dist/**
+  - .assignr/tasks/**
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: New contributors can find contribution guidelines and standardized issue templates
+  for bug reports and feature requests.
+acceptance_criteria:
+  - CONTRIBUTING.md exists at the repo root with sections for development setup, running
+    tests, code style, PR process, and reporting issues.
+  - CONTRIBUTING.md includes the dev setup commands (pnpm install, pnpm build, pnpm
+    test, pnpm typecheck).
+  - .github/ISSUE_TEMPLATE/bug-report.md exists with fields for description,
+    reproduction steps, expected behavior, actual behavior, environment, and Assignr
+    version.
+  - .github/ISSUE_TEMPLATE/feature-request.md exists with fields for problem statement,
+    proposed solution, alternatives considered, and additional context.
+  - Both issue templates include YAML frontmatter for GitHub's issue template system
+    (name, about, title, labels, assignees).
+  - The existing README links to CONTRIBUTING.md in its Package section or a new
+    Contributing section.
+implementation_notes:
+  - "CONTRIBUTING.md should match the project conventions from AGENTS.md and domain
+    spec: ESM TypeScript, vitest tests, pnpm package manager, assignr MCP tools."
+  - The issue templates should follow GitHub's issue template format (YAML frontmatter +
+    markdown body).
+  - Add a Contributing section or link to the README footer.
+  - Use bug and feature-request as labels in the frontmatter.
+  - Do not add a CODEOWNERS file unless the repo has defined code owners.
+  - The PR process section should reference the review workflow (assignr review, review
+    queue).
+verification:
+  commands:
+    - test -f CONTRIBUTING.md
+    - test -f .github/ISSUE_TEMPLATE/bug-report.md
+    - test -f .github/ISSUE_TEMPLATE/feature-request.md
+    - rg -n 'CONTRIBUTING' README.md
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes:
+  - This task does not depend on the rename — it touches entirely different files.
+  - No CONTRIBUTING.md or .github/ISSUE_TEMPLATE/ directory currently exists in the repo.
+  - The existing blocked task readme-thirty-second-value-demo also touches README.md —
+    if a link to CONTRIBUTING.md is added to the README, coordinate with that task.

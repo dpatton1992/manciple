@@ -1,0 +1,51 @@
+id: publish-first-github-release-from-latest-tag
+title: Publish first GitHub release from latest tag
+status: pending
+type: hardening
+domain: core
+priority: high
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths: []
+forbidden_paths:
+  - src/**
+  - tests/**
+  - bin/**
+  - dist/**
+  - "**/*.ts"
+  - "**/*.js"
+  - "**/*.json"
+  - "**/*.yaml"
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: First GitHub Release published from the latest git tag (v0.4.1) with release
+  notes, providing a trust signal for prospective users.
+acceptance_criteria:
+  - GitHub Releases page at github.com/dpatton1992/assignr/releases shows at least one
+    release.
+  - The release is created from the existing v0.4.1 git tag.
+  - Release notes summarize what Assignr does and highlight key features (CLI, MCP
+    server, agent skills, task lifecycle, review workflow).
+  - The release title is descriptive (e.g. 'v0.4.1 — Structured task management for
+    coding agents').
+  - No source code changes are needed — this is purely a GitHub Release publish action.
+implementation_notes:
+  - Use gh release create v0.4.1 --title "v0.4.1 — ..." --notes "..." to publish.
+  - The release notes should be written for a first-time visitor evaluating the project
+    — keep it concise but informative.
+  - Do NOT create a new tag or modify any source files — the tag v0.4.1 already exists.
+  - If gh CLI is unavailable, create the release manually via the GitHub web UI.
+  - Future releases should follow this same process; this task establishes the pattern.
+verification:
+  commands:
+    - gh release view v0.4.1 2>&1 | head -5
+outputs_required:
+  - risks
+notes:
+  - Git tags v0.2.0 through v0.4.1 already exist but no GitHub Release has been created
+    from any of them — this is a trust gap the user called out.
+  - The release notes should link to the README and docs for deeper context.

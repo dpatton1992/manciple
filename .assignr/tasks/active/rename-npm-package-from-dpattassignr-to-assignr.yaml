@@ -1,0 +1,66 @@
+id: rename-npm-package-from-dpattassignr-to-assignr
+title: Rename npm package from @dpatt/assignr to assignr
+status: needs_review
+type: hardening
+domain: core
+priority: high
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - package.json
+  - README.md
+  - docs/getting-started.md
+forbidden_paths:
+  - src/**
+  - tests/**
+  - bin/**
+  - dist/**
+  - .assignr/tasks/**
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: The npm package installs as assignr (unscoped) instead of @dpatt/assignr, and the
+  old package is deprecated with a redirect notice.
+acceptance_criteria:
+  - package.json name field is changed from @dpatt/assignr to assignr.
+  - All self-references in package.json (dependencies section) are updated to match the
+    new name.
+  - README.md install command uses npm install -g assignr instead of npm install -g
+    @dpatt/assignr.
+  - docs/getting-started.md install command uses npm install -g assignr.
+  - The @dpatt/assignr package is deprecated on npm with a deprecation message pointing
+    to assignr.
+  - pnpm typecheck and pnpm test both pass.
+  - The assignr CLI version remains v0.4.1 (no version bump needed for rename).
+implementation_notes:
+  - "The package.json has a self-reference dependency: '@dpatt/assignr': '^0.4.0' in
+    dependencies — this must be updated to 'assignr': '^0.4.1' or removed if it's a
+    circular reference."
+  - Run npm deprecate @dpatt/assignr after publishing the new package.
+  - The publishConfig.access field can stay as 'public' for the unscoped name.
+  - Do not change the bin names (assignr and assignr-mcp) — only the package name
+    changes.
+  - Update the homepage and bugs URL in package.json if the rename also implies a repo
+    URL change (currently points to dpatton1992/assignr — that stays).
+  - The README and docs currently refer to @dpatt/assignr in multiple places; update all
+    of them.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test
+    - rg -n '@dpatt/assignr' package.json | wc -l | xargs test 0 -eq
+    - rg -n '@dpatt/assignr' README.md | wc -l | xargs test 0 -eq
+    - rg -n '@dpatt/assignr' docs/getting-started.md | wc -l | xargs test 0 -eq
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes:
+  - assignr (unscoped) is confirmed available on npm (returns 404).
+  - "@assignr/cli appears to be behind an auth wall and may be a private or unclaimed
+    scope — the unscoped name is the right target for a devtools CLI."
+  - The existing @dpatt/assignr package on npm must be deprecated, not deleted, so
+    existing users get a migration notice.

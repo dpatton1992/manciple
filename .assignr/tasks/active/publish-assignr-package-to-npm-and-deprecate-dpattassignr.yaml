@@ -1,0 +1,58 @@
+id: publish-assignr-package-to-npm-and-deprecate-dpattassignr
+title: Publish assignr package to npm and deprecate dpatt/assignr
+status: in_progress
+type: hardening
+domain: core
+priority: high
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths: []
+forbidden_paths:
+  - src/**
+  - tests/**
+  - bin/**
+  - .assignr/tasks/**
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: The unscoped assignr package is published on npm and the old @dpatt/assignr is
+  deprecated with a redirect notice.
+acceptance_criteria:
+  - "npm publish succeeds for the assignr package (current state of package.json with
+    name: assignr)."
+  - npm deprecate @dpatt/assignr "This package has been renamed to assignr. Run `npm
+    install -g assignr` instead." succeeds.
+  - pnpm test and pnpm typecheck pass before publish.
+  - No version bump is needed — the code is already at v0.4.1 with the name changed to
+    assignr.
+  - The published assignr package is installable via `npm install -g assignr`.
+implementation_notes:
+  - Run pnpm build first so dist/ is up to date.
+  - Run npm publish (not pnpm publish) since pnpm may not publish correctly for this
+    package.
+  - The package.json publishConfig.access is already set to 'public' — keep that.
+  - Deprecate @dpatt/assignr AFTER publishing assignr, not before, so there's no gap
+    where neither package resolves.
+  - 'Use: npm deprecate @dpatt/assignr "This package has been renamed to assignr. Run
+    `npm install -g assignr` instead."'
+  - Do NOT delete @dpatt/assignr — deprecation preserves the package for existing users
+    while showing a migration notice.
+  - Check that the npm user is logged in first with npm whoami.
+verification:
+  commands:
+    - npm whoami
+    - npm view assignr version 2>&1 | head -3
+    - npm view @dpatt/assignr deprecate 2>&1 | head -3
+    - pnpm typecheck
+    - pnpm test
+outputs_required:
+  - risks
+notes:
+  - This task completes the npm-side work that was a follow-up from the
+    rename-npm-package-from-dpattassignr-to-assignr task.
+  - The code changes (package.json rename, docs updates) are already done and in
+    needs_review. This is purely the npm publish step.
+  - Run publish first, then deprecate — order matters so there is no resolution gap.

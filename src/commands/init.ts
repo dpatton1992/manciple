@@ -46,7 +46,7 @@ Run \`assignr --help\` to see all available commands.
 \`\`\`bash
 assignr new "My task title" --type implementation --domain core --priority high
 assignr validate
-assignr compile my-task-title
+assignr handoff my-task-title
 # Run the generated prompt in your preferred coding agent
 assignr run-log my-task-title
 assignr set-status my-task-title needs_review

@@ -1,5 +1,5 @@
 {
-	"name": "@dpatt/assignr",
+	"name": "assignr",
 	"version": "0.4.1",
 	"description": "A repo-native workflow layer for existing coding agents.",
 	"license": "MIT",
@@ -58,7 +58,7 @@
 		"prepublishOnly": "pnpm run check:assignr-yaml && pnpm run build && pnpm run test"
 	},
 	"dependencies": {
-		"@dpatt/assignr": "^0.4.0",
+		"assignr": "^0.4.1",
 		"@modelcontextprotocol/sdk": "^1.29.0",
 		"commander": "^12.1.0",
 		"fs-extra": "^11.2.0",

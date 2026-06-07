@@ -9,7 +9,7 @@ prompt, and record review evidence afterward.
 Assignr requires Node.js 18+.
 
 ```bash
-npm install -g @dpatt/assignr
+npm install -g assignr
 assignr --help
 ```
 
@@ -35,7 +35,7 @@ This one command does everything to set up the repo:
 Running `assignr init` again is safe — it skips anything already set up.
 Use `--force` to overwrite existing files.
 
-## Create And Compile A Task
+## Create And Handoff A Task
 
 Create a task with a clear title, type, domain, and priority:
 
@@ -43,7 +43,7 @@ Create a task with a clear title, type, domain, and priority:
 assignr new "Build login page" --type implementation --domain auth --priority high
 assignr validate
 assignr status
-assignr compile build-login-page
+assignr handoff build-login-page
 ```
 
 The task spec is written to `.assignr/tasks/active/build-login-page.yaml`.

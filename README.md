@@ -20,7 +20,7 @@ can check in about 30 seconds:
 
 ```bash
 assignr new "Fix password reset session handling" --type implementation --domain auth --priority high
-assignr compile fix-password-reset-session-handling
+assignr handoff fix-password-reset-session-handling
 ```
 
 ```yaml
@@ -45,7 +45,7 @@ outputs_required:
 Requires Node.js 18+.
 
 ```bash
-npm install -g @dpatt/assignr
+npm install -g assignr
 assignr --help
 ```
 
@@ -59,7 +59,7 @@ assignr init
 assignr new "Build login page" --type implementation --domain auth --priority high
 assignr validate
 assignr status
-assignr compile build-login-page
+assignr handoff build-login-page
 ```
 
 The new task lives in `.assignr/tasks/active/build-login-page.yaml`. The
@@ -131,7 +131,7 @@ outputs_required:
 | `assignr init` | Initialize `.assignr/` in a repo. |
 | `assignr new <title>` | Create a task spec. Add `--interactive` to collect common fields through prompts. |
 | `assignr validate` | Validate task specs. |
-| `assignr compile [task-id]` | Compile an implementation prompt. |
+| `assignr handoff [task-id]` | Compile a task prompt, or inspect the worker queue. See `assignr handoff --help`. |
 | `assignr list` | List active task specs. |
 | `assignr status` | Show status counts and a suggested next task. |
 | `assignr run-log <task-id>` | Create a run log with commands, files, result, model, agent, and risks. |
@@ -160,10 +160,14 @@ outputs_required:
 
 ## Package
 
-- npm: `@dpatt/assignr`
+- npm: `assignr`
 - CLI: `assignr`
 - MCP binary: `assignr-mcp`
 - Agent assets: packaged docs include [Agent Skills](docs/agent-skills.md) for
   `.codex/skills/` and `.claude/skills/`, plus
   [OpenCode Agents](docs/opencode-agents.md) for `.opencode/agents/`.
 - License: MIT
+
+## Contributing
+
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, code style, pull request process, and how to report issues.
