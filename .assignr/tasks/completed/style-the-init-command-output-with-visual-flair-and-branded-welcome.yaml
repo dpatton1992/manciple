@@ -1,6 +1,6 @@
 id: style-the-init-command-output-with-visual-flair-and-branded-welcome
 title: Style the init command output with visual flair and branded welcome
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: high

@@ -21,6 +21,8 @@ Run `assignr init` at the root of the repo where agents will work:
 assignr init
 ```
 
+![assignr init output](images/init-output.png)
+
 This one command does everything to set up the repo:
 
 - Creates `.assignr/` with configuration, task directories, prompt output,

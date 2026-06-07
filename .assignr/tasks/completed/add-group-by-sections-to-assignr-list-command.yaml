@@ -1,6 +1,6 @@
 id: add-group-by-sections-to-assignr-list-command
 title: Add group-by sections to assignr list command
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: medium

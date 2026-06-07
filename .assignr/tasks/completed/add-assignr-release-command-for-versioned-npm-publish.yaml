@@ -1,6 +1,6 @@
 id: add-assignr-release-command-for-versioned-npm-publish
 title: Add assignr release command for versioned npm publish
-status: needs_review
+status: complete
 type: hardening
 domain: core
 priority: high

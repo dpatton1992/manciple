@@ -1,6 +1,6 @@
 id: improve-review-command-output-layout-with-visual-formatting
 title: Improve review command output layout with visual formatting
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: medium

@@ -1,6 +1,6 @@
 id: interactive-smoke-task
 title: Interactive smoke task
-status: blocked
+status: archived
 type: implementation
 domain: core
 priority: medium

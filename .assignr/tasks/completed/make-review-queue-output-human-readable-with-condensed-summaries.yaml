@@ -1,6 +1,6 @@
 id: make-review-queue-output-human-readable-with-condensed-summaries
 title: Make review queue output human-readable with condensed summaries
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: high

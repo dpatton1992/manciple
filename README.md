@@ -40,6 +40,8 @@ outputs_required:
   - risks
 ```
 
+![assignr task planning output](docs/images/planning-output.png)
+
 ## Install
 
 Requires Node.js 18+.
@@ -56,6 +58,11 @@ agent prompt:
 
 ```bash
 assignr init
+```
+
+![assignr init output](docs/images/init-output.png)
+
+```bash
 assignr new "Build login page" --type implementation --domain auth --priority high
 assignr validate
 assignr status

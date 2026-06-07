@@ -1,6 +1,6 @@
 id: restructure-init-output-as-success-summary-with-workflow-first-layout-and-verbose-mode
 title: Restructure init output as success-summary with workflow-first layout and verbose mode
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: high

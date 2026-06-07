@@ -1,6 +1,6 @@
 id: add-agent-native-path-and-update-review-command-in-init-workflow-block
 title: Add agent-native path and update review command in init workflow block
-status: needs_review
+status: complete
 type: implementation
 domain: core
 priority: medium
