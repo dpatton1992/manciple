@@ -1,6 +1,6 @@
 {
 	"name": "assignr",
-	"version": "0.4.1",
+	"version": "0.4.2",
 	"description": "A repo-native workflow layer for existing coding agents.",
 	"license": "MIT",
 	"author": "Daniel Patton",
@@ -52,8 +52,8 @@
 		"format:yaml": "tsx scripts/formatAssignrYaml.ts",
 		"check:assignr-yaml": "tsx scripts/formatAssignrYaml.ts --check",
 		"check:assignr-lifecycle": "tsx scripts/checkAssignrLifecycle.ts",
-		"test": "tsx scripts/runVitest.ts --silent",
-		"test:verbose": "tsx scripts/runVitest.ts",
+		"test": "NO_COLOR=1 tsx scripts/runVitest.ts --silent",
+		"test:verbose": "NO_COLOR=1 tsx scripts/runVitest.ts",
 		"test:watch": "vitest",
 		"typecheck": "tsc --noEmit",
 		"prepublishOnly": "pnpm run check:assignr-yaml && pnpm run build && pnpm run test"

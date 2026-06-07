@@ -29,6 +29,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run baseline checks
+        env:
+          NO_COLOR: "1"
         run: |
           pnpm typecheck
           pnpm test
@@ -37,7 +39,7 @@ jobs:
       - name: Pack package and install CLI globally
         run: |
           npm pack
-          npm install -g ./dpatt-assignr-*.tgz
+          npm install -g ./assignr-*.tgz
 
       - name: Smoke test installed assignr CLI in a temporary project
         run: |
