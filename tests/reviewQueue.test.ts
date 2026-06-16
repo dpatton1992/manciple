@@ -366,7 +366,7 @@ describe("reviewQueueCommand", () => {
       expect(output).toContain("── Task: packet-review");
       expect(output).toContain("Packet:");
       expect(output).toContain("Changes: 2");
-      expect(output).toContain("Path: allowed:0 forbidden:0");
+      expect(output).toContain("Path: path-policy:0");
       expect(output).toContain("Criteria: 2");
       expect(output).toContain("uncoveredAcceptanceCriteria: 1 items");
     } finally {

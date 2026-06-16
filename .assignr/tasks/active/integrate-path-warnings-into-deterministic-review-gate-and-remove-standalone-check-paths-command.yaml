@@ -1,0 +1,90 @@
+id: integrate-path-warnings-into-deterministic-review-gate-and-remove-standalone-check-paths-command
+title: Integrate path warnings into deterministic review gate and remove standalone
+  check-paths command
+status: needs_review
+type: refactor
+domain: core
+priority: high
+depends_on:
+  - add-check-paths-command-for-validating-file-path-boundaries
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/review/deterministicGate.ts
+  - src/commands/reviewCheck.ts
+  - src/commands/reviewQueue.ts
+  - src/commands/checkPaths.ts
+  - src/commands/check.ts
+  - src/mcp.ts
+  - src/cli.ts
+  - tests/checkPaths.test.ts
+  - tests/reviewCheck.test.ts
+  - tests/reviewQueue.test.ts
+forbidden_paths:
+  - dist/
+  - node_modules/
+  - .assignr/runs/
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Fold the warn-vs-fail path checking concept into the deterministic review gate and
+  remove the standalone check-paths command and MCP tool.
+acceptance_criteria:
+  - "`addPathPolicyBlockers()` in `deterministicGate.ts` pushes outside-allowed files as
+    warnings (non-blocking) and forbidden-path touches as blockers (fatal, exit 1)."
+  - "`DeterministicReviewTaskReport` has a `warnings` field alongside `blockers`;
+    `ready` is determined by `blockers.length === 0` regardless of warnings."
+  - "`review check --deterministic` displays warnings in a visible but non-fatal section
+    of the table output."
+  - '`review queue --mode triage` treats path warnings as non-escalating ("pass"
+    decision if only warnings exist).'
+  - "`review queue --mode deep` includes warnings in the formatted evidence summary."
+  - "`src/commands/checkPaths.ts` is deleted."
+  - "`assignr_check_paths` MCP tool is removed from `src/mcp.ts`."
+  - "`check paths <task-id>` CLI registration is removed from `src/cli.ts` and
+    `src/commands/check.ts`."
+  - "`tests/checkPaths.test.ts` is deleted or its useful assertions are folded into
+    deterministic gate tests."
+  - Existing `reviewCheck` tests that check path-policy blockers still pass (the
+    forbidden_path case is still a blocker).
+  - "`pnpm typecheck` passes."
+  - "`pnpm test` passes."
+implementation_notes:
+  - Add a `DeterministicReviewBlockerKind` value of `"path-warning"` (or define a
+    separate `DeterministicReviewWarning` type — whichever keeps consumers simpler).
+  - "The `DeterministicReviewTaskReport` interface gets a new `warnings:
+    DeterministicReviewBlocker[]` field."
+  - "`addPathPolicyBlockers()` is renamed to `addPathPolicyResults()` or modified to
+    return warnings separately. The existing callers pass an extra warnings-collection
+    argument."
+  - "In `reviewCheck.ts`: after the blockers table, print a non-fatal warnings section
+    (yellow, not red). Do not exit 1 for warnings alone."
+  - "In `reviewQueue.ts`: `decisionFor()` should return `pass` when only warnings exist
+    (no blockers). Include warnings in `summarizeBlockers()` and
+    `formatCondensedEvidence()`."
+  - Remove `assignr_check_paths` tool registration from `mcp.ts`. Remove the `check
+    paths` subcommand from `cli.ts` and `check.ts`.
+  - Remove `checkPathsCommand`, `runCheckPaths`, `checkFilesAgainstTask`, and
+    `readGitChangedPaths` from `checkPaths.ts` then delete the file.
+  - Keep `src/utils/pathUtils.ts` — it is already imported by `deterministicGate.ts`.
+  - 'The existing test `"reports deterministic allowed and forbidden path violations"`
+    in `reviewCheck.test.ts` should be updated: outside-allowed is now a warning (no
+    longer a blocker), forbidden is still a blocker.'
+  - Use `pnpm typecheck` and `pnpm test` as verification commands.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes:
+  - This task depends on the previous implementation task which created checkPaths.ts,
+    pathUtils.ts, and the CLI/MCP registrations.
+  - pathUtils.ts must NOT be deleted — it is the shared utility that both the gate and
+    the old command used.
+  - The reviewQueue triage decision function `decisionFor()` checks `blockers` array
+    only; warnings do not trigger escalation.

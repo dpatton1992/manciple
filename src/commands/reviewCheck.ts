@@ -7,6 +7,7 @@ import {
   readLatestRunLogContent,
 } from "../review/evidence.js";
 import { evaluateDeterministicReviewGate } from "../review/deterministicGate.js";
+import type { DeterministicReviewBlocker, DeterministicReviewBlockerKind } from "../review/deterministicGate.js";
 import {
   headerBanner,
   colorForStatus,
@@ -31,6 +32,52 @@ function printTableHeader(idWidth: number, statusWidth: number): void {
 
 function formatScore(score: number, width: number = 5): string {
   return String(score).padStart(width);
+}
+
+function truncateId(id: string): string {
+  if (id.length <= 45) return id;
+  return id.slice(0, 45) + "…";
+}
+
+const BLOCKED_KINDS_FOR_DECISION = new Set<DeterministicReviewBlockerKind>([
+  "load-error",
+  "lifecycle-placement",
+  "status-mismatch",
+  "blocked-dependency",
+  "completed-active",
+  "active-wrong-directory",
+]);
+
+function decisionFor(blockers: DeterministicReviewBlocker[]): "pass" | "escalate" | "blocked" {
+  if (blockers.length === 0) return "pass";
+  return blockers.some((blocker) => BLOCKED_KINDS_FOR_DECISION.has(blocker.kind)) ? "blocked" : "escalate";
+}
+
+function summarizeBlockers(blockers: DeterministicReviewBlocker[]): string {
+  if (blockers.length === 0) return "deterministic=pass";
+  const counts = new Map<DeterministicReviewBlockerKind, number>();
+  for (const blocker of blockers) {
+    counts.set(blocker.kind, (counts.get(blocker.kind) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([kind, count]) => `${count} ${kind}`)
+    .join(", ");
+}
+
+function colorForBlockerKind(kind: DeterministicReviewBlockerKind): (s: string) => string {
+  switch (kind) {
+    case "path-policy":
+    case "path-ownership":
+    case "load-error":
+      return picocolors.red;
+    case "missing-evidence":
+    case "missing-run-log":
+      return picocolors.yellow;
+    case "blocked-dependency":
+      return picocolors.magenta;
+    default:
+      return picocolors.red;
+  }
 }
 
 export function reviewCheckCommand(
@@ -64,81 +111,115 @@ export function reviewCheckCommand(
 
     // --machine mode: tab-delimited backward compat
     if (options.machine) {
-      if (blockers.length === 0) {
-        if (report.taskReports.length === 0) {
-          console.log(taskId
-            ? `No needs_review task matched ${taskId}.`
-            : "No active needs_review tasks found.");
-          return;
-        }
-        for (const taskReport of report.taskReports) {
-          console.log(`ready\t${taskReport.taskId}\tdeterministic=pass`);
-        }
-        return;
-      }
       for (const taskReport of report.taskReports) {
         if (taskReport.blockers.length === 0) {
           console.log(`ready\t${taskReport.taskId}\tdeterministic=pass`);
-          continue;
-        }
-        for (const blocker of taskReport.blockers) {
-          console.log(`blocked\t${blocker.taskId}\t${blocker.kind}\t${blocker.reason}`);
+        } else {
+          for (const blocker of taskReport.blockers) {
+            console.log(`blocked\t${blocker.taskId}\t${blocker.kind}\t${blocker.reason}`);
+          }
         }
       }
       for (const blocker of report.loadBlockers) {
         console.log(`blocked\t${blocker.taskId}\t${blocker.kind}\t${blocker.reason}`);
       }
-      process.exit(1);
+      if (blockers.length > 0) {
+        process.exit(1);
+      }
+      return;
     }
 
     // Formatted deterministic output
     console.log(headerBanner().trimEnd());
 
-    if (blockers.length === 0) {
-      if (report.taskReports.length === 0) {
-        console.log(taskId
-          ? `  No needs_review task matched ${taskId}.`
-          : "  No active needs_review tasks found.");
-        return;
+    // Build one entry per task (not per blocker)
+    interface DeterministicEntry {
+      truncatedId: string;
+      fullId: string;
+      gate: string;
+      summary: string;
+      blockers: DeterministicReviewBlocker[];
+      decision: "pass" | "blocked" | "escalate";
+    }
+
+    const gateEntries: DeterministicEntry[] = [];
+
+    for (const taskReport of report.taskReports) {
+      const decision = decisionFor(taskReport.blockers);
+      const truncatedId = truncateId(taskReport.taskId);
+
+      if (decision === "pass") {
+        gateEntries.push({
+          truncatedId,
+          fullId: taskReport.taskId,
+          gate: `${picocolors.green("✓")} pass`,
+          summary: "deterministic=pass",
+          blockers: [],
+          decision,
+        });
+      } else {
+        const summary = summarizeBlockers(taskReport.blockers);
+        const gateText = decision === "blocked"
+          ? `${picocolors.red("⊘")} blocked`
+          : `${picocolors.yellow("◐")} escalate`;
+        gateEntries.push({
+          truncatedId,
+          fullId: taskReport.taskId,
+          gate: gateText,
+          summary,
+          blockers: [...taskReport.blockers],
+          decision,
+        });
       }
-      const idWidth = Math.max(4, ...report.taskReports.map((r) => r.taskId.length));
-      const statusLabel = "DETERMINISTIC GATE";
-      const statusWidth = Math.max(statusLabel.length, 5);
-      const rule = "─".repeat(idWidth + statusWidth + 4);
-      console.log(`  ${styleCell("TASK", undefined, idWidth)}  ${styleCell(statusLabel, undefined, statusWidth)}  DETAILS`);
-      console.log(`  ${rule}`);
-      for (const taskReport of report.taskReports) {
-        const gateLabel = `${picocolors.green("✓")} pass`;
-        console.log(`  ${styleCell(taskReport.taskId, undefined, idWidth)}  ${styleCell(gateLabel, undefined, statusWidth)}  deterministic=pass`);
-      }
+    }
+
+    for (const blocker of report.loadBlockers) {
+      const truncatedId = truncateId(blocker.taskId);
+      gateEntries.push({
+        truncatedId,
+        fullId: blocker.taskId,
+        gate: `${picocolors.red("⊘")} blocked`,
+        summary: blocker.kind,
+        blockers: [blocker],
+        decision: "blocked",
+      });
+    }
+
+    if (gateEntries.length === 0) {
+      console.log(taskId
+        ? `  No needs_review task matched ${taskId}.`
+        : "  No active needs_review tasks found.");
       return;
     }
 
-    const allEntries: Array<{ taskId: string; gate: string; detail: string }> = [];
-    for (const taskReport of report.taskReports) {
-      if (taskReport.blockers.length === 0) {
-        allEntries.push({ taskId: taskReport.taskId, gate: `${picocolors.green("✓")} pass`, detail: "deterministic=pass" });
-        continue;
-      }
-      for (const blocker of taskReport.blockers) {
-        allEntries.push({ taskId: blocker.taskId, gate: `${picocolors.red("⊘")} blocked`, detail: `${blocker.kind}: ${blocker.reason}` });
-      }
-    }
-    for (const blocker of report.loadBlockers) {
-      allEntries.push({ taskId: blocker.taskId, gate: `${picocolors.red("⊘")} blocked`, detail: `${blocker.kind}: ${blocker.reason}` });
-    }
-
-    const idWidth = Math.max(4, ...allEntries.map((e) => e.taskId.length));
-    const statusLabel = "DETERMINISTIC GATE";
-    const statusWidth = Math.max(statusLabel.length, ...allEntries.map((e) => e.gate.length));
-    const rule = "─".repeat(idWidth + statusWidth + 4);
-    console.log(`  ${styleCell("TASK", undefined, idWidth)}  ${styleCell(statusLabel, undefined, statusWidth)}  DETAILS`);
+    // Print table (one row per task)
+    const idWidth = Math.max(4, ...gateEntries.map((e) => e.truncatedId.length));
+    const gateLabel = "GATE";
+    const gateWidth = Math.max(gateLabel.length, ...gateEntries.map((e) => e.gate.length));
+    const rule = "─".repeat(idWidth + gateWidth + 4);
+    console.log(`  ${styleCell("TASK", undefined, idWidth)}  ${styleCell(gateLabel, undefined, gateWidth)}  BLOCKERS`);
     console.log(`  ${rule}`);
-    for (const entry of allEntries) {
-      console.log(`  ${styleCell(entry.taskId, undefined, idWidth)}  ${styleCell(entry.gate, undefined, statusWidth)}  ${entry.detail}`);
+    for (const entry of gateEntries) {
+      console.log(`  ${styleCell(entry.truncatedId, undefined, idWidth)}  ${styleCell(entry.gate, undefined, gateWidth)}  ${entry.summary}`);
     }
 
-    process.exit(1);
+    // Print detail sections for blocked/escalated tasks
+    const blockedEntries = gateEntries.filter((e) => e.decision !== "pass");
+    if (blockedEntries.length > 0) {
+      console.log("");
+      for (const entry of blockedEntries) {
+        const summary = summarizeBlockers(entry.blockers);
+        console.log(`  ── ${entry.truncatedId}  (${summary})`);
+        for (const blocker of entry.blockers) {
+          const color = colorForBlockerKind(blocker.kind);
+          console.log(`    ${color("•")} ${color(blocker.kind)}: ${blocker.reason}`);
+        }
+      }
+    }
+
+    if (blockers.length > 0) {
+      process.exit(1);
+    }
   }
 
   const { tasks, errors } = loadTasks(specsTasksDir);

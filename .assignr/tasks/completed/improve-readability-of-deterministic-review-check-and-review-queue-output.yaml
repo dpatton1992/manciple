@@ -1,0 +1,87 @@
+id: improve-readability-of-deterministic-review-check-and-review-queue-output
+title: Improve readability of deterministic review check and review queue output
+status: complete
+type: refactor
+domain: core
+priority: high
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/commands/reviewCheck.ts
+  - src/commands/reviewQueue.ts
+  - tests/reviewCheck.test.ts
+  - tests/reviewQueue.test.ts
+forbidden_paths:
+  - dist/
+  - node_modules/
+  - .assignr/runs/
+  - src/review/deterministicGate.ts
+  - src/review/readiness.ts
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Make the deterministic review check and review queue CLI output human-readable by
+  grouping blockers per task, truncating long IDs, and formatting details clearly.
+acceptance_criteria:
+  - '`assignr review check --deterministic` outputs one row per task (not per blocker),
+    with a summary column like "3 path-policy, 2 missing-evidence" and exits 1 if any
+    blockers exist.'
+  - Long task IDs (over 45 characters) are truncated with `…` so the table fits within a
+    standard 120-char terminal width.
+  - Each task's blockers are listed in a collapsed details section below the table row,
+    indented and color-coded by kind (red for path-policy/path-ownership, yellow for
+    missing-evidence, magenta for blocked-dependency).
+  - "`assignr review queue --mode triage` uses the same truncated-ID and
+    summary-per-task format, with a per-task section showing details only when
+    escalated."
+  - "`assignr review queue --mode deep` preserves its per-task section layout but uses
+    truncated IDs in the section header and condensed packet lines."
+  - "`--machine` mode output is unchanged (programmatic consumers rely on the
+    tab-delimited format)."
+  - All existing tests pass without modification (no schema or behavior changes).
+  - "`pnpm typecheck` and `pnpm test` pass."
+implementation_notes:
+  - No behavior changes — only CLI presentation. The `evaluateDeterministicReviewGate`
+    function and its report types are untouched.
+  - "Truncation rule: show a slug prefix up to 45 characters, append `…` if truncated.
+    Store the full ID for any detailed sections. Example:
+    `integrate-path-warnings-into-determ…`"
+  - "Color coding for blocker kinds: path-policy / path-ownership → picocolors.red;
+    missing-evidence / missing-run-log → picocolors.yellow; blocked-dependency →
+    picocolors.magenta; load-error → picocolors.red."
+  - 'The main gate table has columns: TASK (truncated), GATE (✓ pass / ⊘ blocked / ◐
+    escalate), BLOCKERS (summary like "3 path-policy, 2 missing-evidence").'
+  - "Below the table, add a collapsed details section per blocked/escalated task: a
+    header like `── add-check-paths-command-for-validat…  (3 path-policy, 2
+    missing-evidence)` followed by bulleted, indented, color-coded blocker lines."
+  - The non-deterministic `review check` path (the readiness score path) is out of scope
+    — only the `--deterministic` mode and `review queue` formatting.
+  - Update the review queue triage mode (`runTriageMode`) to use the same truncated-ID /
+    summary format as review check deterministic.
+  - Update the review queue deep mode (`runDeepMode`) to truncate IDs in the section
+    header while keeping full IDs in the packet/reason lines.
+  - The `formatPacketMultiline` and `formatCondensedEvidence` functions are fine as-is —
+    they already use compact summaries. Only the section header ID needs truncation.
+  - "Test coverage: update existing snapshot-like assertions in `reviewQueue.test.ts`
+    and `reviewCheck.test.ts` that assert on output format strings (like the compressed
+    packet and formatted deep output) to match the new layout."
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes:
+  - This is a purely cosmetic task — no logic changes, no schema changes, no behavior
+    changes. Only display formatting.
+  - The `--machine` flag must remain byte-identical. Only formatted (non-machine) output
+    changes.
+  - Review queue deep mode section headers should show truncated IDs, but the packet and
+    reason lines can use full IDs since they're already compact.
+  - If a task has 0 blockers and passes, show one row as "✓ pass" with detail
+    "deterministic=pass" — no expanded section needed.

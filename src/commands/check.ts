@@ -77,3 +77,5 @@ export function checkTokensCommand(ctx: CheckContext, taskId: string): void {
 export function checkCostCommand(ctx: CheckContext): void {
   summarizeRunCostCommand(ctx.runsDir);
 }
+
+

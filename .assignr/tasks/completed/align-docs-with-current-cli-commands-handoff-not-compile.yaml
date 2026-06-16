@@ -42,7 +42,7 @@ acceptance_criteria:
 implementation_notes:
   - "The init output screenshot must be captured by a human before this task runs: run
     assignr init in a fresh test repo and screenshot the output. Save to
-    docs/images/init-output.png."
+    docs/images/git."
   - The compile command still exists as a deprecated alias for handoff — it's fine to
     mention it in a deprecation note, but it should not appear as the primary command
     anywhere.

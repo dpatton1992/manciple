@@ -11,6 +11,7 @@ import {
 } from "./evidence.js";
 import { evaluateReviewReadiness } from "./readiness.js";
 import type { ReviewReadinessReport } from "./readiness.js";
+import { normalizePath, pathMatchesPattern } from "../utils/pathUtils.js";
 
 export type DeterministicReviewBlockerKind =
   | "load-error"
@@ -97,41 +98,6 @@ function defaultDirs(specsTasksDir: string): Required<Pick<
 function displayPath(cwd: string, path: string): string {
   const rel = relative(cwd, path);
   return rel && !rel.startsWith("..") ? rel : path;
-}
-
-function normalizePath(path: string): string {
-  return path.trim().replace(/^\.\//, "").replace(/\\/g, "/");
-}
-
-function fixedPrefix(pattern: string): string {
-  const normalized = normalizePath(pattern);
-  const wildcardIndex = normalized.search(/[*?[\]{}]/);
-  if (wildcardIndex === -1) return normalized;
-  const prefix = normalized.slice(0, wildcardIndex);
-  const lastSlash = prefix.lastIndexOf("/");
-  return lastSlash === -1 ? "" : prefix.slice(0, lastSlash + 1);
-}
-
-function pathMatchesPattern(path: string, pattern: string): boolean {
-  const normalizedPath = normalizePath(path);
-  const normalizedPattern = normalizePath(pattern);
-
-  if (!normalizedPath || !normalizedPattern) return false;
-  if (normalizedPattern === "**" || normalizedPath === normalizedPattern) return true;
-  if (normalizedPattern.endsWith("/")) return normalizedPath.startsWith(normalizedPattern);
-  if (normalizedPattern.endsWith("/**")) {
-    return normalizedPath.startsWith(normalizedPattern.slice(0, -2));
-  }
-  if (normalizedPattern.endsWith("/*")) {
-    const prefix = normalizedPattern.slice(0, -1);
-    return normalizedPath.startsWith(prefix) && !normalizedPath.slice(prefix.length).includes("/");
-  }
-  if (normalizedPattern.includes("*") || normalizedPattern.includes("?")) {
-    const prefix = fixedPrefix(normalizedPattern);
-    return prefix ? normalizedPath.startsWith(prefix) : true;
-  }
-
-  return false;
 }
 
 function changedFilesFor(readiness: ReviewReadinessReport, gitChangedFiles: string[]): string[] {

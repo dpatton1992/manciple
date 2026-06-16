@@ -1,0 +1,93 @@
+id: add-check-paths-command-for-validating-file-path-boundaries
+title: Add check paths command for validating file path boundaries
+status: archived
+type: implementation
+domain: core
+priority: high
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/commands/checkPaths.ts
+  - src/commands/check.ts
+  - src/commands/verify.ts
+  - src/utils/pathUtils.ts
+  - src/review/deterministicGate.ts
+  - src/mcp.ts
+  - src/cli.ts
+  - tests/checkPaths.test.ts
+  - tests/reviewCheck.test.ts
+  - tests/verify.test.ts
+forbidden_paths:
+  - dist/
+  - node_modules/
+  - .assignr/runs/
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: A standalone CLI command and MCP tool that checks git changed files against a
+  task's allowed_paths and forbidden_paths, warning on out-of-bounds and failing on
+  forbidden touches.
+acceptance_criteria:
+  - "`assignr check paths <task-id>` exits 0 when all changed files are within
+    `allowed_paths` and none match `forbidden_paths`."
+  - "`assignr check paths <task-id>` prints a warning (but exits 0) when a changed file
+    is outside `allowed_paths` but no files match `forbidden_paths`."
+  - "`assignr check paths <task-id>` exits 1 when a changed file matches
+    `forbidden_paths`, printing the violating paths."
+  - "`assignr check paths <task-id>` accepts `--file <path>` (repeatable) to check
+    explicit file paths instead of reading git status."
+  - "`assignr check paths <task-id> --json` emits structured JSON output with warnings,
+    violations, and exit code signal."
+  - The `pathMatchesPattern` and `normalizePath` functions used in deterministicGate.ts
+    are extracted to a shared utility (`src/utils/pathUtils.ts`) and reused by the new
+    command.
+  - A new `assignr_check_paths` MCP tool is registered in `src/mcp.ts` that accepts
+    `task_id` and optional `files` array and returns the check result.
+  - "Tests cover: all-files-allowed, file-outside-allowed-paths (warning only),
+    file-matches-forbidden-path (fatal), forbidden-outside-allowed (both conditions),
+    empty allowed_paths (no warning), and JSON output format."
+implementation_notes:
+  - Warnings for files outside allowed_paths should be printed to stderr so they do not
+    pollute --json stdout.
+  - "Exit code behavior: 0 = no forbidden violations (warnings are non-fatal), 1 = one
+    or more forbidden_paths violations."
+  - When `allowed_paths` is empty, no outside-allowed-path warnings are emitted (no
+    constraint = no violation).
+  - When --file is not provided, read git changed files via the existing
+    `readGitChangedFiles()` from `src/review/evidence.ts`.
+  - When --file is provided, only check those explicit paths and do not read git status.
+  - The --json flag suppresses human-readable output and prints a structured JSON result
+    to stdout.
+  - Extract path matching to `src/utils/pathUtils.ts` (export `pathMatchesPattern` and
+    `normalizePath`), update `deterministicGate.ts` to import from there.
+  - "The MCP tool should accept `task_id` as required string and optional `files` as
+    string array (defaults to git status if omitted). Return format: `{ ok: boolean,
+    task_id: string, warnings: string[], violations: string[], changed_files: string[]
+    }`."
+  - Register the command as `check paths <task-id>` under the primary `check` command
+    group in `cli.ts` and add `checkPathsSubCommand()` to `src/commands/check.ts`.
+  - Add the MCP tool under name `assignr_check_paths` with same contract as the CLI
+    --json output.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test -- checkPaths
+    - pnpm test -- reviewCheck
+    - pnpm test -- verify
+    - pnpm test -- mcpList
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes:
+  - The path-policy check logic already exists inside `deterministicGate.ts` as
+    `addPathPolicyBlockers()` but uses module-private helpers. Extraction to shared
+    utilities is part of this task.
+  - Existing `reviewCheck --deterministic` already produces path-policy blockers for
+    needs_review tasks, but there is no standalone command to check paths during
+    implementation.
+  - This task does NOT modify the behavior of `reviewCheck --deterministic` — it only
+    refactors shared path-matching functions to avoid duplication.
