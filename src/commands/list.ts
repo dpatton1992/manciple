@@ -198,8 +198,10 @@ export function listCommand(specsTasksDir: string, _cwd: string, options: ListCo
   const tier = resolveTier(options);
   const taskDirs = requiredTaskDirs(specsTasksDir, tier);
   const hasReadableTaskDir = taskDirs.some((taskDir) => existsSync(taskDir));
+  const tasksRoot = resolveTasksRoot(specsTasksDir);
+  const hasTaskStorage = existsSync(tasksRoot) || existsSync(specsTasksDir);
 
-  if (!hasReadableTaskDir) {
+  if (!hasReadableTaskDir && !hasTaskStorage) {
     console.error(`Tasks directory does not exist: ${taskDirs[0]}`);
     process.exit(1);
   }

@@ -68,6 +68,18 @@ describe("listCommand", () => {
     }
   });
 
+  it("treats a missing selected lifecycle tier as empty when task storage exists", () => {
+    const { root, paths } = makeRepo();
+    mkdirSync(paths.tasksCompleted, { recursive: true });
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    listCommand(paths.specsTasks, root);
+
+    expect(logSpy.mock.calls.flat().join("\n")).toContain("No tasks found.");
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
   it("shows active tasks by default without completed or archived tasks", () => {
     const { root, paths } = makeRepo();
     writeTask(root, "active", "active-task");
