@@ -1,5 +1,5 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "fs";
-import { basename, join, relative } from "path";
+import { join, relative, resolve } from "path";
 import { parse } from "yaml";
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -32,11 +32,33 @@ import { formatYamlDocument } from "./utils/yamlFormat.js";
 import { TaskSpecSchema } from "./specs/schema.js";
 import type { LoadedTask, TaskSpec } from "./specs/schema.js";
 
-const cwd = process.cwd();
 const mcpServerName = "assignr";
-const config = loadConfig(cwd);
-const root = config.root;
-const p = getPaths(cwd, root);
+
+interface McpRepoContext {
+  cwd: string;
+  root: string;
+  paths: ReturnType<typeof getPaths>;
+}
+
+const repoInputSchema = {
+  repo: z
+    .string()
+    .optional()
+    .describe(
+      "Absolute or relative repository root to scope this Assignr operation. Defaults to the MCP server process cwd for backward compatibility."
+    ),
+};
+
+function getRepoContext(repo?: string): McpRepoContext {
+  const cwd = resolve(repo ?? process.cwd());
+  const config = loadConfig(cwd);
+  const root = config.root;
+  return {
+    cwd,
+    root,
+    paths: getPaths(cwd, root),
+  };
+}
 
 function jsonResult(value: unknown): CallToolResult {
   return {
@@ -92,15 +114,15 @@ function loadDomainContextForPaths(
   return { content: renderDomainContext(parsed as Record<string, unknown>) };
 }
 
-function findTask(taskId: string): LoadedTask | undefined {
-  return loadTasks(p.specsTasks, "all").tasks.find((task) => task.spec.id === taskId);
+function findTask(taskId: string, ctx: McpRepoContext): LoadedTask | undefined {
+  return loadTasks(ctx.paths.specsTasks, "all").tasks.find((task) => task.spec.id === taskId);
 }
 
-function loadTasksOrError(): LoadedTaskWithTier[] {
-  const { tasks, errors } = loadTasks(p.specsTasks, "all");
+function loadTasksOrError(ctx: McpRepoContext): LoadedTaskWithTier[] {
+  const { tasks, errors } = loadTasks(ctx.paths.specsTasks, "all");
   if (errors.length > 0) {
     const message = errors
-      .map((error) => `${relative(cwd, error.filePath)}: ${error.error}`)
+      .map((error) => `${relative(ctx.cwd, error.filePath)}: ${error.error}`)
       .join("; ");
     throw new Error(`Cannot load tasks: ${message}`);
   }
@@ -166,13 +188,13 @@ function dependencyContextTask(task: LoadedTaskWithTier): LoadedTaskWithTier {
   };
 }
 
-function loadActiveValidationTasks(): {
+function loadActiveValidationTasks(ctx: McpRepoContext): {
   tasks: LoadedTaskWithTier[];
   errors: Array<{ filePath: string; error: string }>;
   activeFilePaths: Set<string>;
 } {
-  const activeResult = loadTasks(p.specsTasks, "active");
-  const allResult = loadTasks(p.specsTasks, "all");
+  const activeResult = loadTasks(ctx.paths.specsTasks, "active");
+  const allResult = loadTasks(ctx.paths.specsTasks, "all");
   const activeIds = new Set(activeResult.tasks.map((task) => task.spec.id));
   const activeFilePaths = new Set(activeResult.tasks.map((task) => task.filePath));
   const contextTasks = allResult.tasks
@@ -197,14 +219,16 @@ server.registerTool(
     title: "List Assignr Tasks",
     description: "List Assignr tasks, optionally filtered by status or domain.",
     inputSchema: {
+      ...repoInputSchema,
       status: z.string().optional(),
       tier: z.enum(["active", "completed", "archived", "all"]).optional(),
       domain: z.string().optional(),
     },
   },
-  ({ status, tier, domain }) =>
+  ({ repo, status, tier, domain }) =>
     toolResult(() => {
-      return jsonResult(listTasksForMcp(p.specsTasks, cwd, { status, tier, domain }));
+      const ctx = getRepoContext(repo);
+      return jsonResult(listTasksForMcp(ctx.paths.specsTasks, ctx.cwd, { status, tier, domain }));
     })
 );
 
@@ -213,28 +237,30 @@ server.registerTool(
   {
     title: "Validate Assignr Tasks",
     description: "Run schema and semantic validation for Assignr task specs.",
+    inputSchema: repoInputSchema,
   },
-  () =>
+  ({ repo }) =>
     toolResult(() => {
+      const ctx = getRepoContext(repo);
       const {
         tasks,
         errors: loadErrors,
         activeFilePaths,
-      } = loadActiveValidationTasks();
+      } = loadActiveValidationTasks(ctx);
       const result = validateTasks(tasks, {
-        specsDomainsDir: p.specsDomains,
+        specsDomainsDir: ctx.paths.specsDomains,
         countFilePaths: activeFilePaths,
       });
       const valid = result.valid.filter((task) => activeFilePaths.has(task.filePath));
       const invalid = result.invalid.filter((entry) => activeFilePaths.has(entry.filePath));
       const errors = [
         ...loadErrors.map((error) => ({
-          file: relative(cwd, error.filePath),
+          file: relative(ctx.cwd, error.filePath),
           message: error.error,
         })),
         ...invalid.flatMap(({ filePath, errors: issues }) =>
           issues.map((issue) => ({
-            file: relative(cwd, filePath),
+            file: relative(ctx.cwd, filePath),
             message: `[${issue.field}] ${issue.message}`,
           }))
         ),
@@ -258,15 +284,17 @@ server.registerTool(
   {
     title: "Check Assignr Lifecycle Placement",
     description: "Validate that task files live in the lifecycle directory matching their status.",
+    inputSchema: repoInputSchema,
   },
-  () =>
+  ({ repo }) =>
     toolResult(() => {
+      const ctx = getRepoContext(repo);
       return jsonResult(
         checkLifecyclePlacement({
-          cwd,
-          activeDir: p.tasksActive,
-          completedDir: p.tasksCompleted,
-          archivedDir: p.tasksArchived,
+          cwd: ctx.cwd,
+          activeDir: ctx.paths.tasksActive,
+          completedDir: ctx.paths.tasksCompleted,
+          archivedDir: ctx.paths.tasksArchived,
         })
       );
     })
@@ -278,10 +306,12 @@ server.registerTool(
     title: "Build Assignr Dispatch Plan",
     description:
       "Return a deterministic coordinator packet with assignments, deferrals, stop conditions, and verification commands.",
+    inputSchema: repoInputSchema,
   },
-  () =>
+  ({ repo }) =>
     toolResult(() => {
-      return jsonResult(createDispatchPlan(p.specsTasks, cwd));
+      const ctx = getRepoContext(repo);
+      return jsonResult(createDispatchPlan(ctx.paths.specsTasks, ctx.cwd));
     })
 );
 
@@ -291,12 +321,14 @@ server.registerTool(
     title: "Run Assignr Verify Profile",
     description: "Run a deterministic verification profile and return a compact pass/fail receipt.",
     inputSchema: {
+      ...repoInputSchema,
       profile: z.enum(VERIFY_PROFILE_NAMES),
     },
   },
-  ({ profile }) =>
+  ({ repo, profile }) =>
     toolResult(async () => {
-      return jsonResult(await runVerifyProfile(parseVerifyProfile(profile), { cwd }));
+      const ctx = getRepoContext(repo);
+      return jsonResult(await runVerifyProfile(parseVerifyProfile(profile), { cwd: ctx.cwd }));
     })
 );
 
@@ -307,6 +339,7 @@ server.registerTool(
     description:
       "Create a new Assignr task spec in the active tasks directory. Generates the task id from the title using slugify. Returns an error if a task with the same id already exists.",
     inputSchema: {
+      ...repoInputSchema,
       title: z.string().min(1).describe("Human-readable task title. The id is derived from this."),
       type: z.enum(TASK_TYPES).describe("Task type."),
       domain: z.string().min(1).describe("Domain label, e.g. auth, core, api."),
@@ -323,6 +356,7 @@ server.registerTool(
     },
   },
   ({
+    repo,
     title,
     type,
     domain,
@@ -338,12 +372,13 @@ server.registerTool(
     notes,
   }) =>
     toolResult(() => {
+      const ctx = getRepoContext(repo);
       const id = slugify(title);
 
-      const existing = findTask(id);
+      const existing = findTask(id, ctx);
       if (existing) {
         return errorResult(
-          `A task with id "${id}" already exists at ${relative(cwd, existing.filePath)}. Choose a different title or update the existing task.`
+          `A task with id "${id}" already exists at ${relative(ctx.cwd, existing.filePath)}. Choose a different title or update the existing task.`
         );
       }
 
@@ -373,14 +408,14 @@ server.registerTool(
         return errorResult(`Invalid task spec: ${messages}`);
       }
 
-      if (!existsSync(p.tasksActive)) {
-        mkdirSync(p.tasksActive, { recursive: true });
+      if (!existsSync(ctx.paths.tasksActive)) {
+        mkdirSync(ctx.paths.tasksActive, { recursive: true });
       }
 
-      const filePath = join(p.tasksActive, `${id}.yaml`);
+      const filePath = join(ctx.paths.tasksActive, `${id}.yaml`);
       writeFileSync(filePath, formatYamlDocument(parsed.data), "utf-8");
 
-      return jsonResult({ id, file_path: relative(cwd, filePath) });
+      return jsonResult({ id, file_path: relative(ctx.cwd, filePath) });
     })
 );
 
@@ -390,12 +425,14 @@ server.registerTool(
     title: "Get Assignr Task",
     description: "Read a task YAML file and return the parsed task spec.",
     inputSchema: {
+      ...repoInputSchema,
       task_id: z.string(),
     },
   },
-  ({ task_id }) =>
+  ({ repo, task_id }) =>
     toolResult(() => {
-      const found = findTask(task_id);
+      const ctx = getRepoContext(repo);
+      const found = findTask(task_id, ctx);
       if (!found) return errorResult(`Task not found: ${task_id}`);
 
       const raw = readFileSync(found.filePath, "utf-8");
@@ -410,19 +447,21 @@ server.registerTool(
     title: "Compile Assignr Task",
     description: "Compile one Assignr task into a generated markdown prompt.",
     inputSchema: {
+      ...repoInputSchema,
       task_id: z.string(),
     },
   },
-  ({ task_id }) =>
+  ({ repo, task_id }) =>
     toolResult(() => {
+      const ctx = getRepoContext(repo);
       try {
         return jsonResult({
           ...compileTaskForMcp({
             taskId: task_id,
-            specsTasksDir: p.specsTasks,
-            specsDomainsDir: p.specsDomains,
-            promptsGeneratedDir: p.promptsGenerated,
-            cwd,
+            specsTasksDir: ctx.paths.specsTasks,
+            specsDomainsDir: ctx.paths.specsDomains,
+            promptsGeneratedDir: ctx.paths.promptsGenerated,
+            cwd: ctx.cwd,
           }),
         });
       } catch (err) {
@@ -439,17 +478,19 @@ server.registerTool(
     title: "Format Assignr Task YAML",
     description: "Check or format one Assignr task YAML file by task id.",
     inputSchema: {
+      ...repoInputSchema,
       task_id: z.string(),
       check_only: z.boolean().optional(),
     },
   },
-  ({ task_id, check_only }) =>
+  ({ repo, task_id, check_only }) =>
     toolResult(() => {
+      const ctx = getRepoContext(repo);
       try {
         return jsonResult(
           formatTaskById(task_id, {
-            specsTasksDir: p.specsTasks,
-            cwd,
+            specsTasksDir: ctx.paths.specsTasks,
+            cwd: ctx.cwd,
             checkOnly: check_only ?? false,
           })
         );
@@ -471,17 +512,19 @@ server.registerTool(
     title: "Get Assignr Task Packet",
     description: "Return a compact bounded worker packet for one task.",
     inputSchema: {
+      ...repoInputSchema,
       task_id: z.string(),
     },
   },
-  ({ task_id }) =>
+  ({ repo, task_id }) =>
     toolResult(() => {
+      const ctx = getRepoContext(repo);
       try {
         return jsonResult(
           buildTaskPacket({
             taskId: task_id,
-            specsTasksDir: p.specsTasks,
-            cwd,
+            specsTasksDir: ctx.paths.specsTasks,
+            cwd: ctx.cwd,
           })
         );
       } catch (err) {
@@ -498,17 +541,19 @@ server.registerTool(
     title: "Set Assignr Task Status",
     description: "Update the status field for one Assignr task YAML file.",
     inputSchema: {
+      ...repoInputSchema,
       task_id: z.string(),
       status: z.string(),
     },
   },
-  ({ task_id, status }) =>
+  ({ repo, task_id, status }) =>
     toolResult(() => {
+      const ctx = getRepoContext(repo);
       if (!STATUSES.includes(status as Status)) {
         return errorResult(`Invalid status: "${status}". Allowed: ${STATUSES.join(", ")}`);
       }
 
-      const found = findTask(task_id);
+      const found = findTask(task_id, ctx);
       if (!found) return errorResult(`Task not found: ${task_id}`);
 
       const raw = readFileSync(found.filePath, "utf-8");
@@ -532,6 +577,7 @@ server.registerTool(
     description:
       "Create a run log for one Assignr task. Pass agent context fields when available so the log is populated rather than left as TODO stubs.",
     inputSchema: {
+      ...repoInputSchema,
       task_id: z.string(),
       agent: z.string().optional().describe("The agent harness or tool used (e.g. 'Claude Code', 'Cursor')."),
       model: z.string().optional().describe("The model that performed the work (e.g. 'claude-sonnet-4-5')."),
@@ -561,6 +607,7 @@ server.registerTool(
     },
   },
   ({
+    repo,
     task_id,
     agent,
     model,
@@ -577,18 +624,19 @@ server.registerTool(
     notes,
   }) =>
     toolResult(() => {
-      const tasks = loadTasksOrError();
+      const ctx = getRepoContext(repo);
+      const tasks = loadTasksOrError(ctx);
       const found = tasks.find((task) => task.spec.id === task_id);
       if (!found) return errorResult(`Task not found: ${task_id}`);
 
-      if (!existsSync(p.runs)) {
-        mkdirSync(p.runs, { recursive: true });
+      if (!existsSync(ctx.paths.runs)) {
+        mkdirSync(ctx.paths.runs, { recursive: true });
       }
 
-      const outPath = join(p.runs, `${timestamp()}-${found.spec.id}.md`);
+      const outPath = join(ctx.paths.runs, `${timestamp()}-${found.spec.id}.md`);
       writeFileSync(
         outPath,
-        buildRunLog(found.spec.title, found.spec.id, found.spec.status, p.promptsGenerated, cwd, {
+        buildRunLog(found.spec.title, found.spec.id, found.spec.status, ctx.paths.promptsGenerated, ctx.cwd, {
           agent,
           model,
           filesChanged: files_changed,
@@ -616,12 +664,14 @@ server.registerTool(
     title: "Get Compiled Assignr Prompt",
     description: "Read an existing compiled prompt for one Assignr task.",
     inputSchema: {
+      ...repoInputSchema,
       task_id: z.string(),
     },
   },
-  ({ task_id }) =>
+  ({ repo, task_id }) =>
     toolResult(() => {
-      const promptPath = join(p.promptsGenerated, `${task_id}.md`);
+      const ctx = getRepoContext(repo);
+      const promptPath = join(ctx.paths.promptsGenerated, `${task_id}.md`);
       if (!existsSync(promptPath)) {
         return errorResult(`Compiled prompt not found for task: ${task_id}`);
       }

@@ -1,0 +1,74 @@
+id: create-assignr-review-skill-for-claude-code-and-codex
+title: Create assignr-review skill for Claude Code and Codex
+status: complete
+type: implementation
+domain: core
+priority: high
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - .claude/skills/assignr-review/
+  - .codex/skills/assignr-review/
+forbidden_paths:
+  - dist/
+  - node_modules/
+  - .assignr/runs/
+  - .assignr/specs/tasks/
+  - src/
+  - bin/
+  - tests/
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Create the assignr-review skill SKILL.md files that define a structured review
+  workflow using Assignr review tools, for both Claude Code and Codex.
+acceptance_criteria:
+  - .claude/skills/assignr-review/SKILL.md exists and defines a complete review workflow.
+  - .codex/skills/assignr-review/SKILL.md exists and defines the same workflow (with
+    s/Claude Code/Codex/ platform references).
+  - The skill describes how to load a task in needs_review status, check review
+    readiness, load evidence (run log, git diff), evaluate acceptance criteria,
+    determine a verdict (approve/request-changes/block), and record the review outcome.
+  - The skill references deterministic MCP tools (assignr_verify,
+    assignr_get_task_packet, assignr_run_log) and CLI commands (assignr review, assignr
+    approve, assignr request-changes, assignr block-review) where appropriate.
+  - "The skill follows the existing SKILL.md conventions: YAML frontmatter with
+    name/description, markdown body with sections, and clear workflow steps."
+  - pnpm typecheck passes.
+  - pnpm test passes.
+implementation_notes:
+  - The skill is for reviewers — not implementors. It should focus on evaluating
+    completed task work, not doing new implementation.
+  - "The workflow should include: (1) load task packet for a needs_review task, (2)
+    check review readiness with assignr_verify --profile review, (3) load run log and
+    git diff evidence, (4) evaluate against acceptance criteria, (5) decide verdict, (6)
+    record outcome via assignr_run_log and assignr_set_status."
+  - The skill should reference assignr_verify --profile review for deterministic checks
+    and assignr_verify --profile worker for re-running worker verification if needed.
+  - The skill should reference CLI commands assignr approve, assignr request-changes,
+    assignr block-review for verdict recording.
+  - The Claude Code version at .claude/skills/assignr-review/SKILL.md should mention
+    Claude Code and use .claude/skills/ paths.
+  - The Codex version at .codex/skills/assignr-review/SKILL.md should mention Codex and
+    use .codex/skills/ paths.
+  - Both files should be otherwise identical in structure and content.
+  - Do not create agent definitions in .opencode/agents/ unless the review workflow
+    requires a dedicated subagent — start with just the skill file.
+  - The skill should be designed so it can be loaded by MCP-compatible agents (Claude
+    Code, OpenCode) and by Codex's skill system.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes:
+  - This is task 1 of 2 for the review skill feature.
+  - The registration/AGENTS.md update will be a separate docs task.
+  - The skill must be installable via assignr init -- the existing installAssets.ts
+    copies everything under .claude/skills/ and .codex/skills/ automatically.

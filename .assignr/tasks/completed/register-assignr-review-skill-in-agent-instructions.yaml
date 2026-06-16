@@ -1,0 +1,65 @@
+id: register-assignr-review-skill-in-agent-instructions
+title: Register assignr-review skill in agent instructions
+status: complete
+type: docs
+domain: core
+priority: medium
+depends_on:
+  - create-assignr-review-skill-for-claude-code-and-codex
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - AGENTS.md
+  - .codex/AGENTS.md
+forbidden_paths:
+  - dist/
+  - node_modules/
+  - .assignr/runs/
+  - .assignr/specs/tasks/
+  - src/
+  - bin/
+  - tests/
+  - .claude/
+  - .codex/skills/
+  - .opencode/
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Update AGENTS.md and .codex/AGENTS.md to reference the new assignr-review skill in
+  the available_skills list and project conventions.
+acceptance_criteria:
+  - AGENTS.md lists assignr-review in the available_skills section with accurate name
+    and description.
+  - .codex/AGENTS.md lists assignr-review in the available_skills section with accurate
+    name and description.
+  - The skill description matches the name/description frontmatter in the SKILL.md files.
+  - pnpm typecheck passes.
+  - pnpm test passes.
+implementation_notes:
+  - Add the new skill entry to the available_skills list in AGENTS.md, following the
+    same format as existing skills.
+  - Add the new skill entry to the available_skills list in .codex/AGENTS.md, following
+    the same format.
+  - The name should be 'assignr-review' and the description should match the one in the
+    skill's YAML frontmatter.
+  - Place it in alphabetical order within the existing skill list or at the end of the
+    list.
+  - Only add the entry if it does not already exist — check first before editing.
+  - Do not modify the skill files themselves (those are created by the sibling
+    implementation task).
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+notes:
+  - This is task 2 of 2 for the review skill feature.
+  - Depends on task 1 (skill file creation) because the AGENTS.md description should
+    match the skill file's frontmatter.
+  - The available_skills listing in AGENTS.md is what allows the skill tool to load the
+    skill by name.

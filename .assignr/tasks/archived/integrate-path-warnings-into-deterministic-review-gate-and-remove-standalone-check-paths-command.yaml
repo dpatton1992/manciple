@@ -1,7 +1,7 @@
 id: integrate-path-warnings-into-deterministic-review-gate-and-remove-standalone-check-paths-command
 title: Integrate path warnings into deterministic review gate and remove standalone
   check-paths command
-status: needs_review
+status: archived
 type: refactor
 domain: core
 priority: high

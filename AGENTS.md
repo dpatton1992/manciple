@@ -34,6 +34,8 @@ model/provider accounting.
 The `assignr` MCP server is configured in `opencode.json`. Assignr tools are
 prefixed `assignr_` (e.g. `assignr_get_task_packet`, `assignr_set_status`,
 `assignr_verify`). Prefer these over raw CLI calls when both are available.
+Assignr MCP is global: pass this repo root as the `repo` argument on MCP calls
+so returned task data, run logs, and verification operate on this checkout.
 
 ## Project Conventions
 
@@ -42,3 +44,13 @@ prefixed `assignr_` (e.g. `assignr_get_task_packet`, `assignr_set_status`,
 - Run logs are written to `.assignr/runs/` by `assignr_run_log`.
 - Verification uses `assignr_verify --profile worker|coordinator|review`.
 - Tests: `pnpm test` (vitest). Lint: `pnpm exec tsc --noEmit`.
+
+## Available Skills
+
+<available_skills>
+  <skill>
+    <name>assignr-review</name>
+    <description>Review completed Assignr task work by loading the task packet, checking review readiness with assignr_verify --profile review, evaluating acceptance criteria against run log and git diff evidence, and recording a deterministic verdict (approve/request-changes/block). Use when the user asks Claude Code to review, approve, or give feedback on a completed Assignr task.</description>
+    <location>file:///Users/danielpatton/Documents/GitHub/promptops/.claude/skills/assignr-review/SKILL.md</location>
+  </skill>
+</available_skills>

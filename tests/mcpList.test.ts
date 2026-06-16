@@ -648,4 +648,87 @@ describe("listTasksForMcp", () => {
     });
     expect(payload.failures[0].output.stdout ?? payload.failures[0].output.stderr).toBeTruthy();
   });
+
+  it("scopes MCP list calls to the repo argument instead of the server cwd", async () => {
+    const serverRoot = await mkdtemp(join(tmpdir(), "assignr-mcp-server-root-"));
+    const targetRoot = await mkdtemp(join(tmpdir(), "assignr-mcp-target-root-"));
+    tempDirs.push(serverRoot, targetRoot);
+    writeTask(serverRoot, "active", "server-task", "pending");
+    writeTask(targetRoot, "active", "target-task", "needs_review");
+
+    const tsxBin = join(
+      process.cwd(),
+      "node_modules",
+      ".bin",
+      process.platform === "win32" ? "tsx.cmd" : "tsx"
+    );
+    const transport = new StdioClientTransport({
+      command: tsxBin,
+      args: [join(process.cwd(), "src", "mcp.ts")],
+      cwd: serverRoot,
+    });
+    const client = new Client({ name: "assignr-test", version: "0.0.0" });
+
+    await client.connect(transport);
+    const defaultResult = await client.callTool({
+      name: "assignr_list",
+      arguments: { status: "all" },
+    });
+    const scopedResult = await client.callTool({
+      name: "assignr_list",
+      arguments: { repo: targetRoot, status: "all" },
+    });
+    await client.close();
+
+    const defaultText = defaultResult.content.find((part) => part.type === "text")?.text;
+    const scopedText = scopedResult.content.find((part) => part.type === "text")?.text;
+    expect(defaultText).toBeDefined();
+    expect(scopedText).toBeDefined();
+
+    expect(JSON.parse(defaultText!).map((task: { id: string }) => task.id)).toEqual(["server-task"]);
+    expect(JSON.parse(scopedText!).map((task: { id: string }) => task.id)).toEqual(["target-task"]);
+  });
+
+  it("scopes MCP write calls to the repo argument instead of the server cwd", async () => {
+    const serverRoot = await mkdtemp(join(tmpdir(), "assignr-mcp-write-server-root-"));
+    const targetRoot = await mkdtemp(join(tmpdir(), "assignr-mcp-write-target-root-"));
+    tempDirs.push(serverRoot, targetRoot);
+
+    const tsxBin = join(
+      process.cwd(),
+      "node_modules",
+      ".bin",
+      process.platform === "win32" ? "tsx.cmd" : "tsx"
+    );
+    const transport = new StdioClientTransport({
+      command: tsxBin,
+      args: [join(process.cwd(), "src", "mcp.ts")],
+      cwd: serverRoot,
+    });
+    const client = new Client({ name: "assignr-test", version: "0.0.0" });
+
+    await client.connect(transport);
+    const result = await client.callTool({
+      name: "assignr_create",
+      arguments: {
+        repo: targetRoot,
+        title: "Scoped MCP Task",
+        type: "implementation",
+        domain: "core",
+        goal: "Create a task in the requested repo.",
+        acceptance_criteria: ["It writes to the requested repo."],
+        verification_commands: ["pnpm test"],
+      },
+    });
+    await client.close();
+
+    const text = result.content.find((part) => part.type === "text")?.text;
+    expect(text).toBeDefined();
+    expect(JSON.parse(text!)).toMatchObject({
+      id: "scoped-mcp-task",
+      file_path: ".assignr/tasks/active/scoped-mcp-task.yaml",
+    });
+    expect(existsSync(join(targetRoot, ".assignr", "tasks", "active", "scoped-mcp-task.yaml"))).toBe(true);
+    expect(existsSync(join(serverRoot, ".assignr", "tasks", "active", "scoped-mcp-task.yaml"))).toBe(false);
+  });
 });
