@@ -1,0 +1,71 @@
+id: split-mcp-tool-registration-into-focused-modules
+title: Split MCP tool registration into focused modules
+status: pending
+type: refactor
+domain: core
+priority: medium
+depends_on:
+  - remove-package-self-dependency-and-add-lint-script
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/mcp.ts
+  - src/mcp/**
+  - src/mcpList.ts
+  - src/specs/**
+  - src/commands/formatTask.ts
+  - src/commands/taskPacket.ts
+  - src/commands/runLog.ts
+  - src/commands/verify.ts
+  - tests/mcpList.test.ts
+  - tests/validateTasks.test.ts
+  - tests/schema.test.ts
+  - tests/formatTask.test.ts
+  - tests/runLog.test.ts
+  - tests/verify.test.ts
+forbidden_paths:
+  - dist/**
+  - .assignr/prompts/generated/**
+  - .assignr/tasks/completed/**
+  - .assignr/tasks/archived/**
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: src/mcp.ts delegates MCP tool registration and shared helpers to focused modules
+  while preserving the existing Assignr MCP tool contract.
+acceptance_criteria:
+  - src/mcp.ts is reduced to server construction, shared context wiring, and
+    registration composition, with individual tool groups moved to focused modules under
+    src/mcp/ or another clearly named source directory.
+  - All existing MCP tool names, input schemas, output shapes, error-result conventions,
+    and repo scoping behavior remain backward compatible.
+  - assignr_create, assignr_validate, assignr_get_task_packet, assignr_run_log,
+    assignr_verify, lifecycle, dispatch, compile, format, list, and status mutation
+    tools remain registered.
+  - Tests cover at least representative MCP list/create/validate/task packet behavior
+    after the refactor, or existing tests are updated to exercise the exported
+    registration functions directly.
+  - The run log documents the chosen MCP module boundaries and any helpers intentionally
+    left in src/mcp.ts.
+implementation_notes:
+  - This is a behavior-preserving refactor; do not change tool names or field names
+    because agents depend on them.
+  - Prefer grouping tools by lifecycle, task spec IO, handoff/compile, verification, and
+    run log concerns rather than by arbitrary file length.
+  - Keep shared repo context resolution and JSON/error result helpers in one place to
+    avoid divergent behavior between tool modules.
+  - Do not edit generated prompts or completed task specs.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test -- mcpList validateTasks schema formatTask runLog verify
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+  - decisions_made
+notes:
+  - This intentionally does not depend on the CLI modularization task; it can proceed in
+    parallel after package hygiene because it does not need src/cli.ts.

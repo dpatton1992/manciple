@@ -1,0 +1,65 @@
+id: harden-child-process-execution-paths
+title: Harden child process execution paths
+status: pending
+type: hardening
+domain: core
+priority: medium
+depends_on:
+  - remove-package-self-dependency-and-add-lint-script
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - scripts/release.ts
+  - scripts/runVitest.ts
+  - scripts/assignr-token-audit.mjs
+  - src/commands/worktree.ts
+  - tests/tokenAuditScript.test.ts
+  - tests/worktree.test.ts
+  - tests/formatTask.test.ts
+  - package.json
+forbidden_paths:
+  - dist/**
+  - .assignr/prompts/generated/**
+  - .assignr/tasks/completed/**
+  - .assignr/tasks/archived/**
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Assignr child-process execution paths avoid unnecessary shell execution and handle
+  command failures consistently.
+acceptance_criteria:
+  - "scripts/release.ts does not use shell: true for fixed git, npm, pnpm, or gh
+    commands unless the run log documents a platform-specific reason for each retained
+    shell invocation."
+  - scripts/runVitest.ts and scripts/assignr-token-audit.mjs continue to pass arguments
+    safely and preserve current exit-code behavior on POSIX and Windows.
+  - src/commands/worktree.ts continues to execute git with argument arrays and reports
+    failures with useful messages without introducing shell interpretation.
+  - Tests or script-level verification cover success and failure behavior for at least
+    the token audit wrapper and one command path that spawns a child process.
+  - No user-supplied task id, branch, path, or verification option is interpolated into
+    a shell command string in the touched paths.
+implementation_notes:
+  - Prefer spawnSync or execFileSync with executable plus argument array over shell
+    command strings.
+  - For cross-platform pnpm execution, preserve the current Windows behavior where
+    needed and document any shell usage retained for Windows command resolution.
+  - Keep release script behavior compatible with the existing manual release flow; do
+    not add a new release feature in this task.
+  - Avoid hardening unrelated parsing code unless it is directly on a child-process
+    boundary.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test -- tokenAuditScript worktree formatTask
+    - pnpm test
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+  - decisions_made
+notes:
+  - This intentionally overlaps package.json with the package hygiene task only for
+    test/script adjustments after the lint script exists.
