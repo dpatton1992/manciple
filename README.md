@@ -1,12 +1,17 @@
-# Manciple
+ _ __ ___    __ _  _ __    ___ (_) _ __  | |  ___ 
+| '_ ` _ \  / _` || '_ \  / __|| || '_ \ | | / _ \
+| | | | | || (_| || | | || (__ | || |_) || ||  __/
+|_| |_| |_| \__,_||_| |_| \___||_|| .__/ |_| \___|
+                                  |_|             
 
 Repo-native task orchestration for coding agents.
 
-Manciple (formerly known as Assignr 🎼💜) stores scoped YAML task specifications, generated prompts, 
-run logs, and review evidence directly in your repository. Every task defines a clear
-contract—goal, allowed paths, acceptance criteria, verification commands, and
-required evidence—so agents can work independently while humans review with
-confidence.
+> **Formerly known as Assignr.** The project was renamed to Manciple; the workflow and goals remain the same.
+
+A manciple is a steward of provisions. Manciple does the same for coding agents: it keeps scoped work, prompts, run logs, and review evidence organized inside your repository.
+
+Manciple stores scoped YAML task specifications, generated prompts, run logs, and review evidence directly in your repository. Every task defines a clear contract—goal, allowed paths, acceptance criteria, verification commands, and required evidence—so agents can work independently while humans review with confidence.
+
 
 ## Demo
 
