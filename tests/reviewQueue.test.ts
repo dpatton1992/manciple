@@ -14,9 +14,9 @@ let cwd: string;
 let p: ReturnType<typeof getPaths>;
 
 beforeEach(async () => {
-  cwd = mkdtempSync(join(tmpdir(), "assignr-review-queue-"));
-  p = getPaths(cwd, ".assignr");
-  await initCommand({ force: false, cwd, root: ".assignr" });
+  cwd = mkdtempSync(join(tmpdir(), "manciple-review-queue-"));
+  p = getPaths(cwd, ".manciple");
+  await initCommand({ force: false, cwd, root: ".manciple" });
 });
 
 afterEach(() => {

@@ -147,7 +147,7 @@ function main(): void {
 
   // Step 7: GitHub release
   console.log("Creating GitHub release...");
-  const tmpDir = mkdtempSync(join(tmpdir(), "assignr-release-"));
+  const tmpDir = mkdtempSync(join(tmpdir(), "manciple-release-"));
   const notesFile = join(tmpDir, "RELEASE_NOTES.md");
   writeFileSync(notesFile, notes, "utf-8");
   try {
@@ -157,7 +157,7 @@ function main(): void {
   }
 
   console.log(`\n✓ Released v${newVersion}`);
-  console.log(`  https://github.com/dpatton1992/assignr/releases/tag/v${newVersion}`);
+  console.log(`  https://github.com/dpatton1992/manciple/releases/tag/v${newVersion}`);
 }
 
 main();

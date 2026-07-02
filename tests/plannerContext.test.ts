@@ -35,7 +35,7 @@ function writeTask(
   id: string,
   options: WriteTaskOptions = {}
 ): void {
-  const paths = getPaths(root, ".assignr");
+  const paths = getPaths(root, ".manciple");
   const dirByTier = {
     active: paths.tasksActive,
     completed: paths.tasksCompleted,
@@ -73,9 +73,9 @@ function writeTask(
 }
 
 function makeRepo(): { root: string; paths: ReturnType<typeof getPaths> } {
-  const root = mkdtempSync(join(tmpdir(), "assignr-planner-context-"));
+  const root = mkdtempSync(join(tmpdir(), "manciple-planner-context-"));
   tempDirs.push(root);
-  return { root, paths: getPaths(root, ".assignr") };
+  return { root, paths: getPaths(root, ".manciple") };
 }
 
 describe("buildPlannerContext", () => {

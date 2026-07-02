@@ -39,14 +39,14 @@ jobs:
       - name: Pack package and install CLI globally
         run: |
           npm pack
-          npm install -g ./assignr-*.tgz
+          npm install -g ./manciple-*.tgz
 
-      - name: Smoke test installed assignr CLI in a temporary project
+      - name: Smoke test installed manciple CLI in a temporary project
         run: |
           tmpdir="$(mktemp -d)"
           cd "$tmpdir"
-          assignr init
-          assignr new "Test task"
-          assignr validate
-          assignr status
-          assignr compile test-task
+          manciple init
+          manciple new "Test task"
+          manciple validate
+          manciple status
+          manciple handoff test-task

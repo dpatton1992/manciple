@@ -58,7 +58,7 @@ export function statusCommand(specsTasksDir: string, cwd: string): void {
 
   if (errors.length > 0) {
     console.warn(
-      `  ⚠ ${errors.length} task file(s) could not be loaded (run "assignr validate" for details).`
+      `  ⚠ ${errors.length} task file(s) could not be loaded (run "manciple validate" for details).`
     );
   }
 

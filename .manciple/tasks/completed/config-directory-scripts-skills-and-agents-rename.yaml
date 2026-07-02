@@ -1,0 +1,114 @@
+id: config-directory-scripts-skills-and-agents-rename
+title: Config directory, scripts, skills, and agents rename
+status: complete
+type: refactor
+domain: core
+priority: high
+depends_on:
+  - core-identity-and-infrastructure-rename
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - .manciple/config.yaml
+  - .manciple/specs/domains/core.yaml
+  - .manciple/tasks/active/*.yaml
+  - scripts/
+  - package.json
+  - AGENTS.md
+  - .claude/skills/**/*
+  - .codex/skills/**/*
+  - .opencode/agents/**/*
+  - .codex/AGENTS.md
+forbidden_paths:
+  - dist/**
+  - node_modules/**
+  - src/
+  - tests/
+  - bin/
+  - docs/**
+  - .github/**
+  - README.md
+  - CONTRIBUTING.md
+  - .mcp.json
+  - opencode.json
+  - .manciple/prompts/**
+  - .manciple/runs/**
+  - .manciple/tasks/completed/**
+  - .manciple/tasks/archived/**
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: The .manciple config directory content, all script files, all Claude/Codex skill
+  files, all OpenCode agent files, and the AGENTS.md instruction files consistently
+  reference the manciple project name.
+acceptance_criteria:
+  - .manciple/config.yaml references manciple.
+  - .manciple/specs/domains/core.yaml title and description reference manciple.
+  - Existing active task YAMLs under .manciple/tasks/active/ consistently reference
+    manciple as the project name.
+  - scripts/assignr-token-audit.mjs is renamed to scripts/manciple-token-audit.mjs with
+    internal references updated.
+  - scripts/checkAssignrLifecycle.ts is renamed to scripts/checkMancipleLifecycle.ts
+    with internal references updated.
+  - scripts/formatAssignrYaml.ts is renamed to scripts/formatMancipleYaml.ts with
+    internal DEFAULT_TARGETS paths updated.
+  - package.json script names match the renamed scripts (check:manciple-yaml,
+    check:manciple-lifecycle, etc.).
+  - package.json prepublishOnly references the new script names.
+  - All .claude/skills/assignr-* directories are renamed to .claude/skills/manciple-*
+    with all SKILL.md content updated.
+  - All .codex/skills/assignr-* directories are renamed to .codex/skills/manciple-*
+    with all SKILL.md content updated.
+  - .opencode/agents/assignr-coordinator.md is renamed to manciple-coordinator.md with
+    content updated.
+  - .opencode/agents/assignr-worker.md is renamed to manciple-worker.md with content
+    updated.
+  - AGENTS.md at repo root references manciple.
+  - .codex/AGENTS.md references manciple.
+  - pnpm typecheck passes.
+  - pnpm build succeeds.
+implementation_notes:
+  - The .manciple/ directory was already renamed from .assignr/ in Task 1. Only update
+    the content of files within it.
+  - The package.json scripts section references old script names (format:yaml,
+    check:assignr-yaml, check:assignr-lifecycle) — rename them to match the new script
+    file names.
+  - The prepublishOnly script in package.json runs check:assignr-yaml, build, and test —
+    update the script reference.
+  - The scripts/formatAssignrYaml.ts file has DEFAULT_TARGETS = [.assignr/tasks,
+    .assignr/specs/tasks] — update those paths to .manciple/.
+  - The scripts/checkAssignrLifecycle.ts file imports getPaths with .assignr — update to
+    .manciple/.
+  - Skill SKILL.md files have frontmatter name/description fields and body content
+    referencing assignr MCP tools (assignr_get_task_packet, assignr_verify, etc.) —
+    these tool names were already renamed in Task 1, so update the skill content to
+    reference manciple_ tool prefixes.
+  - AGENTS.md references assignr-worker, assignr-coordinator agent names — update to
+    manciple-worker, manciple-coordinator.
+  - The .opencode/agents/assignr-coordinator.md file references assignr-worker,
+    assignr_dispatch_plan, assignr_verify — update all.
+  - The .opencode/agents/assignr-worker.md file references assignr_dispatch_plan,
+    assignr_*, assignr-mcp-task-runner — update all.
+  - Do NOT edit docs/, .github/, README.md, CONTRIBUTING.md, bin/, or any .ts files
+    under src/ or tests/.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm build
+    - ls .claude/skills/
+    - ls .codex/skills/
+    - ls .opencode/agents/
+    - ls scripts/manciple-token-audit.mjs
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+  - decisions_made
+notes:
+  - Runs parallel to source-code-string-references-rename and
+    documentation-ci-and-release-references — all depend only on
+    core-identity-and-infrastructure-rename.
+  - Modifies the .claude/skills/manciple-agents/agents/claude.yaml file which defines
+    the manciple-agents skill agent definition.

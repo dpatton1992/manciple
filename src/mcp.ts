@@ -32,7 +32,7 @@ import { formatYamlDocument } from "./utils/yamlFormat.js";
 import { TaskSpecSchema } from "./specs/schema.js";
 import type { LoadedTask, TaskSpec } from "./specs/schema.js";
 
-const mcpServerName = "assignr";
+const mcpServerName = "manciple";
 
 interface McpRepoContext {
   cwd: string;
@@ -45,7 +45,7 @@ const repoInputSchema = {
     .string()
     .optional()
     .describe(
-      "Absolute or relative repository root to scope this Assignr operation. Defaults to the MCP server process cwd for backward compatibility."
+      "Absolute or relative repository root to scope this Manciple operation. Defaults to the MCP server process cwd for backward compatibility."
     ),
 };
 
@@ -214,10 +214,10 @@ const server = new McpServer({
 });
 
 server.registerTool(
-  "assignr_list",
+  "manciple_list",
   {
-    title: "List Assignr Tasks",
-    description: "List Assignr tasks, optionally filtered by status or domain.",
+    title: "List Manciple Tasks",
+    description: "List Manciple tasks, optionally filtered by status or domain.",
     inputSchema: {
       ...repoInputSchema,
       status: z.string().optional(),
@@ -233,10 +233,10 @@ server.registerTool(
 );
 
 server.registerTool(
-  "assignr_validate",
+  "manciple_validate",
   {
-    title: "Validate Assignr Tasks",
-    description: "Run schema and semantic validation for Assignr task specs.",
+    title: "Validate Manciple Tasks",
+    description: "Run schema and semantic validation for Manciple task specs.",
     inputSchema: repoInputSchema,
   },
   ({ repo }) =>
@@ -280,9 +280,9 @@ server.registerTool(
 );
 
 server.registerTool(
-  "assignr_check_lifecycle",
+  "manciple_check_lifecycle",
   {
-    title: "Check Assignr Lifecycle Placement",
+    title: "Check Manciple Lifecycle Placement",
     description: "Validate that task files live in the lifecycle directory matching their status.",
     inputSchema: repoInputSchema,
   },
@@ -301,9 +301,9 @@ server.registerTool(
 );
 
 server.registerTool(
-  "assignr_dispatch_plan",
+  "manciple_dispatch_plan",
   {
-    title: "Build Assignr Dispatch Plan",
+    title: "Build Manciple Dispatch Plan",
     description:
       "Return a deterministic coordinator packet with assignments, deferrals, stop conditions, and verification commands.",
     inputSchema: repoInputSchema,
@@ -316,9 +316,9 @@ server.registerTool(
 );
 
 server.registerTool(
-  "assignr_verify",
+  "manciple_verify",
   {
-    title: "Run Assignr Verify Profile",
+    title: "Run Manciple Verify Profile",
     description: "Run a deterministic verification profile and return a compact pass/fail receipt.",
     inputSchema: {
       ...repoInputSchema,
@@ -333,11 +333,11 @@ server.registerTool(
 );
 
 server.registerTool(
-  "assignr_create",
+  "manciple_create",
   {
-    title: "Create Assignr Task",
+    title: "Create Manciple Task",
     description:
-      "Create a new Assignr task spec in the active tasks directory. Generates the task id from the title using slugify. Returns an error if a task with the same id already exists.",
+      "Create a new Manciple task spec in the active tasks directory. Generates the task id from the title using slugify. Returns an error if a task with the same id already exists.",
     inputSchema: {
       ...repoInputSchema,
       title: z.string().min(1).describe("Human-readable task title. The id is derived from this."),
@@ -420,9 +420,9 @@ server.registerTool(
 );
 
 server.registerTool(
-  "assignr_get_task",
+  "manciple_get_task",
   {
-    title: "Get Assignr Task",
+    title: "Get Manciple Task",
     description: "Read a task YAML file and return the parsed task spec.",
     inputSchema: {
       ...repoInputSchema,
@@ -442,10 +442,10 @@ server.registerTool(
 );
 
 server.registerTool(
-  "assignr_compile",
+  "manciple_compile",
   {
-    title: "Compile Assignr Task",
-    description: "Compile one Assignr task into a generated markdown prompt.",
+    title: "Compile Manciple Task",
+    description: "Compile one Manciple task into a generated markdown prompt.",
     inputSchema: {
       ...repoInputSchema,
       task_id: z.string(),
@@ -473,10 +473,10 @@ server.registerTool(
 );
 
 server.registerTool(
-  "assignr_format_task",
+  "manciple_format_task",
   {
-    title: "Format Assignr Task YAML",
-    description: "Check or format one Assignr task YAML file by task id.",
+    title: "Format Manciple Task YAML",
+    description: "Check or format one Manciple task YAML file by task id.",
     inputSchema: {
       ...repoInputSchema,
       task_id: z.string(),
@@ -507,9 +507,9 @@ server.registerTool(
 );
 
 server.registerTool(
-  "assignr_get_task_packet",
+  "manciple_get_task_packet",
   {
-    title: "Get Assignr Task Packet",
+    title: "Get Manciple Task Packet",
     description: "Return a compact bounded worker packet for one task.",
     inputSchema: {
       ...repoInputSchema,
@@ -536,10 +536,10 @@ server.registerTool(
 );
 
 server.registerTool(
-  "assignr_set_status",
+  "manciple_set_status",
   {
-    title: "Set Assignr Task Status",
-    description: "Update the status field for one Assignr task YAML file.",
+    title: "Set Manciple Task Status",
+    description: "Update the status field for one Manciple task YAML file.",
     inputSchema: {
       ...repoInputSchema,
       task_id: z.string(),
@@ -571,11 +571,11 @@ server.registerTool(
 );
 
 server.registerTool(
-  "assignr_run_log",
+  "manciple_run_log",
   {
-    title: "Create Assignr Run Log",
+    title: "Create Manciple Run Log",
     description:
-      "Create a run log for one Assignr task. Pass agent context fields when available so the log is populated rather than left as TODO stubs.",
+      "Create a run log for one Manciple task. Pass agent context fields when available so the log is populated rather than left as TODO stubs.",
     inputSchema: {
       ...repoInputSchema,
       task_id: z.string(),
@@ -597,7 +597,7 @@ server.registerTool(
       verify_receipt: z
         .string()
         .optional()
-        .describe("Deterministic assignr_verify or assignr verify --profile receipt text."),
+        .describe("Deterministic manciple_verify or manciple verify --profile receipt text."),
       result: z
         .enum(["complete", "partial", "blocked", "failed"])
         .optional()
@@ -659,10 +659,10 @@ server.registerTool(
 );
 
 server.registerTool(
-  "assignr_get_compiled_prompt",
+  "manciple_get_compiled_prompt",
   {
-    title: "Get Compiled Assignr Prompt",
-    description: "Read an existing compiled prompt for one Assignr task.",
+    title: "Get Compiled Manciple Prompt",
+    description: "Read an existing compiled prompt for one Manciple task.",
     inputSchema: {
       ...repoInputSchema,
       task_id: z.string(),

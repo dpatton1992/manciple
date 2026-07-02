@@ -60,9 +60,9 @@ function expectExit(callback: () => void): string {
 }
 
 beforeEach(async () => {
-  cwd = mkdtempSync(join(tmpdir(), "assignr-review-outcome-"));
-  p = getPaths(cwd, ".assignr");
-  await initCommand({ force: false, cwd, root: ".assignr" });
+  cwd = mkdtempSync(join(tmpdir(), "manciple-review-outcome-"));
+  p = getPaths(cwd, ".manciple");
+  await initCommand({ force: false, cwd, root: ".manciple" });
 });
 
 afterEach(() => {

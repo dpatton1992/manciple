@@ -1,16 +1,16 @@
 {
-	"name": "assignr",
+	"name": "manciple",
 	"version": "0.4.5",
 	"description": "A repo-native workflow layer for existing coding agents.",
 	"license": "MIT",
 	"author": "Daniel Patton",
-	"homepage": "https://github.com/dpatton1992/assignr#readme",
+	"homepage": "https://github.com/dpatton1992/manciple#readme",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/dpatton1992/assignr.git"
+		"url": "git+https://github.com/dpatton1992/manciple.git"
 	},
 	"bugs": {
-		"url": "https://github.com/dpatton1992/assignr/issues"
+		"url": "https://github.com/dpatton1992/manciple/issues"
 	},
 	"preferGlobal": true,
 	"type": "module",
@@ -22,13 +22,13 @@
 		"dist/",
 		"docs/",
 		"README.md",
-		"scripts/assignr-token-audit.mjs",
+		"scripts/manciple-token-audit.mjs",
 		".codex/skills/",
 		".claude/skills/",
 		".opencode/agents/"
 	],
 	"keywords": [
-		"assignr",
+		"manciple",
 		"ai",
 		"agents",
 		"coding-agents",
@@ -42,24 +42,24 @@
 		"access": "public"
 	},
 	"bin": {
-		"assignr": "./bin/assignr.js",
-		"assignr-mcp": "./bin/assignr-mcp.js"
+		"manciple": "./bin/manciple.js",
+		"manciple-mcp": "./bin/manciple-mcp.js"
 	},
 	"scripts": {
 		"build": "tsc",
 		"dev": "tsx src/cli.ts",
 		"release": "tsx scripts/release.ts",
-		"format:yaml": "tsx scripts/formatAssignrYaml.ts",
-		"check:assignr-yaml": "tsx scripts/formatAssignrYaml.ts --check",
-		"check:assignr-lifecycle": "tsx scripts/checkAssignrLifecycle.ts",
+		"format:yaml": "tsx scripts/formatMancipleYaml.ts",
+		"check:manciple-yaml": "tsx scripts/formatMancipleYaml.ts --check",
+		"check:manciple-lifecycle": "tsx scripts/checkMancipleLifecycle.ts",
 		"test": "NO_COLOR=1 tsx scripts/runVitest.ts --silent",
 		"test:verbose": "NO_COLOR=1 tsx scripts/runVitest.ts",
 		"test:watch": "vitest",
 		"typecheck": "tsc --noEmit",
-		"prepublishOnly": "pnpm run check:assignr-yaml && pnpm run build && pnpm run test"
+		"prepublishOnly": "pnpm run check:manciple-yaml && pnpm run build && pnpm run test"
 	},
 	"dependencies": {
-		"assignr": "^0.4.1",
+		"manciple": "^0.4.5",
 		"@modelcontextprotocol/sdk": "^1.29.0",
 		"commander": "^12.1.0",
 		"fs-extra": "^11.2.0",

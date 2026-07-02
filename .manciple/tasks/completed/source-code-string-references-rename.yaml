@@ -1,0 +1,113 @@
+id: source-code-string-references-rename
+title: Source code string references rename
+status: complete
+type: refactor
+domain: core
+priority: high
+depends_on:
+  - core-identity-and-infrastructure-rename
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/commands/*.ts
+  - src/specs/*.ts
+  - src/review/*.ts
+  - src/lifecycle/*.ts
+  - src/templates/*.ts
+  - src/coordination/*.ts
+  - src/utils/*.ts
+  - tests/*.ts
+forbidden_paths:
+  - dist/**
+  - node_modules/**
+  - bin/
+  - docs/**
+  - scripts/**
+  - .claude/**
+  - .codex/**
+  - .opencode/**
+  - .github/**
+  - README.md
+  - CONTRIBUTING.md
+  - AGENTS.md
+  - .mcp.json
+  - opencode.json
+  - package.json
+  - src/constants.ts
+  - src/cli.ts
+  - src/mcp.ts
+  - src/config.ts
+  - src/utils/paths.ts
+  - src/utils/styling.ts
+  - src/commands/mcpConfig.ts
+  - src/commands/init.ts
+  - src/commands/doctor.ts
+  - src/commands/tokenEstimate.ts
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: Every remaining TypeScript source file and test file references manciple instead
+  of the old project name in strings, comments, error messages, console output, and type
+  names.
+acceptance_criteria:
+  - No .ts file under src/ contains the string assignr except where it is a deliberate
+    historical reference documented in a comment.
+  - No .ts file under tests/ contains the string assignr except where it is a deliberate
+    historical reference.
+  - All console.error and console.log messages, error messages, comments, and
+    documentation strings in src/commands/*.ts reference manciple instead of assignr.
+  - All src/specs/*.ts files reference manciple in string content.
+  - All src/review/*.ts files reference manciple in string content.
+  - All src/lifecycle/*.ts files reference manciple in string content.
+  - All src/templates/*.ts reference manciple in string content.
+  - All src/utils/*.ts (except paths.ts and styling.ts already done) reference manciple
+    in string content.
+  - All src/coordination/*.ts files reference manciple in string content.
+  - All tests/*.ts files reference manciple in string content (temp dir names, getPaths
+    calls, assertion strings, describe blocks).
+  - pnpm typecheck passes.
+  - pnpm build succeeds.
+  - pnpm test passes with all existing tests still green (after accounting for string
+    changes in assertions).
+implementation_notes:
+  - Do NOT change the .assignr/ references in test files — the directory was renamed to
+    .manciple/ in Task 1. Test files hardcode the paths via getPaths(testRoot,
+    .assignr) which should now say .manciple/.
+  - Do NOT edit bin/, docs/, scripts/, .claude/, .codex/, .opencode/, .github/,
+    .mcp.json, opencode.json, README.md, CONTRIBUTING.md, or AGENTS.md.
+  - Preserve the actual behavior — only string references to the name assignr should
+    change to manciple within source strings and comments.
+  - TypeScript interface names like AssignrConfig and AssignrPaths were already renamed
+    in Task 1 — do not reintroduce the old names.
+  - Temp directory prefixes in test files (e.g., assignr-happy-path-) should be changed
+    to manciple-happy-path- but this is cosmetic.
+  - The getPaths helper in test files takes a root parameter — it was changed from
+    .assignr to .manciple by changing the hardcoded constant. Update all test files
+    accordingly.
+  - Some test assertions check string output that contains assignr (e.g., assignr init,
+    assignr new) — these must be updated to match the new output which will say
+    manciple.
+  - Do NOT change node_modules/ or dist/ content.
+  - Run pnpm test at the end and fix any assertion mismatches caused by the renamed
+    strings.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm build
+    - pnpm test
+    - grep -r 'assignr' src/ --include='*.ts' || echo 'No assignr references in src/'
+    - grep -r 'assignr' tests/ --include='*.ts' || echo 'No assignr references in tests/'
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+  - decisions_made
+notes:
+  - Depends on core-identity-and-infrastructure-rename completing first so that the base
+    identity, DEFAULT_ROOT, and MCP server names have already been changed.
+  - This is a mechanical find-and-replace task across all remaining .ts files.
+  - Existing active task split-mcp-tool-registration-into-focused-modules has
+    allowed_paths that overlap with this task's files — the split-mcp task should be
+    deferred or updated after the rebrand.

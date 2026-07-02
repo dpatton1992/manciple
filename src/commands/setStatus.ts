@@ -73,7 +73,7 @@ export function setStatusCommand(
   if (!found) {
     console.error(
       `Task not found: ${taskId}\n` +
-        `Run "assignr list" to see available tasks.`
+        `Run "manciple list" to see available tasks.`
     );
     process.exit(1);
   }

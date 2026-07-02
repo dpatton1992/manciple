@@ -86,7 +86,7 @@ function compactRunLogSummary(cwd: string, taskId: string): string {
   }
 
   const summary = parts.length > 0 ? parts.join("; ") : "available";
-  return `_Run log ${summary}. Use \`assignr review --include-run-log\` for full context._`;
+  return `_Run log ${summary}. Use \`manciple review --include-run-log\` for full context._`;
 }
 
 function compactGitDiffSummary(cwd: string): string {
@@ -104,7 +104,7 @@ function compactGitDiffSummary(cwd: string): string {
     return "_No changes staged._";
   }
 
-  return `_Git changes available (${lines.length} file(s) modified). Use \`assignr review --include-diff\` for full diff._`;
+  return `_Git changes available (${lines.length} file(s) modified). Use \`manciple review --include-diff\` for full diff._`;
 }
 
 export interface RenderReviewPromptOptions {
@@ -213,7 +213,7 @@ export function createReviewPrompt(
 
   if (!found) {
     console.error(
-      `Task not found: ${taskId}\nRun "assignr status" to see available tasks.`
+      `Task not found: ${taskId}\nRun "manciple status" to see available tasks.`
     );
     process.exit(1);
   }

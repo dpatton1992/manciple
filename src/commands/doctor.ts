@@ -63,7 +63,7 @@ export function doctorCommand(cwd: string, root: string): void {
 
   console.log(headerBanner().trimEnd());
   console.log(`  Project root: ${picocolors.bold(projectRoot)}`);
-  console.log(`  Assignr root: ${picocolors.bold(p.root)}`);
+  console.log(`  Root: ${picocolors.bold(p.root)}`);
   console.log(`  Package version: ${picocolors.bold(version)}`);
   console.log(`  Active tasks: ${picocolors.bold(String(activeTaskCount))}`);
   console.log();
@@ -79,9 +79,9 @@ export function doctorCommand(cwd: string, root: string): void {
 
   console.log();
   if (allOk) {
-    console.log(picocolors.green("All checks passed. Assignr is configured correctly."));
+    console.log(picocolors.green("All checks passed. Manciple is configured correctly."));
   } else {
-    console.log(picocolors.red(`Some checks failed. Run "assignr init" to fix missing structure under ${relativeToCwd(projectRoot, p.root)}/.`));
+    console.log(picocolors.red(`Some checks failed. Run "manciple init" to fix missing structure under ${relativeToCwd(projectRoot, p.root)}/.`));
     process.exit(1);
   }
 }

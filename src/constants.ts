@@ -1,4 +1,4 @@
-export const DEFAULT_ROOT = ".assignr";
+export const DEFAULT_ROOT = ".manciple";
 
 export const STATUSES = [
   "pending",

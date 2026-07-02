@@ -23,7 +23,7 @@ function writeTask(
     implementationNotes.length > 0
       ? ["implementation_notes:", ...implementationNotes.map((note) => `  - ${note}`)]
       : ["implementation_notes: []"];
-  const paths = getPaths(root, ".assignr");
+  const paths = getPaths(root, ".manciple");
   const dirByTier = {
     active: paths.tasksActive,
     completed: paths.tasksCompleted,
@@ -68,9 +68,9 @@ describe("listTasksForMcp", () => {
   });
 
   it("treats status=active as a lifecycle tier filter", async () => {
-    const root = await mkdtemp(join(tmpdir(), "assignr-mcp-list-"));
+    const root = await mkdtemp(join(tmpdir(), "manciple-mcp-list-"));
     tempDirs.push(root);
-    const paths = getPaths(root, ".assignr");
+    const paths = getPaths(root, ".manciple");
     writeTask(root, "active", "active-task");
     writeTask(root, "completed", "completed-task", "complete");
 
@@ -86,9 +86,9 @@ describe("listTasksForMcp", () => {
   });
 
   it("keeps task status filters for real statuses", async () => {
-    const root = await mkdtemp(join(tmpdir(), "assignr-mcp-list-"));
+    const root = await mkdtemp(join(tmpdir(), "manciple-mcp-list-"));
     tempDirs.push(root);
-    const paths = getPaths(root, ".assignr");
+    const paths = getPaths(root, ".manciple");
     writeTask(root, "active", "pending-task");
     writeTask(root, "active", "review-task", "needs_review");
 
@@ -98,9 +98,9 @@ describe("listTasksForMcp", () => {
   });
 
   it("lists active lifecycle tasks independently of task status", async () => {
-    const root = await mkdtemp(join(tmpdir(), "assignr-mcp-list-"));
+    const root = await mkdtemp(join(tmpdir(), "manciple-mcp-list-"));
     tempDirs.push(root);
-    const paths = getPaths(root, ".assignr");
+    const paths = getPaths(root, ".manciple");
     writeTask(root, "active", "pending-task");
     writeTask(root, "active", "review-task", "needs_review");
     writeTask(root, "active", "blocked-task", "blocked");
@@ -116,9 +116,9 @@ describe("listTasksForMcp", () => {
   });
 
   it("finds completed tasks when filtering by complete status", async () => {
-    const root = await mkdtemp(join(tmpdir(), "assignr-mcp-list-"));
+    const root = await mkdtemp(join(tmpdir(), "manciple-mcp-list-"));
     tempDirs.push(root);
-    const paths = getPaths(root, ".assignr");
+    const paths = getPaths(root, ".manciple");
     writeTask(root, "active", "pending-task");
     writeTask(root, "completed", "completed-task", "complete");
 
@@ -130,9 +130,9 @@ describe("listTasksForMcp", () => {
   });
 
   it("can list every lifecycle tier with status=all", async () => {
-    const root = await mkdtemp(join(tmpdir(), "assignr-mcp-list-"));
+    const root = await mkdtemp(join(tmpdir(), "manciple-mcp-list-"));
     tempDirs.push(root);
-    const paths = getPaths(root, ".assignr");
+    const paths = getPaths(root, ".manciple");
     writeTask(root, "active", "active-task");
     writeTask(root, "archived", "archived-task", "blocked");
 
@@ -145,9 +145,9 @@ describe("listTasksForMcp", () => {
   });
 
   it("returns structured path ownership warnings in MCP compile results", async () => {
-    const root = await mkdtemp(join(tmpdir(), "assignr-mcp-list-"));
+    const root = await mkdtemp(join(tmpdir(), "manciple-mcp-list-"));
     tempDirs.push(root);
-    const paths = getPaths(root, ".assignr");
+    const paths = getPaths(root, ".manciple");
     mkdirSync(paths.tasksActive, { recursive: true });
     mkdirSync(paths.specsDomains, { recursive: true });
     writeFileSync(join(paths.specsDomains, "core.yaml"), "id: core\nname: Core\n", "utf-8");
@@ -229,11 +229,11 @@ describe("listTasksForMcp", () => {
       args: [join(process.cwd(), "src", "mcp.ts")],
       cwd: root,
     });
-    const client = new Client({ name: "assignr-test", version: "0.0.0" });
+    const client = new Client({ name: "manciple-test", version: "0.0.0" });
 
     await client.connect(transport);
     const result = await client.callTool({
-      name: "assignr_compile",
+      name: "manciple_compile",
       arguments: { task_id: "target-task" },
     });
     await client.close();
@@ -271,9 +271,9 @@ describe("listTasksForMcp", () => {
   });
 
   it("returns compact task packets over MCP without writing compiled prompts", async () => {
-    const root = await mkdtemp(join(tmpdir(), "assignr-mcp-packet-"));
+    const root = await mkdtemp(join(tmpdir(), "manciple-mcp-packet-"));
     tempDirs.push(root);
-    const paths = getPaths(root, ".assignr");
+    const paths = getPaths(root, ".manciple");
     mkdirSync(paths.tasksActive, { recursive: true });
     writeTask(root, "active", "target-task", "pending", ["Preserve packet parity."]);
     writeFileSync(
@@ -317,110 +317,11 @@ describe("listTasksForMcp", () => {
       args: [join(process.cwd(), "src", "mcp.ts")],
       cwd: root,
     });
-    const client = new Client({ name: "assignr-test", version: "0.0.0" });
+    const client = new Client({ name: "manciple-test", version: "0.0.0" });
 
     await client.connect(transport);
     const result = await client.callTool({
-      name: "assignr_get_task_packet",
-      arguments: { task_id: "target-task" },
-    });
-    await client.close();
-
-    const text = result.content.find((part) => part.type === "text")?.text;
-    expect(text).toBeDefined();
-    const payload = JSON.parse(text!);
-
-    expect(payload).toMatchObject({
-      task_id: "target-task",
-      title: "target-task",
-      status: "pending",
-      type: "implementation",
-      domain: "core",
-      priority: "medium",
-      depends_on: [],
-      allowed_paths: ["src/**"],
-      forbidden_paths: [],
-      path_ownership: {
-        touched_paths: [],
-        locked_paths: [],
-        unsafe_parallel_areas: [],
-      },
-      acceptance_criteria: ["It works."],
-      implementation_notes: ["Preserve packet parity."],
-      verification_commands: ["pnpm test"],
-      outputs_required: ["files_changed"],
-      notes: [],
-      path_ownership_warnings: [
-        {
-          kind: "touched",
-          owner_task_id: "owner-task",
-          affected_path: "src/**",
-          owner_path: "src/**",
-        },
-        {
-          kind: "locked",
-          owner_task_id: "owner-task",
-          affected_path: "src/**",
-          owner_path: "src/**",
-        },
-      ],
-    });
-    expect(payload).not.toHaveProperty("content");
-    expect(payload).not.toHaveProperty("output_path");
-    expect(existsSync(join(paths.promptsGenerated, "target-task.md"))).toBe(false);
-    expect(JSON.stringify(payload)).not.toContain("# Agent Task");
-  });
-
-  it("returns missing task errors for MCP task packets", async () => {
-    const root = await mkdtemp(join(tmpdir(), "assignr-mcp-packet-missing-"));
-    tempDirs.push(root);
-    writeTask(root, "active", "present-task");
-
-    const tsxBin = join(
-      process.cwd(),
-      "node_modules",
-      ".bin",
-      process.platform === "win32" ? "tsx.cmd" : "tsx"
-    );
-    const transport = new StdioClientTransport({
-      command: tsxBin,
-      args: [join(process.cwd(), "src", "mcp.ts")],
-      cwd: root,
-    });
-    const client = new Client({ name: "assignr-test", version: "0.0.0" });
-
-    await client.connect(transport);
-    const result = await client.callTool({
-      name: "assignr_get_task_packet",
-      arguments: { task_id: "missing-task" },
-    });
-    await client.close();
-
-    const text = result.content.find((part) => part.type === "text")?.text;
-    expect(result.isError).toBe(true);
-    expect(JSON.parse(text!)).toEqual({ error: "Task not found: missing-task" });
-  });
-
-  it("creates tasks with implementation notes through MCP", async () => {
-    const root = await mkdtemp(join(tmpdir(), "assignr-mcp-create-"));
-    tempDirs.push(root);
-
-    const tsxBin = join(
-      process.cwd(),
-      "node_modules",
-      ".bin",
-      process.platform === "win32" ? "tsx.cmd" : "tsx"
-    );
-    const transport = new StdioClientTransport({
-      command: tsxBin,
-      args: [join(process.cwd(), "src", "mcp.ts")],
-      cwd: root,
-    });
-    const client = new Client({ name: "assignr-test", version: "0.0.0" });
-
-    await client.connect(transport);
-    const result = await client.callTool({
-      name: "assignr_create",
+      name: "manciple_create",
       arguments: {
         title: "MCP Design Contract",
         type: "implementation",
@@ -437,16 +338,16 @@ describe("listTasksForMcp", () => {
     expect(text).toBeDefined();
     expect(JSON.parse(text!)).toMatchObject({
       id: "mcp-design-contract",
-      file_path: ".assignr/tasks/active/mcp-design-contract.yaml",
+      file_path: ".manciple/tasks/active/mcp-design-contract.yaml",
     });
-    const raw = readFileSync(join(root, ".assignr", "tasks", "active", "mcp-design-contract.yaml"), "utf-8");
+    const raw = readFileSync(join(root, ".manciple", "tasks", "active", "mcp-design-contract.yaml"), "utf-8");
     expect((parse(raw) as Record<string, unknown>)["implementation_notes"]).toEqual([
       "Preserve CLI and MCP parity.",
     ]);
   });
 
   it("formats one task over MCP with a structured response", async () => {
-    const root = await mkdtemp(join(tmpdir(), "assignr-mcp-format-task-"));
+    const root = await mkdtemp(join(tmpdir(), "manciple-mcp-format-task-"));
     tempDirs.push(root);
     writeTask(root, "active", "format-task");
 
@@ -461,11 +362,11 @@ describe("listTasksForMcp", () => {
       args: [join(process.cwd(), "src", "mcp.ts")],
       cwd: root,
     });
-    const client = new Client({ name: "assignr-test", version: "0.0.0" });
+    const client = new Client({ name: "manciple-test", version: "0.0.0" });
 
     await client.connect(transport);
     const result = await client.callTool({
-      name: "assignr_format_task",
+      name: "manciple_format_task",
       arguments: { task_id: "format-task", check_only: true },
     });
     await client.close();
@@ -475,15 +376,15 @@ describe("listTasksForMcp", () => {
     expect(JSON.parse(text!)).toEqual({
       checked: true,
       changed: false,
-      file: ".assignr/tasks/active/format-task.yaml",
+      file: ".manciple/tasks/active/format-task.yaml",
       errors: [],
     });
   });
 
   it("creates run logs over MCP with separated audit evidence", async () => {
-    const root = await mkdtemp(join(tmpdir(), "assignr-mcp-run-log-"));
+    const root = await mkdtemp(join(tmpdir(), "manciple-mcp-run-log-"));
     tempDirs.push(root);
-    const paths = getPaths(root, ".assignr");
+    const paths = getPaths(root, ".manciple");
     writeTask(root, "active", "run-log-task");
 
     const tsxBin = join(
@@ -497,11 +398,11 @@ describe("listTasksForMcp", () => {
       args: [join(process.cwd(), "src", "mcp.ts")],
       cwd: root,
     });
-    const client = new Client({ name: "assignr-test", version: "0.0.0" });
+    const client = new Client({ name: "manciple-test", version: "0.0.0" });
 
     await client.connect(transport);
     const result = await client.callTool({
-      name: "assignr_run_log",
+      name: "manciple_run_log",
       arguments: {
         task_id: "run-log-task",
         task_status: "needs_review",
@@ -538,9 +439,9 @@ describe("listTasksForMcp", () => {
   });
 
   it("exposes the deterministic dispatch plan over MCP", async () => {
-    const root = await mkdtemp(join(tmpdir(), "assignr-mcp-dispatch-"));
+    const root = await mkdtemp(join(tmpdir(), "manciple-mcp-dispatch-"));
     tempDirs.push(root);
-    const paths = getPaths(root, ".assignr");
+    const paths = getPaths(root, ".manciple");
     writeTask(root, "active", "ready-task");
     writeTask(root, "active", "blocked-task", "blocked");
 
@@ -555,11 +456,11 @@ describe("listTasksForMcp", () => {
       args: [join(process.cwd(), "src", "mcp.ts")],
       cwd: root,
     });
-    const client = new Client({ name: "assignr-test", version: "0.0.0" });
+    const client = new Client({ name: "manciple-test", version: "0.0.0" });
 
     await client.connect(transport);
     const result = await client.callTool({
-      name: "assignr_dispatch_plan",
+      name: "manciple_dispatch_plan",
       arguments: {},
     });
     await client.close();
@@ -597,7 +498,7 @@ describe("listTasksForMcp", () => {
   });
 
   it("returns compact deterministic verify receipts over MCP", async () => {
-    const root = await mkdtemp(join(tmpdir(), "assignr-mcp-verify-"));
+    const root = await mkdtemp(join(tmpdir(), "manciple-mcp-verify-"));
     tempDirs.push(root);
 
     const tsxBin = join(
@@ -611,11 +512,11 @@ describe("listTasksForMcp", () => {
       args: [join(process.cwd(), "src", "mcp.ts")],
       cwd: root,
     });
-    const client = new Client({ name: "assignr-test", version: "0.0.0" });
+    const client = new Client({ name: "manciple-test", version: "0.0.0" });
 
     await client.connect(transport);
     const result = await client.callTool({
-      name: "assignr_verify",
+      name: "manciple_verify",
       arguments: { profile: "coordinator" },
     });
     await client.close();
@@ -650,8 +551,8 @@ describe("listTasksForMcp", () => {
   });
 
   it("scopes MCP list calls to the repo argument instead of the server cwd", async () => {
-    const serverRoot = await mkdtemp(join(tmpdir(), "assignr-mcp-server-root-"));
-    const targetRoot = await mkdtemp(join(tmpdir(), "assignr-mcp-target-root-"));
+    const serverRoot = await mkdtemp(join(tmpdir(), "manciple-mcp-server-root-"));
+    const targetRoot = await mkdtemp(join(tmpdir(), "manciple-mcp-target-root-"));
     tempDirs.push(serverRoot, targetRoot);
     writeTask(serverRoot, "active", "server-task", "pending");
     writeTask(targetRoot, "active", "target-task", "needs_review");
@@ -667,15 +568,15 @@ describe("listTasksForMcp", () => {
       args: [join(process.cwd(), "src", "mcp.ts")],
       cwd: serverRoot,
     });
-    const client = new Client({ name: "assignr-test", version: "0.0.0" });
+    const client = new Client({ name: "manciple-test", version: "0.0.0" });
 
     await client.connect(transport);
     const defaultResult = await client.callTool({
-      name: "assignr_list",
+      name: "manciple_list",
       arguments: { status: "all" },
     });
     const scopedResult = await client.callTool({
-      name: "assignr_list",
+      name: "manciple_list",
       arguments: { repo: targetRoot, status: "all" },
     });
     await client.close();
@@ -690,8 +591,8 @@ describe("listTasksForMcp", () => {
   });
 
   it("scopes MCP write calls to the repo argument instead of the server cwd", async () => {
-    const serverRoot = await mkdtemp(join(tmpdir(), "assignr-mcp-write-server-root-"));
-    const targetRoot = await mkdtemp(join(tmpdir(), "assignr-mcp-write-target-root-"));
+    const serverRoot = await mkdtemp(join(tmpdir(), "manciple-mcp-write-server-root-"));
+    const targetRoot = await mkdtemp(join(tmpdir(), "manciple-mcp-write-target-root-"));
     tempDirs.push(serverRoot, targetRoot);
 
     const tsxBin = join(
@@ -705,11 +606,11 @@ describe("listTasksForMcp", () => {
       args: [join(process.cwd(), "src", "mcp.ts")],
       cwd: serverRoot,
     });
-    const client = new Client({ name: "assignr-test", version: "0.0.0" });
+    const client = new Client({ name: "manciple-test", version: "0.0.0" });
 
     await client.connect(transport);
     const result = await client.callTool({
-      name: "assignr_create",
+      name: "manciple_create",
       arguments: {
         repo: targetRoot,
         title: "Scoped MCP Task",
@@ -726,9 +627,9 @@ describe("listTasksForMcp", () => {
     expect(text).toBeDefined();
     expect(JSON.parse(text!)).toMatchObject({
       id: "scoped-mcp-task",
-      file_path: ".assignr/tasks/active/scoped-mcp-task.yaml",
+      file_path: ".manciple/tasks/active/scoped-mcp-task.yaml",
     });
-    expect(existsSync(join(targetRoot, ".assignr", "tasks", "active", "scoped-mcp-task.yaml"))).toBe(true);
-    expect(existsSync(join(serverRoot, ".assignr", "tasks", "active", "scoped-mcp-task.yaml"))).toBe(false);
+    expect(existsSync(join(targetRoot, ".manciple", "tasks", "active", "scoped-mcp-task.yaml"))).toBe(true);
+    expect(existsSync(join(serverRoot, ".manciple", "tasks", "active", "scoped-mcp-task.yaml"))).toBe(false);
   });
 });

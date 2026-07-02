@@ -15,7 +15,7 @@ function writeTask(
   status = "pending",
   overrides?: Partial<{ domain: string; type: string; priority: string }>,
 ): void {
-  const paths = getPaths(root, ".assignr");
+  const paths = getPaths(root, ".manciple");
   const dirByTier = {
     active: paths.tasksActive,
     completed: paths.tasksCompleted,
@@ -55,9 +55,9 @@ function writeTask(
 }
 
 function makeRepo(): { root: string; paths: ReturnType<typeof getPaths> } {
-  const root = mkdtempSync(join(tmpdir(), "assignr-list-"));
+  const root = mkdtempSync(join(tmpdir(), "manciple-list-"));
   tempDirs.push(root);
-  return { root, paths: getPaths(root, ".assignr") };
+  return { root, paths: getPaths(root, ".manciple") };
 }
 
 describe("listCommand", () => {

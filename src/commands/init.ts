@@ -19,8 +19,8 @@ import {
 import { setupMcpConfig } from './mcpConfig.js';
 import { installAssetsCommand } from './installAssets.js';
 
-const CONFIG_YAML = `# Assignr configuration
-root: .assignr
+const CONFIG_YAML = `# Manciple configuration
+root: .manciple
 `;
 
 const STATE_JSON = JSON.stringify({ version: 1, tasks: [] }, null, 2);
@@ -33,24 +33,24 @@ constraints: []
 context: []
 `;
 
-const COMMANDS_README = `# Assignr Commands
+const COMMANDS_README = `# Manciple Commands
 
 This directory holds command reference files and local workflow notes.
 
 ## Usage
 
-Run \`assignr --help\` to see all available commands.
+Run \`manciple --help\` to see all available commands.
 
 ## Workflow
 
 \`\`\`bash
-assignr new "My task title" --type implementation --domain core --priority high
-assignr validate
-assignr handoff my-task-title
+manciple new "My task title" --type implementation --domain core --priority high
+manciple validate
+manciple handoff my-task-title
 # Run the generated prompt in your preferred coding agent
-assignr run-log my-task-title
-assignr set-status my-task-title needs_review
-assignr review my-task-title
+manciple run-log my-task-title
+manciple set-status my-task-title needs_review
+manciple review my-task-title
 \`\`\`
 `;
 
@@ -63,7 +63,7 @@ const ASSET_LABELS: Record<string, string> = {
 function updateGitignore(cwd: string, root: string, quiet: boolean = false): void {
 	const gitignorePath = join(cwd, '.gitignore');
 	const entriesToAdd = [`${root}/prompts/generated/`, `${root}/runs/`];
-	const header = '# assignr';
+	const header = '# manciple';
 
 	let existing = '';
 	if (existsSync(gitignorePath)) {
@@ -79,7 +79,7 @@ function updateGitignore(cwd: string, root: string, quiet: boolean = false): voi
 	if (!quiet) {
 		const action = existing === '' ? 'Created' : 'Updated';
 		console.log(
-			`  ${picocolors.green('✓')} ${picocolors.dim('.gitignore')} ${action.toLowerCase()} (added ${missing.length} assignr entr${missing.length === 1 ? 'y' : 'ies'})`,
+			`  ${picocolors.green('✓')} ${picocolors.dim('.gitignore')} ${action.toLowerCase()} (added ${missing.length} manciple entr${missing.length === 1 ? 'y' : 'ies'})`,
 		);
 	}
 }
@@ -225,17 +225,17 @@ export async function initCommand(options: {
 
 	console.log(`\n  ${sectionHeader('Workflow')}`);
 	console.log(`  ${picocolors.bold('1.')} Plan work:`);
-	console.log(`     ${picocolors.cyan('$ assignr task new "My task" --type implementation')}`);
+	console.log(`     ${picocolors.cyan('$ manciple task new "My task" --type implementation')}`);
 	console.log(`  ${picocolors.bold('2.')} Execute work:`);
-	console.log(`     ${picocolors.cyan('$ assignr handoff my-task')}`);
+	console.log(`     ${picocolors.cyan('$ manciple handoff my-task')}`);
 	console.log(`  ${picocolors.bold('3.')} Review results:`);
-	console.log(`     ${picocolors.cyan('$ assignr review')}`);
+	console.log(`     ${picocolors.cyan('$ manciple review')}`);
 	console.log('');
 	console.log(`  ${picocolors.dim('Using Claude Code, Codex, or OpenCode?')}`);
-	console.log(`     ${picocolors.cyan('$ assignr-task-planner')}`);
-	console.log(`     ${picocolors.cyan('$ assignr-agents')}`);
+	console.log(`     ${picocolors.cyan('$ manciple-task-planner')}`);
+	console.log(`     ${picocolors.cyan('$ manciple-agents')}`);
 	console.log('');
-	console.log(`  ${picocolors.dim('Need help? Run')} ${picocolors.cyan('assignr --help')}`);
+	console.log(`  ${picocolors.dim('Need help? Run')} ${picocolors.cyan('manciple --help')}`);
 
 	// ── 4. Detailed sections (verbose only) ─────────────────────────────
 

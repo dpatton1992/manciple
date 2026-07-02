@@ -200,7 +200,7 @@ describe("evaluateReviewReadiness", () => {
           evidence: "Covered by tests.",
         }],
         tokenEstimate: [
-          "Scope: estimates Assignr artifact/context bloat only.",
+          "Scope: estimates Manciple artifact/context bloat only.",
           "Budget warning: over budget (15804/4000 estimated tokens). Warning only; no workflow failed.",
         ].join("\n"),
       }],

@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Report a bug to help us improve Assignr
+about: Report a bug to help us improve Manciple
 title: '[Bug] '
 labels: bug
 assignees: ''
@@ -30,7 +30,7 @@ What actually happened, including any error output, stack traces, or unexpected 
 
 - **OS**: [e.g. macOS 14.0, Ubuntu 22.04]
 - **Node version**: [e.g. 18.15.0, 20.10.0]
-- **Assignr version**: [e.g. 0.1.0, or the commit SHA if installed from source]
+- **Manciple version**: [e.g. 0.1.0, or the commit SHA if installed from source]
 
 ## Additional Context
 

@@ -1,10 +1,10 @@
-# Contributing to Assignr
+# Contributing to Manciple
 
-Thank you for your interest in contributing to Assignr! This document outlines the development setup, code style, pull request process, and how to report issues.
+Thank you for your interest in contributing to Manciple! This document outlines the development setup, code style, pull request process, and how to report issues.
 
 ## Development Setup
 
-Assignr is an ESM TypeScript project using pnpm as its package manager.
+Manciple is an ESM TypeScript project using pnpm as its package manager.
 
 ```bash
 # Install dependencies
@@ -36,29 +36,29 @@ pnpm format:yaml
 - **Commands**: CLI commands print to stdout; errors go to stderr with `process.exit(1)`.
 - **Dependencies**: Minimal external runtime — only four declared production dependencies.
 
-### Assignr Workflow Conventions
+### Manciple Workflow Conventions
 
-This project uses Assignr for structured task management. Key conventions from [AGENTS.md](AGENTS.md):
+This project uses Manciple for structured task management. Key conventions from [AGENTS.md](AGENTS.md):
 
-- **Task specs** live in `.assignr/specs/tasks/` and must not be edited directly — use `assignr_set_status` (or `assignr set-status`) for status changes.
-- **Run logs** are written to `.assignr/runs/` via `assignr_run_log` (or `assignr run-log`).
-- **Verification** uses `assignr_verify --profile worker|coordinator|review` (or `assignr verify --profile ...`).
+- **Task specs** live in `.manciple/specs/tasks/` and must not be edited directly — use `manciple_set_status` (or `manciple set-status`) for status changes.
+- **Run logs** are written to `.manciple/runs/` via `manciple_run_log` (or `manciple run-log`).
+- **Verification** uses `manciple_verify --profile worker|coordinator|review` (or `manciple verify --profile ...`).
 - **MCP tools** are preferred over raw CLI calls when both are available.
 
-See the [core domain spec](.assignr/specs/domains/core.yaml) for detailed project conventions.
+See the [core domain spec](.manciple/specs/domains/core.yaml) for detailed project conventions.
 
 ## Pull Request Process
 
-1. **Create a task**: Use `assignr new` to create a task spec for your change, or pick up an existing task from the queue with `assignr handoff`.
+1. **Create a task**: Use `manciple new` to create a task spec for your change, or pick up an existing task from the queue with `manciple handoff`.
 2. **Implement**: Make your changes, staying within the task's `allowed_paths` and respecting `forbidden_paths`.
 3. **Verify**: Run the task's verification commands and confirm they pass:
    ```bash
-   assignr verify --profile worker
+   manciple verify --profile worker
    ```
-4. **Record evidence**: Create a run log with `assignr run-log` documenting files changed, tests run, and any risks.
+4. **Record evidence**: Create a run log with `manciple run-log` documenting files changed, tests run, and any risks.
 5. **Mark for review**: Set the task status to `needs_review`:
    ```bash
-   assignr set-status <task-id> needs_review
+   manciple set-status <task-id> needs_review
    ```
 6. **Review workflow**: A reviewer will pick up the task from the review queue. Follow the [review process](docs/review-queue.md) for triage and deep-review stages.
 
@@ -73,7 +73,7 @@ Please include as much detail as possible to help us reproduce and address the i
 
 ## Task Lifecycle
 
-Assignr tasks follow a defined lifecycle:
+Manciple tasks follow a defined lifecycle:
 
 1. **Pending** — task is created but not started
 2. **In Progress** — work is actively being done
@@ -81,7 +81,7 @@ Assignr tasks follow a defined lifecycle:
 4. **Complete** — reviewed and accepted
 5. **Blocked / Failed / Partial** — exceptions handled as needed
 
-Tasks move between lifecycle directories (`.assignr/tasks/active/`, `.assignr/tasks/completed/`, `.assignr/tasks/archived/`) based on their status. See the [Task Lifecycle docs](docs/task-lifecycle.md) for details.
+Tasks move between lifecycle directories (`.manciple/tasks/active/`, `.manciple/tasks/completed/`, `.manciple/tasks/archived/`) based on their status. See the [Task Lifecycle docs](docs/task-lifecycle.md) for details.
 
 ## Questions?
 

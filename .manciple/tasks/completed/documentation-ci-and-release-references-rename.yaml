@@ -1,0 +1,102 @@
+id: documentation-ci-and-release-references-rename
+title: Documentation, CI, and release references rename
+status: complete
+type: refactor
+domain: core
+priority: medium
+depends_on:
+  - core-identity-and-infrastructure-rename
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - docs/*.md
+  - README.md
+  - CONTRIBUTING.md
+  - .github/workflows/*.yml
+  - .github/ISSUE_TEMPLATE/*.md
+  - scripts/release.ts
+forbidden_paths:
+  - dist/**
+  - node_modules/**
+  - src/
+  - tests/
+  - bin/
+  - scripts/*.ts
+  - scripts/*.mjs
+  - scripts/!(release.ts)
+  - package.json
+  - .claude/**
+  - .codex/**
+  - .opencode/**
+  - AGENTS.md
+  - docs/images/**
+  - pnpm-lock.yaml
+  - .mcp.json
+  - opencode.json
+  - .manciple/**
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: All documentation files, CI workflow files, issue templates, and the release
+  script reference manciple instead of assignr.
+acceptance_criteria:
+  - docs/getting-started.md references manciple instead of assignr throughout.
+  - docs/agent-skills.md references manciple instead of assignr throughout.
+  - docs/opencode-agents.md references manciple instead of assignr throughout.
+  - docs/parallel-workflows.md references manciple instead of assignr throughout.
+  - docs/mcp-server.md references manciple instead of assignr throughout.
+  - docs/review-queue.md references manciple instead of assignr throughout.
+  - docs/evidence-and-review.md references manciple instead of assignr throughout.
+  - docs/task-lifecycle.md references manciple instead of assignr throughout.
+  - README.md references manciple instead of assignr throughout.
+  - CONTRIBUTING.md references manciple instead of assignr throughout.
+  - .github/workflows/unit-tests.yml does not reference assignr.
+  - .github/workflows/pack-install-smoke.yml does not reference assignr (uses manciple
+    init, manciple new, etc.).
+  - .github/ISSUE_TEMPLATE/bug-report.md references manciple instead of assignr.
+  - .github/ISSUE_TEMPLATE/feature-request.md references manciple instead of assignr.
+  - scripts/release.ts GitHub URL references manciple instead of assignr.
+  - pnpm typecheck passes.
+implementation_notes:
+  - The pack-install-smoke.yml workflow has smoke test commands (assignr init, assignr
+    new, assignr validate, assignr status, assignr compile) — update them to use the
+    manciple CLI command.
+  - The unit-tests.yml workflow does not directly reference assignr by name — it only
+    runs pnpm test.
+  - The release.ts script has a GitHub URL (github.com/dpatton1992/assignr) — update to
+    manciple.
+  - README.md has extensive assignr references including code blocks, command examples,
+    feature descriptions, and the package section — update all.
+  - CONTRIBUTING.md references assignr throughout including code blocks and workflow
+    descriptions — update all.
+  - The docs/ files reference assignr CLI commands (assignr init, assignr new, etc.) and
+    Assignr as a product name — update to manciple.
+  - Do NOT edit src/, tests/, bin/, scripts/ (beyond release.ts), .claude/, .codex/,
+    .opencode/, .mcp.json, opencode.json, AGENTS.md, .codex/AGENTS.md, package.json, or
+    any .manciple/ files.
+  - Do NOT edit image files under docs/images/.
+  - Do NOT edit pnpm-lock.yaml, node_modules/, or dist/.
+verification:
+  commands:
+    - pnpm typecheck
+    - grep -r 'assignr' docs/ --include='*.md' || echo 'No assignr in docs/'
+    - grep 'assignr' README.md || echo 'No assignr in README'
+    - grep 'assignr' CONTRIBUTING.md || echo 'No assignr in CONTRIBUTING'
+    - grep -r 'assignr' .github/ --include='*.yml' --include='*.md' || echo 'No assignr
+      in .github/'
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+  - decisions_made
+notes:
+  - Runs parallel to source-code-string-references-rename and
+    config-directory-scripts-skills-and-agents-rename — all depend only on
+    core-identity-and-infrastructure-rename.
+  - The docs/opencode-agents.md file references agent and skill names that are being
+    renamed in config-directory-scripts-skills-and-agents-rename. Coordinate to ensure
+    both tasks use consistent naming.
+  - The docs/agent-skills.md file references skill names that are being renamed in
+    config-directory-scripts-skills-and-agents-rename.

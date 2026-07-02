@@ -3,47 +3,47 @@
 Skill files for Claude Code and Codex live in `.claude/skills/` and
 `.codex/skills/`.
 
-The npm package ships both directories. Run `assignr init` from your repo root
+The npm package ships both directories. Run `manciple init` from your repo root
 to copy them from the installed package automatically (along with MCP config,
 `.gitignore` entries, and the OpenCode agents):
 
 ```bash
-assignr init
+manciple init
 ```
 
-Or run `assignr install-assets` separately if you only want to update the skill
+Or run `manciple install-assets` separately if you only want to update the skill
 files without re-running full init:
 
 ```bash
-assignr install-assets
+manciple install-assets
 ```
 
 Both copy `.claude/skills/` and `.codex/skills/` from
-`node_modules/@dpatt/assignr/` into your repo root, plus the OpenCode agents
+`node_modules/@dpatt/manciple/` into your repo root, plus the OpenCode agents
 (see [OpenCode Agents](opencode-agents.md)).
 
 ## Available Skills
 
-- `assignr-mcp-task-runner`: pick up, execute, verify, log, and close one task
+- `manciple-mcp-task-runner`: pick up, execute, verify, log, and close one task
   through MCP.
-- `assignr-agents`: coordinate multiple Assignr task workers in parallel.
+- `manciple-agents`: coordinate multiple Manciple task workers in parallel.
 
 The skills delegate routine scheduling and verification decisions to
-deterministic Assignr surfaces:
+deterministic Manciple surfaces:
 
-- Coordinators call `assignr_dispatch_plan` or `assignr dispatch-plan` before
+- Coordinators call `manciple_dispatch_plan` or `manciple dispatch-plan` before
   spawning workers, then spawn only the returned assignments.
-- Workers start from `assignr_get_task_packet` or `assignr task-packet
+- Workers start from `manciple_get_task_packet` or `manciple task-packet
   <task-id>`, using full prompt compilation only when domain context is needed.
-- Workers and coordinators report receipts from `assignr_verify` or
-  `assignr verify --profile worker|coordinator|review`.
-- Scoped YAML checks use `assignr_format_task` or `assignr format-task
+- Workers and coordinators report receipts from `manciple_verify` or
+  `manciple verify --profile worker|coordinator|review`.
+- Scoped YAML checks use `manciple_format_task` or `manciple format-task
   <task-id> --check`; the skills do not run routine whole-repo formatting loops.
 
 Use the MCP setup in [MCP Server](mcp-server.md) when the agent should call
-Assignr tools directly. Use [Getting Started](getting-started.md) for the
+Manciple tools directly. Use [Getting Started](getting-started.md) for the
 underlying CLI flow those skills automate.
 
-For OpenCode agent documentation — the `assignr-worker` and
-`assignr-coordinator` agents, their configuration files, MCP setup, and
+For OpenCode agent documentation — the `manciple-worker` and
+`manciple-coordinator` agents, their configuration files, MCP setup, and
 project-level rules — see [OpenCode Agents](opencode-agents.md).

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Manciple Agents"
+  short_description: "Coordinate Manciple MCP task-runner workers by efficient task assignment."
+  default_prompt: "Use Manciple Agents to split active Manciple task work into efficiency-selected worker batches, using CPU capacity only as a ceiling and each worker using manciple-mcp-task-runner."

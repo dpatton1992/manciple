@@ -14,7 +14,7 @@ import type { TaskTier } from "../src/specs/loadTasks.js";
 const tempDirs: string[] = [];
 
 function writeTask(root: string, tier: TaskTier, id: string, status = "pending"): string {
-  const paths = getPaths(root, ".assignr");
+  const paths = getPaths(root, ".manciple");
   const dirs = {
     active: paths.tasksActive,
     completed: paths.tasksCompleted,
@@ -55,9 +55,9 @@ describe("formatTaskById", () => {
   });
 
   it("formats one active task YAML file by task id", async () => {
-    const root = await mkdtemp(join(tmpdir(), "assignr-format-task-"));
+    const root = await mkdtemp(join(tmpdir(), "manciple-format-task-"));
     tempDirs.push(root);
-    const paths = getPaths(root, ".assignr");
+    const paths = getPaths(root, ".manciple");
     const filePath = writeTask(root, "active", "active-task");
 
     const result = formatTaskById("active-task", {
@@ -69,16 +69,16 @@ describe("formatTaskById", () => {
     expect(result).toEqual({
       checked: true,
       changed: true,
-      file: ".assignr/tasks/active/active-task.yaml",
+      file: ".manciple/tasks/active/active-task.yaml",
       errors: [],
     });
     expect(raw).toBe(formatYamlDocument(parse(raw)));
   });
 
   it("reports check-only failures without writing changes", async () => {
-    const root = await mkdtemp(join(tmpdir(), "assignr-format-task-check-"));
+    const root = await mkdtemp(join(tmpdir(), "manciple-format-task-check-"));
     tempDirs.push(root);
-    const paths = getPaths(root, ".assignr");
+    const paths = getPaths(root, ".manciple");
     const filePath = writeTask(root, "active", "check-task");
     const original = readFileSync(filePath, "utf-8");
 
@@ -93,9 +93,9 @@ describe("formatTaskById", () => {
   });
 
   it("finds completed and archived tasks across lifecycle tiers", async () => {
-    const root = await mkdtemp(join(tmpdir(), "assignr-format-task-tiers-"));
+    const root = await mkdtemp(join(tmpdir(), "manciple-format-task-tiers-"));
     tempDirs.push(root);
-    const paths = getPaths(root, ".assignr");
+    const paths = getPaths(root, ".manciple");
     const completedPath = writeTask(root, "completed", "completed-task", "complete");
     const archivedPath = writeTask(root, "archived", "archived-task", "archived");
 
@@ -104,21 +104,21 @@ describe("formatTaskById", () => {
         specsTasksDir: paths.specsTasks,
         cwd: root,
       })
-    ).toMatchObject({ changed: true, file: ".assignr/tasks/completed/completed-task.yaml" });
+    ).toMatchObject({ changed: true, file: ".manciple/tasks/completed/completed-task.yaml" });
     expect(
       formatTaskById("archived-task", {
         specsTasksDir: paths.specsTasks,
         cwd: root,
       })
-    ).toMatchObject({ changed: true, file: ".assignr/tasks/archived/archived-task.yaml" });
+    ).toMatchObject({ changed: true, file: ".manciple/tasks/archived/archived-task.yaml" });
     expect(readFileSync(completedPath, "utf-8")).toBe(formatYamlDocument(parse(readFileSync(completedPath, "utf-8"))));
     expect(readFileSync(archivedPath, "utf-8")).toBe(formatYamlDocument(parse(readFileSync(archivedPath, "utf-8"))));
   });
 
   it("returns a missing task error", async () => {
-    const root = await mkdtemp(join(tmpdir(), "assignr-format-task-missing-"));
+    const root = await mkdtemp(join(tmpdir(), "manciple-format-task-missing-"));
     tempDirs.push(root);
-    const paths = getPaths(root, ".assignr");
+    const paths = getPaths(root, ".manciple");
     writeTask(root, "active", "present-task");
 
     expect(() =>
@@ -130,7 +130,7 @@ describe("formatTaskById", () => {
   });
 
   it("CLI check targets only the requested task", async () => {
-    const root = await mkdtemp(join(tmpdir(), "assignr-format-task-cli-"));
+    const root = await mkdtemp(join(tmpdir(), "manciple-format-task-cli-"));
     tempDirs.push(root);
     writeTask(root, "active", "dirty-task");
     const cleanPath = writeTask(root, "active", "clean-task");
@@ -153,13 +153,13 @@ describe("formatTaskById", () => {
     );
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain("Checked: .assignr/tasks/active/clean-task.yaml");
+    expect(result.stdout).toContain("Checked: .manciple/tasks/active/clean-task.yaml");
   });
 
   it("keeps set-status writes on the canonical YAML formatter", async () => {
-    const root = await mkdtemp(join(tmpdir(), "assignr-format-task-status-"));
+    const root = await mkdtemp(join(tmpdir(), "manciple-format-task-status-"));
     tempDirs.push(root);
-    const paths = getPaths(root, ".assignr");
+    const paths = getPaths(root, ".manciple");
     const filePath = writeTask(root, "active", "status-task");
 
     setStatusCommand("status-task", "in_progress", paths.specsTasks, root);
@@ -170,7 +170,7 @@ describe("formatTaskById", () => {
   });
 
   it("CLI new writes implementation notes when provided", async () => {
-    const root = await mkdtemp(join(tmpdir(), "assignr-new-task-"));
+    const root = await mkdtemp(join(tmpdir(), "manciple-new-task-"));
     tempDirs.push(root);
     const tsxBin = join(
       process.cwd(),
@@ -198,7 +198,7 @@ describe("formatTaskById", () => {
     );
 
     expect(result.status).toBe(0);
-    const raw = readFileSync(join(root, ".assignr", "tasks", "active", "design-contract.yaml"), "utf-8");
+    const raw = readFileSync(join(root, ".manciple", "tasks", "active", "design-contract.yaml"), "utf-8");
     expect((parse(raw) as Record<string, unknown>)["implementation_notes"]).toEqual([
       "Preserve CLI and MCP parity.",
     ]);

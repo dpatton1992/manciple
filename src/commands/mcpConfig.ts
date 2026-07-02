@@ -14,10 +14,10 @@ interface OpenCodeConfig {
   [key: string]: unknown;
 }
 
-const SERVER_NAME = "assignr";
+const SERVER_NAME = "manciple";
 
-function assignrNpxArgs(): string[] {
-  return ["--yes", "--package", "@dpatt/assignr", "assignr-mcp"];
+function mancipleNpxArgs(): string[] {
+  return ["--yes", "--package", "@dpatt/manciple", "manciple-mcp"];
 }
 
 /**
@@ -38,7 +38,7 @@ function openCodeGlobalConfigPath(): string | null {
 }
 
 /**
- * Write the assignr MCP entry into the OpenCode global config
+ * Write the manciple MCP entry into the OpenCode global config
  * so that every repo automatically gets the server.
  */
 function setupOpenCodeGlobalConfig(force: boolean): void {
@@ -67,7 +67,7 @@ function setupOpenCodeGlobalConfig(force: boolean): void {
 
   mcp[SERVER_NAME] = {
     type: "local",
-    command: ["npx", ...assignrNpxArgs()],
+    command: ["npx", ...mancipleNpxArgs()],
     enabled: true,
   };
   config.mcp = mcp;
@@ -82,7 +82,7 @@ function setupOpenCodeGlobalConfig(force: boolean): void {
 }
 
 /**
- * Write the assignr MCP entry into the local .mcp.json for editors
+ * Write the manciple MCP entry into the local .mcp.json for editors
  * (Cline, Claude Desktop, etc.) that look for project-level MCP config.
  */
 function setupLocalMcpConfig(cwd: string, force: boolean): void {
@@ -116,7 +116,7 @@ function setupLocalMcpConfig(cwd: string, force: boolean): void {
 
   (mcpServers as Record<string, unknown>)[SERVER_NAME] = {
     command: "npx",
-    args: assignrNpxArgs(),
+    args: mancipleNpxArgs(),
   };
   config.mcpServers = mcpServers;
 
@@ -126,7 +126,7 @@ function setupLocalMcpConfig(cwd: string, force: boolean): void {
 
 /**
  * Init-friendly MCP setup — logs warnings instead of exiting on errors.
- * This is the version used by `assignr init`.
+ * This is the version used by `manciple init`.
  *
  * Writes to:
  *   - OpenCode global config (~/.config/opencode/opencode.json)
@@ -171,7 +171,7 @@ export function mcpConfigCommand(options: { cwd: string; force: boolean }): void
     ...mcpServers,
     [SERVER_NAME]: {
       command: "npx",
-      args: assignrNpxArgs(),
+    args: mancipleNpxArgs(),
     },
   };
 

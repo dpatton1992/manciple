@@ -1,6 +1,6 @@
 import { join } from "path";
 
-export interface AssignrPaths {
+export interface ManciplePaths {
   root: string;
   config: string;
   specs: string;
@@ -20,7 +20,10 @@ export interface AssignrPaths {
   commands: string;
 }
 
-export function getPaths(cwd: string, root: string): AssignrPaths {
+/** @deprecated Use ManciplePaths instead. */
+export type AssignrPaths = ManciplePaths; // Deliberate backward-compat alias used by external consumers
+
+export function getPaths(cwd: string, root: string): ManciplePaths {
   const r = join(cwd, root);
   return {
     root: r,

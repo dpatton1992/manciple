@@ -27,9 +27,9 @@ function latestRunLog(): string {
 }
 
 beforeEach(async () => {
-  cwd = mkdtempSync(join(tmpdir(), "assignr-run-log-"));
-  p = getPaths(cwd, ".assignr");
-  await initCommand({ force: false, cwd, root: ".assignr" });
+  cwd = mkdtempSync(join(tmpdir(), "manciple-run-log-"));
+  p = getPaths(cwd, ".manciple");
+  await initCommand({ force: false, cwd, root: ".manciple" });
   newCommand("Run log capture", {
     type: "implementation",
     domain: "core",

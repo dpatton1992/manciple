@@ -10,8 +10,8 @@ let cwd: string;
 let p: ReturnType<typeof getPaths>;
 
 beforeEach(() => {
-  cwd = mkdtempSync(join(tmpdir(), "assignr-worktree-"));
-  p = getPaths(cwd, ".assignr");
+  cwd = mkdtempSync(join(tmpdir(), "manciple-worktree-"));
+  p = getPaths(cwd, ".manciple");
 });
 
 afterEach(() => {
@@ -24,7 +24,7 @@ function mockExit(): ReturnType<typeof vi.spyOn> {
   }) as never);
 }
 
-describe("assignr worktree", () => {
+describe("manciple worktree", () => {
   it("constructs a task-specific branch and default worktree path", () => {
     const calls: Array<{ args: string[]; cwd?: string }> = [];
     const runner = vi.fn((args: string[], options?: { cwd?: string }) => {
@@ -50,7 +50,7 @@ describe("assignr worktree", () => {
             "worktree",
             "add",
             "-b",
-            "assignr/extract-auth-middleware",
+            "manciple/extract-auth-middleware",
             join(p.worktrees, "extract-auth-middleware"),
             "HEAD",
           ],
@@ -59,8 +59,8 @@ describe("assignr worktree", () => {
       ]);
 
       const output = logSpy.mock.calls.flat().join("\n");
-      expect(output).toContain("Worktree created: .assignr/worktrees/extract-auth-middleware");
-      expect(output).toContain("Branch: assignr/extract-auth-middleware");
+      expect(output).toContain("Worktree created: .manciple/worktrees/extract-auth-middleware");
+      expect(output).toContain("Branch: manciple/extract-auth-middleware");
     } finally {
       logSpy.mockRestore();
     }
@@ -79,7 +79,7 @@ describe("assignr worktree", () => {
         return "true";
       }
       if (args[0] === "-C" && args[1] === worktreePath && args[2] === "branch") {
-        return "assignr/extract-auth-middleware";
+        return "manciple/extract-auth-middleware";
       }
       return "";
     });
@@ -98,8 +98,8 @@ describe("assignr worktree", () => {
       );
 
       const output = logSpy.mock.calls.flat().join("\n");
-      expect(output).toContain("Worktree already exists: .assignr/worktrees/extract-auth-middleware");
-      expect(output).toContain("Branch: assignr/extract-auth-middleware");
+      expect(output).toContain("Worktree already exists: .manciple/worktrees/extract-auth-middleware");
+      expect(output).toContain("Branch: manciple/extract-auth-middleware");
     } finally {
       logSpy.mockRestore();
     }
@@ -131,7 +131,7 @@ describe("assignr worktree", () => {
 
       expect(exitSpy).toHaveBeenCalledWith(1);
       expect(errorSpy.mock.calls.flat().join("\n")).toContain(
-        "Refusing to overwrite non-empty worktree path: .assignr/worktrees/extract-auth-middleware",
+        "Refusing to overwrite non-empty worktree path: .manciple/worktrees/extract-auth-middleware",
       );
       expect(existsSync(join(worktreePath, "notes.txt"))).toBe(true);
     } finally {
@@ -166,7 +166,7 @@ describe("assignr worktree", () => {
 
       expect(existsSync(join(worktreePath, "notes.txt"))).toBe(false);
       expect(runner).toHaveBeenCalledWith(
-        ["worktree", "add", "-b", "assignr/extract-auth-middleware", worktreePath, "HEAD"],
+        ["worktree", "add", "-b",             "manciple/extract-auth-middleware", worktreePath, "HEAD"],
         { cwd },
       );
     } finally {
@@ -190,7 +190,7 @@ describe("assignr worktree", () => {
 
       expect(exitSpy).toHaveBeenCalledWith(1);
       expect(errorSpy.mock.calls.flat().join("\n")).toContain(
-        "Not a git repository. Run assignr worktree from inside a git repository.",
+        "Not a git repository. Run manciple worktree from inside a git repository.",
       );
     } finally {
       errorSpy.mockRestore();

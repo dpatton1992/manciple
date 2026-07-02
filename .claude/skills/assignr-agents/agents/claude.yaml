@@ -1,4 +1,0 @@
-interface:
-  display_name: "Assignr Agents"
-  short_description: "Coordinate Assignr MCP task-runner workers by efficient task assignment."
-  default_prompt: "Use Assignr Agents to split active Assignr task work into efficiency-selected worker batches, using CPU capacity only as a ceiling and each worker using assignr-mcp-task-runner."

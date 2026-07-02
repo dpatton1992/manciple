@@ -67,7 +67,7 @@ const ACTIVE_STATUSES = new Set([
   "partial",
 ]);
 
-function assignrRootFrom(tasksDir: string): string {
+function mancipleRootFrom(tasksDir: string): string {
   const last = basename(tasksDir);
   const parent = dirname(tasksDir);
 
@@ -86,7 +86,7 @@ function defaultDirs(specsTasksDir: string): Required<Pick<
   DeterministicReviewGateOptions,
   "generatedDir" | "activeDir" | "completedDir" | "archivedDir"
 >> {
-  const root = assignrRootFrom(specsTasksDir);
+  const root = mancipleRootFrom(specsTasksDir);
   return {
     generatedDir: join(root, "prompts", "generated"),
     activeDir: join(root, "tasks", "active"),
@@ -178,7 +178,7 @@ export function evaluateDeterministicReviewGate(
     completedDir: options.completedDir ?? defaults.completedDir,
     archivedDir: options.archivedDir ?? defaults.archivedDir,
   };
-  const runsDir = join(assignrRootFrom(options.specsTasksDir), "runs");
+  const runsDir = join(mancipleRootFrom(options.specsTasksDir), "runs");
   const { tasks, errors } = loadTasks(options.specsTasksDir, "all");
   const loadBlockers: DeterministicReviewBlocker[] = errors.map((error) => ({
     taskId: basename(error.filePath).replace(/\.ya?ml$/, "<unknown>"),

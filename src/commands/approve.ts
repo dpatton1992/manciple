@@ -123,7 +123,7 @@ export function approveCommand(taskId: string, options: ReviewOutcomeCommandOpti
   const destination = join(completedDir, `${taskId}.yaml`);
 
   if (existsSync(destination)) {
-    console.error(`Task ${taskId} already exists in completed. Use assignr reopen first.`);
+    console.error(`Task ${taskId} already exists in completed. Use manciple reopen first.`);
     process.exit(1);
   }
 

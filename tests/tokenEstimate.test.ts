@@ -22,9 +22,9 @@ let cwd: string;
 let p: ReturnType<typeof getPaths>;
 
 beforeEach(async () => {
-  cwd = mkdtempSync(join(tmpdir(), "assignr-token-estimate-"));
-  p = getPaths(cwd, ".assignr");
-  await initCommand({ force: false, cwd, root: ".assignr" });
+  cwd = mkdtempSync(join(tmpdir(), "manciple-token-estimate-"));
+  p = getPaths(cwd, ".manciple");
+  await initCommand({ force: false, cwd, root: ".manciple" });
 });
 
 afterEach(() => {
@@ -77,10 +77,10 @@ describe("tokenEstimateCommand", () => {
     expect(result.budget).toBe(DEFAULT_TOKEN_BUDGET);
     expect(output).toContain("# Token Estimate: estimate-normal");
     expect(output).toContain("Deterministic local heuristic: estimated tokens = ceil(characters / 4). No external APIs are called.");
-    expect(output).toContain("Scope: estimates Assignr artifact/context bloat only, not total provider, harness, tool, retry, reasoning, or generated-output usage.");
+    expect(output).toContain("Scope: estimates Manciple artifact/context bloat only, not total provider, harness, tool, retry, reasoning, or generated-output usage.");
     expect(output).toContain("- estimated: true");
     expect(output).toContain("- method: ceil(characters / 4)");
-    expect(output).toContain("- base Assignr handoff:");
+    expect(output).toContain("- base Manciple handoff:");
     expect(output).toContain("- task spec:");
     expect(output).toContain("- domain context:");
     expect(output).toContain("- template/instructions:");
@@ -184,7 +184,7 @@ describe("tokenEstimateCommand", () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("Risk: over budget");
-    expect(result.stderr).toContain("token-estimate -> assignr check tokens");
+    expect(result.stderr).toContain("token-estimate -> manciple check tokens");
   });
 
   it("renders persisted run-log estimate markers and warning-only budget text", () => {
@@ -198,11 +198,11 @@ describe("tokenEstimateCommand", () => {
     }));
 
     expect(section).toContain("## Token Estimate");
-    expect(section).toContain("_Source: assignr token-estimate --append-run-log_");
+    expect(section).toContain("_Source: manciple token-estimate --append-run-log_");
     expect(section).toContain("- estimated: true");
     expect(section).toContain("- method: ceil(characters / 4)");
-    expect(section).toContain("- base Assignr handoff:");
-    expect(section).toContain("### Base Assignr Handoff Detail");
+    expect(section).toContain("- base Manciple handoff:");
+    expect(section).toContain("### Base Manciple Handoff Detail");
     expect(section).toContain("Budget warning: over budget");
     expect(section).toContain("Warning only; no workflow failed.");
   });
@@ -249,7 +249,7 @@ describe("tokenEstimateCommand", () => {
     expect(content).toContain("## Token Estimate");
     expect(content).toContain("- estimated: true");
     expect(content).toContain("- method: ceil(characters / 4)");
-    expect(content).toContain("- base Assignr handoff:");
+    expect(content).toContain("- base Manciple handoff:");
     expect(content).toContain("- review prompt:");
     expect(content).toContain("- latest run log:");
     expect(content).toContain("- git diff:");

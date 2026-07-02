@@ -62,7 +62,7 @@ export function coordinatorCommand(specsTasksDir: string, _cwd: string): void {
 
   if (errors.length > 0) {
     console.warn(
-      `  Warning: ${errors.length} task file(s) could not be loaded (run "assignr validate" for details).`
+      `  Warning: ${errors.length} task file(s) could not be loaded (run "manciple validate" for details).`
     );
   }
 
@@ -76,7 +76,7 @@ export function coordinatorCommand(specsTasksDir: string, _cwd: string): void {
     ["rework-needed", queue.reworkNeeded],
   ];
 
-  console.log("Assignr Coordinator Queue");
+  console.log("Manciple Coordinator Queue");
   for (const [label, rows] of sections) {
     printSection(label, rows);
   }

@@ -117,9 +117,9 @@ function captureOutput(callback: () => void): { error: string; log: string } {
 }
 
 beforeEach(async () => {
-  cwd = mkdtempSync(join(tmpdir(), "assignr-cli-workflow-"));
-  p = getPaths(cwd, ".assignr");
-  await initCommand({ force: false, cwd, root: ".assignr" });
+  cwd = mkdtempSync(join(tmpdir(), "manciple-cli-workflow-"));
+  p = getPaths(cwd, ".manciple");
+  await initCommand({ force: false, cwd, root: ".manciple" });
 });
 
 afterEach(() => {
@@ -128,7 +128,7 @@ afterEach(() => {
 
 // ── init flags ───────────────────────────────────────────────────────────
 
-describe("assignr init flags", () => {
+describe("manciple init flags", () => {
   it("init with no flags runs full directory structure, MCP config, and agent install", async () => {
     // Full setup: lifecycle dirs exist
     expect(existsSync(p.tasksActive)).toBe(true);
@@ -141,11 +141,11 @@ describe("assignr init flags", () => {
   });
 
   it("init --mcp only touches .mcp.json and skips directory creation", async () => {
-    const mcpOnlyDir = mkdtempSync(join(tmpdir(), "assignr-mcp-only-"));
-    const mp = getPaths(mcpOnlyDir, ".assignr");
+    const mcpOnlyDir = mkdtempSync(join(tmpdir(), "manciple-mcp-only-"));
+    const mp = getPaths(mcpOnlyDir, ".manciple");
 
     try {
-      await initCommand({ force: false, cwd: mcpOnlyDir, root: ".assignr", mcp: true });
+      await initCommand({ force: false, cwd: mcpOnlyDir, root: ".manciple", mcp: true });
 
       // MCP config created
       expect(existsSync(join(mcpOnlyDir, ".mcp.json"))).toBe(true);
@@ -164,11 +164,11 @@ describe("assignr init flags", () => {
   });
 
   it("init --agents only installs packaged assets and skips directory creation", async () => {
-    const agentsOnlyDir = mkdtempSync(join(tmpdir(), "assignr-agents-only-"));
-    const ap = getPaths(agentsOnlyDir, ".assignr");
+    const agentsOnlyDir = mkdtempSync(join(tmpdir(), "manciple-agents-only-"));
+    const ap = getPaths(agentsOnlyDir, ".manciple");
 
     try {
-      await initCommand({ force: false, cwd: agentsOnlyDir, root: ".assignr", agents: true });
+      await initCommand({ force: false, cwd: agentsOnlyDir, root: ".manciple", agents: true });
 
       // Lifecycle directories NOT created
       expect(existsSync(ap.tasksActive)).toBe(false);
@@ -189,9 +189,9 @@ describe("assignr init flags", () => {
 
 // ── task command group delegation ────────────────────────────────────────
 
-describe("assignr task command group", () => {
+describe("manciple task command group", () => {
   it("task new delegates to newCommand and creates a task spec", () => {
-    // This is what `assignr task new <title>` does under the hood
+    // This is what `manciple task new <title>` does under the hood
     newCommand("Task from group", {
       type: "implementation",
       domain: "core",
@@ -209,7 +209,7 @@ describe("assignr task command group", () => {
   it("task list delegates to listCommand", () => {
     createTask("Listable task");
 
-    // `assignr task list` calls listCommand under the hood
+    // `manciple task list` calls listCommand under the hood
     const { error, log } = captureOutput(() => {
       listCommand(p.specsTasks, cwd);
     });
@@ -221,7 +221,7 @@ describe("assignr task command group", () => {
   it("task start sets status to in_progress", () => {
     const taskId = createTask("Startable task");
 
-    // `assignr task start <task-id>` calls setStatusCommand(id, "in_progress")
+    // `manciple task start <task-id>` calls setStatusCommand(id, "in_progress")
     expect(() => setStatusCommand(taskId, "in_progress" as Status, p.specsTasks, cwd)).not.toThrow();
     expect(readStatus(taskId)).toBe("in_progress");
   });
@@ -230,7 +230,7 @@ describe("assignr task command group", () => {
     const taskId = createTask("Showable task");
 
     const { log } = captureOutput(() => {
-      // This replicates what `assignr task show <task-id>` does:
+      // This replicates what `manciple task show <task-id>` does:
       // loadTasks, find the task, readFileSync, console.log
       const { tasks } = loadTasks(p.specsTasks, "all");
       const found = tasks.find((t) => t.spec.id === taskId);
@@ -246,7 +246,7 @@ describe("assignr task command group", () => {
   it("task archive delegates to archiveCommand", () => {
     const taskId = createTask("Archivable task");
 
-    // `assignr task archive <task-id>` calls archiveCommand
+    // `manciple task archive <task-id>` calls archiveCommand
     archiveCommand(taskId, {
       specsTasksDir: p.specsTasks,
       archivedDir: p.tasksArchived,
@@ -267,7 +267,7 @@ describe("assignr task command group", () => {
       cwd,
     });
 
-    // `assignr task reopen <task-id>` calls reopenCommand
+    // `manciple task reopen <task-id>` calls reopenCommand
     reopenCommand(taskId, {
       specsTasksDir: p.specsTasks,
       activeDir: p.tasksActive,
@@ -281,7 +281,7 @@ describe("assignr task command group", () => {
   it("task pause sets blocked status", () => {
     const taskId = createTask("Pausable task");
 
-    // `assignr task pause <task-id> --reason <text>` calls setStatusCommand(id, "blocked")
+    // `manciple task pause <task-id> --reason <text>` calls setStatusCommand(id, "blocked")
     expect(() => setStatusCommand(taskId, "blocked" as Status, p.specsTasks, cwd)).not.toThrow();
     expect(readStatus(taskId)).toBe("blocked");
   });
@@ -292,7 +292,7 @@ describe("assignr task command group", () => {
     // Start the task first
     setStatusCommand(taskId, "in_progress" as Status, p.specsTasks, cwd);
 
-    // `assignr task resume <task-id>` — for non-blocked/non-completed active tasks, sets in_progress
+    // `manciple task resume <task-id>` — for non-blocked/non-completed active tasks, sets in_progress
     expect(() => setStatusCommand(taskId, "in_progress" as Status, p.specsTasks, cwd)).not.toThrow();
     expect(readStatus(taskId)).toBe("in_progress");
   });
@@ -300,14 +300,14 @@ describe("assignr task command group", () => {
 
 // ── submit delegation ────────────────────────────────────────────────────
 
-describe("assignr submit delegation", () => {
+describe("manciple submit delegation", () => {
   it("submit --result complete creates a run log and sets needs_review", () => {
     const taskId = createTask("Submit review task");
 
     // Start the task first
     setStatusCommand(taskId, "in_progress" as Status, p.specsTasks, cwd);
 
-    // `assignr submit <task-id> --result complete` ⇒
+    // `manciple submit <task-id> --result complete` ⇒
     //   runLogCommand(result=complete) + setStatusCommand(needs_review)
     const { log } = captureOutput(() => {
       runLogCommand(taskId, p.specsTasks, p.runs, p.promptsGenerated, cwd, {
@@ -327,7 +327,7 @@ describe("assignr submit delegation", () => {
     // Start the task first
     setStatusCommand(taskId, "in_progress" as Status, p.specsTasks, cwd);
 
-    // `assignr submit <task-id> --complete` ⇒
+    // `manciple submit <task-id> --complete` ⇒
     //   runLogCommand(result=complete) + completeCommand
     const { log } = captureOutput(() => {
       runLogCommand(taskId, p.specsTasks, p.runs, p.promptsGenerated, cwd, {
@@ -350,7 +350,7 @@ describe("assignr submit delegation", () => {
   it("submit --blocked --reason creates a run log and sets blocked", () => {
     const taskId = createTask("Submit blocked task");
 
-    // `assignr submit <task-id> --blocked --reason <text>` ⇒
+    // `manciple submit <task-id> --blocked --reason <text>` ⇒
     //   runLogCommand(result=blocked) + setStatusCommand(blocked)
     const { log } = captureOutput(() => {
       runLogCommand(taskId, p.specsTasks, p.runs, p.promptsGenerated, cwd, {
@@ -367,11 +367,11 @@ describe("assignr submit delegation", () => {
 
 // ── handoff delegation ───────────────────────────────────────────────────
 
-describe("assignr handoff delegation", () => {
+describe("manciple handoff delegation", () => {
   it("handoff <task-id> produces a compiled prompt (same as compile)", () => {
     const taskId = createTask("Handoff compile task");
 
-    // `assignr handoff <task-id>` calls handoffCommand with packet=false,
+    // `manciple handoff <task-id>` calls handoffCommand with packet=false,
     // which delegates to compileCommand
     const { log } = captureOutput(() => {
       handoffCommand(taskId, {
@@ -392,7 +392,7 @@ describe("assignr handoff delegation", () => {
   it("handoff <task-id> --packet produces a JSON task packet (same as task-packet)", () => {
     const taskId = createTask("Handoff packet task");
 
-    // `assignr handoff <task-id> --packet` calls handoffCommand with packet=true,
+    // `manciple handoff <task-id> --packet` calls handoffCommand with packet=true,
     // which delegates to taskPacketCommand
     const { log } = captureOutput(() => {
       handoffCommand(taskId, {
@@ -414,14 +414,14 @@ describe("assignr handoff delegation", () => {
 
 // ── review subcommand delegation ─────────────────────────────────────────
 
-describe("assignr review subcommands", () => {
+describe("manciple review subcommands", () => {
   it("review check delegates to reviewCheckCommand", () => {
     const taskId = createTask("Review check task");
 
     // Put it in needs_review
     setStatusCommand(taskId, "needs_review" as Status, p.specsTasks, cwd);
 
-    // `assignr review check <task-id>` calls reviewCheckCommand
+    // `manciple review check <task-id>` calls reviewCheckCommand
     const { log } = captureOutput(() => {
       reviewCheckCommand(p.tasksActive, cwd, taskId);
     });
@@ -436,7 +436,7 @@ describe("assignr review subcommands", () => {
     // Put it in needs_review
     setStatusCommand(taskId, "needs_review" as Status, p.specsTasks, cwd);
 
-    // `assignr review queue` calls reviewQueueCommand with mode="triage"
+    // `manciple review queue` calls reviewQueueCommand with mode="triage"
     const { log } = captureOutput(() => {
       reviewQueueCommand(p.tasksActive, cwd, { mode: "triage" });
     });
@@ -445,7 +445,7 @@ describe("assignr review subcommands", () => {
     expect(log).toContain(taskId);
   });
 
-  it("review prompt generates a review prompt (same as assignr review <task-id>)", () => {
+  it("review prompt generates a review prompt (same as manciple review <task-id>)", () => {
     const taskId = createTask("Review prompt task");
 
     // We need a compiled prompt first
@@ -456,7 +456,7 @@ describe("assignr review subcommands", () => {
       taskId,
     });
 
-    // `assignr review prompt <task-id>` calls reviewCommand
+    // `manciple review prompt <task-id>` calls reviewCommand
     const { log } = captureOutput(() => {
       reviewCommand(taskId, p.specsTasks, p.promptsGenerated, cwd);
     });
@@ -472,7 +472,7 @@ describe("assignr review subcommands", () => {
     // Put it in needs_review
     setStatusCommand(taskId, "needs_review" as Status, p.specsTasks, cwd);
 
-    // `assignr review approve <task-id>` calls approveCommand
+    // `manciple review approve <task-id>` calls approveCommand
     const { log } = captureOutput(() => {
       approveCommand(taskId, {
         specsTasksDir: p.specsTasks,
@@ -494,7 +494,7 @@ describe("assignr review subcommands", () => {
     // Put it in needs_review
     setStatusCommand(taskId, "needs_review" as Status, p.specsTasks, cwd);
 
-    // `assignr review changes <task-id> --reason <text>` calls requestChangesCommand
+    // `manciple review changes <task-id> --reason <text>` calls requestChangesCommand
     const { log } = captureOutput(() => {
       requestChangesCommand(taskId, "Need more edge case coverage.", {
         specsTasksDir: p.specsTasks,
@@ -513,7 +513,7 @@ describe("assignr review subcommands", () => {
     // Put it in needs_review
     setStatusCommand(taskId, "needs_review" as Status, p.specsTasks, cwd);
 
-    // `assignr review block <task-id> --reason <text>` calls blockReviewCommand
+    // `manciple review block <task-id> --reason <text>` calls blockReviewCommand
     const { log } = captureOutput(() => {
       blockReviewCommand(taskId, "Verification environment unavailable.", {
         specsTasksDir: p.specsTasks,
@@ -529,11 +529,11 @@ describe("assignr review subcommands", () => {
 
 // ── check subcommand delegation ──────────────────────────────────────────
 
-describe("assignr check subcommands", () => {
+describe("manciple check subcommands", () => {
   function checkContext(): CheckContext {
     return {
       cwd,
-      root: ".assignr",
+      root: ".manciple",
       specsTasksDir: p.specsTasks,
       tasksActiveDir: p.tasksActive,
       tasksCompletedDir: p.tasksCompleted,
@@ -551,7 +551,7 @@ describe("assignr check subcommands", () => {
     });
 
     // Doctor output (headerBanner adds the branded line)
-    expect(log).toContain("Assignr — A repo-native workflow layer");
+    expect(log).toContain("Manciple — A repo-native workflow layer");
     // Validate output
     expect(log).toContain("Checked:");
     // Lifecycle check output
@@ -681,7 +681,7 @@ describe("Legacy command deprecation", () => {
     });
 
     // stderr should have the deprecation hint
-    expect(result.stderr).toContain("assignr compile -> assignr handoff");
+    expect(result.stderr).toContain("manciple compile -> manciple handoff");
   });
 
   it("legacy list command prints deprecation hint to stderr", () => {
@@ -691,7 +691,7 @@ describe("Legacy command deprecation", () => {
       encoding: "utf-8",
     });
 
-    expect(result.stderr).toContain("assignr list -> assignr task list");
+    expect(result.stderr).toContain("manciple list -> manciple task list");
     // The command still works — stdout has output
     expect(result.stdout.length).toBeGreaterThan(0);
   });
@@ -703,7 +703,7 @@ describe("Legacy command deprecation", () => {
       encoding: "utf-8",
     });
 
-    expect(result.stderr).toContain("assignr new -> assignr task new");
+    expect(result.stderr).toContain("manciple new -> manciple task new");
   });
 
   it("legacy validate command prints deprecation hint to stderr", () => {
@@ -713,7 +713,7 @@ describe("Legacy command deprecation", () => {
       encoding: "utf-8",
     });
 
-    expect(result.stderr).toContain("assignr validate -> assignr check tasks");
+    expect(result.stderr).toContain("manciple validate -> manciple check tasks");
   });
 
   it("legacy doctor command prints deprecation hint to stderr", () => {
@@ -723,7 +723,7 @@ describe("Legacy command deprecation", () => {
       encoding: "utf-8",
     });
 
-    expect(result.stderr).toContain("assignr doctor -> assignr check");
+    expect(result.stderr).toContain("manciple doctor -> manciple check");
   });
 
   it("multiple legacy commands each emit their own deprecation hint once", () => {
@@ -734,7 +734,7 @@ describe("Legacy command deprecation", () => {
     });
 
     // Hint appears exactly once (the shownDeprecation set prevents duplicates)
-    const matches = result.stderr.match(/assignr validate -> assignr check tasks/g);
+    const matches = result.stderr.match(/manciple validate -> manciple check tasks/g);
     expect(matches).not.toBeNull();
 
     // The command still produces stdout output (it still works)

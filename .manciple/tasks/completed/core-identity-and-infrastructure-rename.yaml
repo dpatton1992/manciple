@@ -1,0 +1,113 @@
+id: core-identity-and-infrastructure-rename
+title: Core identity and infrastructure rename
+status: complete
+type: refactor
+domain: core
+priority: critical
+depends_on: []
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - package.json
+  - bin/
+  - src/constants.ts
+  - src/cli.ts
+  - src/mcp.ts
+  - src/config.ts
+  - src/utils/paths.ts
+  - src/utils/styling.ts
+  - src/commands/mcpConfig.ts
+  - src/commands/init.ts
+  - src/commands/doctor.ts
+  - src/commands/tokenEstimate.ts
+  - .mcp.json
+  - opencode.json
+forbidden_paths:
+  - dist/**
+  - node_modules/**
+  - .manciple/prompts/generated/**
+  - .manciple/runs/**
+  - .manciple/tasks/completed/**
+  - .manciple/tasks/archived/**
+  - src/specs/**
+  - src/review/**
+  - src/lifecycle/**
+  - src/templates/**
+  - src/coordination/**
+  - tests/**
+  - docs/**
+  - scripts/**
+  - .claude/**
+  - .codex/**
+  - .opencode/**
+  - .github/**
+  - README.md
+  - CONTRIBUTING.md
+  - AGENTS.md
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: The npm package, CLI binary, CLI command, MCP server, program constants, path
+  resolution, config directory, and MCP config files all use manciple instead of
+  assignr as their identity.
+acceptance_criteria:
+  - package.json name field is manciple, bin entries reference manciple.js and
+    manciple-mcp.js, the self-dependency name and repository URLs use manciple.
+  - bin/assignr.js is renamed to bin/manciple.js and contains no reference to assignr.
+  - bin/assignr-mcp.js is renamed to bin/manciple-mcp.js and contains no reference to
+    assignr.
+  - src/constants.ts exports DEFAULT_ROOT as .manciple.
+  - src/cli.ts uses program.name('manciple'), program description references manciple,
+    and help text, deprecation messages, and command examples use manciple throughout.
+  - src/mcp.ts uses mcpServerName manciple, registers all 12 MCP tools with manciple_
+    prefix, and all title/description strings reference manciple.
+  - src/config.ts interface is named MancipleConfig.
+  - src/utils/paths.ts interface is named ManciplePaths.
+  - src/utils/styling.ts headerBanner displays Manciple.
+  - src/commands/mcpConfig.ts SERVER_NAME is manciple, npx args reference manciple-mcp.
+  - src/commands/init.ts CONFIG_YAML, COMMANDS_README, workflow block, and all strings
+    reference manciple.
+  - src/commands/doctor.ts error message references manciple.
+  - src/commands/tokenEstimate.ts source string references manciple.
+  - The .assignr/ directory is renamed to .manciple/ with all child contents preserved.
+  - .mcp.json server names use manciple-promptops and manciple, path references use
+    bin/manciple-mcp.js.
+  - opencode.json MCP server reference uses manciple-promptops and bin/manciple-mcp.js.
+  - pnpm typecheck passes.
+  - pnpm build succeeds.
+  - node bin/manciple.js --help shows the manciple CLI with correct name and
+    description.
+implementation_notes:
+  - Do NOT edit the .manciple/ internal file content (config.yaml, domain specs, task
+    YAMLs, run logs, prompts) — those are handled by a separate task. Only rename the
+    directory itself.
+  - Do NOT edit individual src/commands/*.ts files beyond the 3 listed in allowed_paths.
+  - Do NOT edit test files, docs, scripts, skills, agents, or CI configs.
+  - The self-dependency in package.json (assignr ^0.4.1) should be changed to manciple
+    with the current version.
+  - Preserve the existing version number in package.json.
+  - "The .mcp.json has two server entries: assignr-promptops (local repo) and assignr
+    (npx). Rename both."
+  - opencode.json has an MCP entry named assignr-promptops — rename it to
+    manciple-promptops.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm build
+    - node bin/manciple.js --help
+    - ls .manciple/
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+  - decisions_made
+notes:
+  - FOUNDATION task for the entire rebrand. All other rebrand tasks depend on this one.
+  - Automatically resolves the existing active task
+    remove-package-self-dependency-and-add-lint-script — the self-dependency rename
+    naturally replaces the self-reference.
+  - Overlaps with existing active task split-mcp-tool-registration-into-focused-modules
+    since MCP tool names are being renamed. Recommend deferring or updating that task
+    after the rebrand.

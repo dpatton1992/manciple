@@ -171,7 +171,7 @@ describe("validateTasks", () => {
   });
 
   it("reports missing domain references when a domains directory is provided", () => {
-    const domainsDir = mkdtempSync(join(tmpdir(), "assignr-domains-"));
+    const domainsDir = mkdtempSync(join(tmpdir(), "manciple-domains-"));
     const tasks = [makeTask({ id: "child", domain: "missing-domain" })];
 
     try {
@@ -187,7 +187,7 @@ describe("validateTasks", () => {
   });
 
   it("passes when domain references resolve", () => {
-    const domainsDir = mkdtempSync(join(tmpdir(), "assignr-domains-"));
+    const domainsDir = mkdtempSync(join(tmpdir(), "manciple-domains-"));
     writeFileSync(join(domainsDir, "core.yaml"), "id: core\n");
 
     try {

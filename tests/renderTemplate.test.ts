@@ -109,9 +109,9 @@ describe("renderTemplate", () => {
   });
 
   it("builds a compact task packet without rendered prompt prose", async () => {
-    const root = await mkdtemp(join(tmpdir(), "assignr-task-packet-"));
+    const root = await mkdtemp(join(tmpdir(), "manciple-task-packet-"));
     try {
-      const tasksDir = join(root, ".assignr", "tasks", "active");
+      const tasksDir = join(root, ".manciple", "tasks", "active");
       mkdirSync(tasksDir, { recursive: true });
       writeFileSync(
         join(tasksDir, "packet-task.yaml"),
@@ -150,7 +150,7 @@ describe("renderTemplate", () => {
 
       const packet = buildTaskPacket({
         taskId: "packet-task",
-        specsTasksDir: join(root, ".assignr", "tasks"),
+        specsTasksDir: join(root, ".manciple", "tasks"),
         cwd: root,
       });
 

@@ -3,7 +3,7 @@ import type { Status } from "../constants.js";
 import { runLogCommand } from "./runLog.js";
 import { setStatusCommand } from "./setStatus.js";
 import { completeCommand } from "./complete.js";
-import type { AssignrPaths } from "../utils/paths.js";
+import type { ManciplePaths } from "../utils/paths.js";
 
 const RUN_LOG_RESULTS = ["complete", "partial", "blocked", "failed"];
 
@@ -12,7 +12,7 @@ function collect(value: string, previous: string[]): string[] {
   return previous;
 }
 
-export function registerSubmitCommand(program: Command, p: AssignrPaths, cwd: string): void {
+export function registerSubmitCommand(program: Command, p: ManciplePaths, cwd: string): void {
   program
     .command("submit <task-id>")
     .description("Submit a task with a run log and result.")

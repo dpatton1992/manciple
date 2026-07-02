@@ -44,19 +44,19 @@ function writeTask(paths: ReturnType<typeof getPaths>, tier: TaskTier, id: strin
 
 describe("getPaths", () => {
   it("exposes lifecycle task tier directories and keeps specsTasks", () => {
-    const paths = getPaths("/repo", ".assignr");
+    const paths = getPaths("/repo", ".manciple");
 
-    expect(paths.specsTasks).toBe(join("/repo", ".assignr", "specs", "tasks"));
-    expect(paths.tasksActive).toBe(join("/repo", ".assignr", "tasks", "active"));
-    expect(paths.tasksCompleted).toBe(join("/repo", ".assignr", "tasks", "completed"));
-    expect(paths.tasksArchived).toBe(join("/repo", ".assignr", "tasks", "archived"));
+    expect(paths.specsTasks).toBe(join("/repo", ".manciple", "specs", "tasks"));
+    expect(paths.tasksActive).toBe(join("/repo", ".manciple", "tasks", "active"));
+    expect(paths.tasksCompleted).toBe(join("/repo", ".manciple", "tasks", "completed"));
+    expect(paths.tasksArchived).toBe(join("/repo", ".manciple", "tasks", "archived"));
   });
 });
 
 describe("loadTasks", () => {
   it("defaults to active tasks only and includes the tier", () => {
-    const cwd = mkdtempSync(join(tmpdir(), "assignr-load-tasks-"));
-    const paths = getPaths(cwd, ".assignr");
+    const cwd = mkdtempSync(join(tmpdir(), "manciple-load-tasks-"));
+    const paths = getPaths(cwd, ".manciple");
 
     try {
       writeTask(paths, "active", "active-task");
@@ -74,8 +74,8 @@ describe("loadTasks", () => {
   });
 
   it("loads a requested task tier", () => {
-    const cwd = mkdtempSync(join(tmpdir(), "assignr-load-tasks-"));
-    const paths = getPaths(cwd, ".assignr");
+    const cwd = mkdtempSync(join(tmpdir(), "manciple-load-tasks-"));
+    const paths = getPaths(cwd, ".manciple");
 
     try {
       writeTask(paths, "active", "active-task");
@@ -92,8 +92,8 @@ describe("loadTasks", () => {
   });
 
   it("loads archived tasks only when the archived tier is requested", () => {
-    const cwd = mkdtempSync(join(tmpdir(), "assignr-load-tasks-"));
-    const paths = getPaths(cwd, ".assignr");
+    const cwd = mkdtempSync(join(tmpdir(), "manciple-load-tasks-"));
+    const paths = getPaths(cwd, ".manciple");
 
     try {
       writeTask(paths, "active", "active-task");
@@ -110,8 +110,8 @@ describe("loadTasks", () => {
   });
 
   it("loads all task tiers and skips missing directories", () => {
-    const cwd = mkdtempSync(join(tmpdir(), "assignr-load-tasks-"));
-    const paths = getPaths(cwd, ".assignr");
+    const cwd = mkdtempSync(join(tmpdir(), "manciple-load-tasks-"));
+    const paths = getPaths(cwd, ".manciple");
 
     try {
       writeTask(paths, "active", "active-task");
@@ -131,8 +131,8 @@ describe("loadTasks", () => {
   });
 
   it("loads legacy tasks without implementation_notes", () => {
-    const cwd = mkdtempSync(join(tmpdir(), "assignr-load-tasks-"));
-    const paths = getPaths(cwd, ".assignr");
+    const cwd = mkdtempSync(join(tmpdir(), "manciple-load-tasks-"));
+    const paths = getPaths(cwd, ".manciple");
 
     try {
       writeTask(paths, "active", "legacy-task");

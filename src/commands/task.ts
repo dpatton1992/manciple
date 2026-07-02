@@ -8,25 +8,25 @@ import { setStatusCommand } from "./setStatus.js";
 import { archiveCommand } from "./archive.js";
 import { reopenCommand } from "./reopen.js";
 import { loadTasks } from "../specs/loadTasks.js";
-import type { AssignrPaths } from "../utils/paths.js";
+import type { ManciplePaths } from "../utils/paths.js";
 
 function collect(value: string, previous: string[]): string[] {
   previous.push(value);
   return previous;
 }
 
-export function registerTaskCommands(program: Command, p: AssignrPaths, cwd: string): void {
+export function registerTaskCommands(program: Command, p: ManciplePaths, cwd: string): void {
   const task = program
     .command("task")
-    .description("Manage tasks. See `assignr task --help` for subcommands.")
+    .description("Manage tasks. See `manciple task --help` for subcommands.")
     .action(() => {
       task.help();
     });
 
-  // assignr task new <title>
+  // manciple task new <title>
   task
     .command("new <title>")
-    .description("Create a new task spec (same as `assignr new`).")
+    .description("Create a new task spec (same as `manciple new`).")
     .option("--type <type>", `Task type (${TASK_TYPES.join(", ")})`, "implementation")
     .option("--domain <domain>", "Domain for this task.", "core")
     .option("--priority <priority>", `Priority (${PRIORITIES.join(", ")})`, "medium")
@@ -60,10 +60,10 @@ export function registerTaskCommands(program: Command, p: AssignrPaths, cwd: str
       });
     });
 
-  // assignr task list
+  // manciple task list
   task
     .command("list")
-    .description("List task specs (same as `assignr list`).")
+    .description("List task specs (same as `manciple list`).")
     .option("--status <status>", "Show only tasks with this exact status (case-sensitive).")
     .option("--domain <domain>", "Show only tasks in this exact domain (case-sensitive).")
     .option("--completed", "Show completed tasks. Mutually exclusive with --archived and --all.")
@@ -88,7 +88,7 @@ export function registerTaskCommands(program: Command, p: AssignrPaths, cwd: str
       });
     });
 
-  // assignr task show <task-id>
+  // manciple task show <task-id>
   task
     .command("show <task-id>")
     .description("Show task details (prints the parsed task YAML).")
@@ -106,7 +106,7 @@ export function registerTaskCommands(program: Command, p: AssignrPaths, cwd: str
       console.log(raw);
     });
 
-  // assignr task start <task-id>
+  // manciple task start <task-id>
   task
     .command("start <task-id>")
     .description("Start a task (set status to in_progress).")
@@ -114,7 +114,7 @@ export function registerTaskCommands(program: Command, p: AssignrPaths, cwd: str
       setStatusCommand(taskId, "in_progress" as Status, p.specsTasks, cwd);
     });
 
-  // assignr task pause <task-id> --reason <text>
+  // manciple task pause <task-id> --reason <text>
   task
     .command("pause <task-id>")
     .description("Pause a task (set status to blocked). Requires --reason.")
@@ -123,7 +123,7 @@ export function registerTaskCommands(program: Command, p: AssignrPaths, cwd: str
       setStatusCommand(taskId, "blocked" as Status, p.specsTasks, cwd);
     });
 
-  // assignr task resume <task-id>
+  // manciple task resume <task-id>
   task
     .command("resume <task-id>")
     .description("Resume a task (set status to pending, or reopen if archived/completed).")
@@ -147,10 +147,10 @@ export function registerTaskCommands(program: Command, p: AssignrPaths, cwd: str
       }
     });
 
-  // assignr task archive <task-id>
+  // manciple task archive <task-id>
   task
     .command("archive <task-id>")
-    .description("Archive a task (same as `assignr archive`).")
+    .description("Archive a task (same as `manciple archive`).")
     .action((taskId: string) => {
       archiveCommand(taskId, {
         specsTasksDir: p.specsTasks,
@@ -159,10 +159,10 @@ export function registerTaskCommands(program: Command, p: AssignrPaths, cwd: str
       });
     });
 
-  // assignr task reopen <task-id>
+  // manciple task reopen <task-id>
   task
     .command("reopen <task-id>")
-    .description("Reopen a task (same as `assignr reopen`).")
+    .description("Reopen a task (same as `manciple reopen`).")
     .action((taskId: string) => {
       reopenCommand(taskId, {
         specsTasksDir: p.specsTasks,

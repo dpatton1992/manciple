@@ -89,8 +89,8 @@ export function loadTasks(tasksDir: string, tier: LoadTaskTier = "active"): Load
     const legacyFiles = readdirSync(tasksDir).filter((f) => f.endsWith(".yaml"));
     if (legacyFiles.length > 0) {
       console.warn(
-        `\n  ⚠ Migration: ${legacyFiles.length} task file(s) in specs/tasks/ are not visible to assignr commands.` +
-          `\n    Move them to tasks/active/ or run "assignr migrate-tasks" when available.\n`
+        `\n  ⚠ Migration: ${legacyFiles.length} task file(s) in specs/tasks/ are not visible to manciple commands.` +
+          `\n    Move them to tasks/active/ or run "manciple migrate-tasks" when available.\n`
       );
     }
   }

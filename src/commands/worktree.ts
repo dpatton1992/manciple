@@ -24,7 +24,7 @@ function relativeToCwd(cwd: string, path: string): string {
 }
 
 function deterministicBranchName(taskId: string): string {
-  return `assignr/${taskId}`;
+  return `manciple/${taskId}`;
 }
 
 function isDirectory(path: string): boolean {
@@ -57,7 +57,7 @@ export function worktreeCommand(taskId: string, options: WorktreeCommandOptions)
   try {
     runner(["rev-parse", "--show-toplevel"], { cwd });
   } catch {
-    console.error("Not a git repository. Run assignr worktree from inside a git repository.");
+    console.error("Not a git repository. Run manciple worktree from inside a git repository.");
     process.exit(1);
   }
 

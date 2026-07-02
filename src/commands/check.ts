@@ -19,7 +19,7 @@ export interface CheckContext {
 }
 
 /**
- * `assignr check` — runs doctor + validate + lifecycle check in sequence
+ * `manciple check` — runs doctor + validate + lifecycle check in sequence
  */
 export function checkDefaultCommand(ctx: CheckContext): void {
   doctorCommand(ctx.cwd, ctx.root);
@@ -35,14 +35,14 @@ export function checkDefaultCommand(ctx: CheckContext): void {
 }
 
 /**
- * `assignr check tasks` — validate all task specs
+ * `manciple check tasks` — validate all task specs
  */
 export function checkTasksCommand(ctx: CheckContext): void {
   validateCommand(ctx.tasksActiveDir, ctx.cwd);
 }
 
 /**
- * `assignr check lifecycle` — lifecycle placement check
+ * `manciple check lifecycle` — lifecycle placement check
  */
 export function checkLifecycleSubCommand(ctx: CheckContext): void {
   checkLifecycleCommand({
@@ -54,14 +54,14 @@ export function checkLifecycleSubCommand(ctx: CheckContext): void {
 }
 
 /**
- * `assignr check verify --profile <profile>` — run verification
+ * `manciple check verify --profile <profile>` — run verification
  */
 export function checkVerifyCommand(profile: string, cwd: string): Promise<void> {
   return verifyCommand(profile, cwd);
 }
 
 /**
- * `assignr check tokens <task-id>` — token estimate
+ * `manciple check tokens <task-id>` — token estimate
  */
 export function checkTokensCommand(ctx: CheckContext, taskId: string): void {
   tokenEstimateCommand({
@@ -72,7 +72,7 @@ export function checkTokensCommand(ctx: CheckContext, taskId: string): void {
 }
 
 /**
- * `assignr check cost` — summarize run costs
+ * `manciple check cost` — summarize run costs
  */
 export function checkCostCommand(ctx: CheckContext): void {
   summarizeRunCostCommand(ctx.runsDir);

@@ -13,8 +13,8 @@ export interface HandoffContext {
 }
 
 /**
- * `assignr handoff <task-id>` — compile prompt
- * `assignr handoff <task-id> --packet` — compact worker packet
+ * `manciple handoff <task-id>` — compile prompt
+ * `manciple handoff <task-id> --packet` — compact worker packet
  */
 export function handoffCommand(
   taskId: string,
@@ -37,8 +37,8 @@ export function handoffCommand(
 }
 
 /**
- * `assignr handoff queue` — coordinator queue
- * `assignr handoff queue --json` — dispatch plan JSON
+ * `manciple handoff queue` — coordinator queue
+ * `manciple handoff queue --json` — dispatch plan JSON
  */
 export function handoffQueueCommand(ctx: HandoffContext & { json?: boolean }): void {
   if (ctx.json) {

@@ -72,8 +72,8 @@ export function validateCommand(
   const { tasks, errors: loadErrors } = options.all
     ? loadTasks(specsTasksDir, "all")
     : activeOnlyValidationTasks(specsTasksDir);
-  const assignrRoot = relative(cwd, dirname(dirname(specsTasksDir)));
-  const specsDomainsDir = getPaths(cwd, assignrRoot).specsDomains;
+  const mancipleRoot = relative(cwd, dirname(dirname(specsTasksDir)));
+  const specsDomainsDir = getPaths(cwd, mancipleRoot).specsDomains;
 
   let totalErrors = loadErrors.length;
   let totalWarnings = 0;
@@ -85,7 +85,7 @@ export function validateCommand(
   }
 
   if (tasks.length === 0 && loadErrors.length === 0) {
-    console.warn(`  ${picocolors.yellow("⚠")} No tasks found. Run "assignr new" to create your first task.`);
+    console.warn(`  ${picocolors.yellow("⚠")} No tasks found. Run "manciple new" to create your first task.`);
   }
 
   const result = validateTasks(tasks, {
@@ -118,7 +118,7 @@ export function validateCommand(
 
   const totalValid = valid.length;
 
-  console.log(`\n${picocolors.bold("Assignr Validate")}`);
+  console.log(`\n${picocolors.bold("Manciple Validate")}`);
   console.log(`${picocolors.dim("─────────────────")}`);
   console.log(
     `  Checked: ${picocolors.bold(formatCount(checkedCounts.tasksChecked, "task"))}, ` +

@@ -1,0 +1,63 @@
+id: introduce-testable-command-error-handling-for-task-creation
+title: Introduce testable command error handling for task creation
+status: pending
+type: refactor
+domain: core
+priority: high
+depends_on:
+  - remove-package-self-dependency-and-add-lint-script
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - src/commands/new.ts
+  - src/cli.ts
+  - tests/happyPath.test.ts
+  - tests/cliWorkflow.test.ts
+  - tests/schema.test.ts
+  - tests/validateTasks.test.ts
+forbidden_paths:
+  - dist/**
+  - .manciple/prompts/generated/**
+  - .manciple/tasks/completed/**
+  - .manciple/tasks/archived/**
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas: []
+goal: The task creation command path can report validation failures without command
+  modules calling process.exit directly.
+acceptance_criteria:
+  - src/commands/new.ts no longer calls process.exit directly for empty goals, invalid
+    titles, duplicate files, invalid type/priority, or interactive failure handling.
+  - newCommand and newInteractiveCommand remain usable from the CLI with the same
+    stderr/stdout behavior and nonzero process exit behavior for invalid user input.
+  - Direct-library tests can assert thrown errors or returned results from task creation
+    without monkeypatching process.exit for the migrated paths.
+  - Existing task creation behavior is preserved for valid non-interactive and
+    interactive flows, including generated YAML content and prompts.
+  - A reusable local pattern is introduced or documented in code for later command
+    modules to migrate away from direct process.exit without forcing a whole-repo
+    rewrite in this task.
+implementation_notes:
+  - "Keep command semantics compatible at the CLI boundary: user-facing errors should
+    still be printed to stderr and the CLI process should exit nonzero when invoked
+    through bin/manciple."
+  - Prefer throwing typed or ordinary Error instances from command modules and handling
+    process.exit at the Commander action/entry boundary; do not swallow errors silently.
+  - Limit migration to task creation/new command paths unless a small shared helper
+    requires touching the CLI entry point.
+  - Update tests that currently intercept process.exit only for the migrated task
+    creation paths; leave unrelated command tests alone.
+verification:
+  commands:
+    - pnpm typecheck
+    - pnpm test -- happyPath cliWorkflow
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+  - decisions_made
+notes:
+  - This intentionally overlaps src/cli.ts with later CLI modularization work; complete
+    this first so the orchestration refactor can preserve the new error boundary.

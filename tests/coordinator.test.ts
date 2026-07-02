@@ -16,9 +16,9 @@ let cwd: string;
 let p: ReturnType<typeof getPaths>;
 
 beforeEach(async () => {
-  cwd = mkdtempSync(join(tmpdir(), "assignr-coordinator-"));
-  p = getPaths(cwd, ".assignr");
-  await initCommand({ force: false, cwd, root: ".assignr" });
+  cwd = mkdtempSync(join(tmpdir(), "manciple-coordinator-"));
+  p = getPaths(cwd, ".manciple");
+  await initCommand({ force: false, cwd, root: ".manciple" });
 });
 
 afterEach(() => {
@@ -304,7 +304,7 @@ describe("coordinator queue", () => {
       coordinatorCommand(p.specsTasks, cwd);
 
       const output = logSpy.mock.calls.flat().join("\n");
-      expect(output).toContain("Assignr Coordinator Queue");
+      expect(output).toContain("Manciple Coordinator Queue");
       expect(output).toContain("runnable");
       expect(output).toContain("waiting");
       expect(output).toContain("needs_review");

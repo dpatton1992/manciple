@@ -1,19 +1,19 @@
 {
   "mcpServers": {
-    "assignr-promptops": {
+    "manciple-promptops": {
       "command": "node",
       "args": [
-        "/Users/danielpatton/Documents/GitHub/promptops/bin/assignr-mcp.js"
+        "/Users/danielpatton/Documents/GitHub/promptops/bin/manciple-mcp.js"
       ],
       "cwd": "/Users/danielpatton/Documents/GitHub/promptops"
     },
-    "assignr": {
+    "manciple": {
       "command": "npx",
       "args": [
         "--yes",
         "--package",
-        "@dpatt/assignr",
-        "assignr-mcp"
+        "@dpatt/manciple",
+        "manciple-mcp"
       ]
     }
   }

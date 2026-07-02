@@ -19,7 +19,7 @@ export const DEFAULT_TOKEN_BUDGET = 4000;
 export const TOKEN_HEURISTIC_DESCRIPTION =
   "Deterministic local heuristic: estimated tokens = ceil(characters / 4). No external APIs are called.";
 export const TOKEN_ESTIMATE_SCOPE_DESCRIPTION =
-  "Scope: estimates Assignr artifact/context bloat only, not total provider, harness, tool, retry, reasoning, or generated-output usage.";
+  "Scope: estimates Manciple artifact/context bloat only, not total provider, harness, tool, retry, reasoning, or generated-output usage.";
 
 export interface TokenEstimateOptions {
   specsTasksDir: string;
@@ -145,7 +145,7 @@ export function buildTokenEstimate(options: TokenEstimateOptions): TokenEstimate
     optionalBuckets.push(estimateBucket("git context", readGitContext(options.cwd), true));
   }
 
-  const compiledBucket = estimateBucket("base Assignr handoff", compiledPrompt);
+  const compiledBucket = estimateBucket("base Manciple handoff", compiledPrompt);
   const optionalChars = optionalBuckets.reduce((sum, bucket) => sum + bucket.chars, 0);
   const totalChars = compiledBucket.chars + optionalChars;
   const totalWithOptional = {
@@ -179,7 +179,7 @@ export function renderTokenEstimateRunLogSection(result: TokenEstimateResult): s
 
   return `## Token Estimate
 
-_Source: assignr token-estimate --append-run-log_
+_Source: manciple token-estimate --append-run-log_
 
 ${TOKEN_ESTIMATE_SCOPE_DESCRIPTION}
 - estimated: true
@@ -190,7 +190,7 @@ ${TOKEN_ESTIMATE_SCOPE_DESCRIPTION}
 ${renderBucket(result.compiledPrompt)}
 ${optional}
 
-### Base Assignr Handoff Detail
+### Base Manciple Handoff Detail
 
 ${result.buckets.map(renderBucket).join("\n")}
 
@@ -231,7 +231,7 @@ Budget: ${result.budget} estimated tokens
 ${renderBucket(result.compiledPrompt)}
 ${optional}
 
-## Base Assignr Handoff Detail
+## Base Manciple Handoff Detail
 
 ${result.buckets.map(renderBucket).join("\n")}
 

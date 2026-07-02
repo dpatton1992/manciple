@@ -86,11 +86,11 @@ export function priorityBadge(priority: string, options?: StylingOptions): strin
 }
 
 /**
- * Render the branded "Assignr — A repo-native workflow layer" header banner.
+ * Render the branded "Manciple — A repo-native workflow layer" header banner.
  * When NO_COLOR is set (or noColor option is true), ANSI codes are skipped.
  */
 export function headerBanner(options?: StylingOptions): string {
-  const text = "Assignr — A repo-native workflow layer";
+  const text = "Manciple — A repo-native workflow layer";
   if (options?.noColor) {
     return text + "\n";
   }

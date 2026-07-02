@@ -268,7 +268,7 @@ export function runLogCommand(
 
   if (!found) {
     console.error(
-      `Task not found: ${taskId}\nRun "assignr status" to see available tasks.`
+      `Task not found: ${taskId}\nRun "manciple status" to see available tasks.`
     );
     process.exit(1);
   }

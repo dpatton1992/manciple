@@ -5,12 +5,12 @@ import type { ReviewReadinessAcceptanceEvidence, ReviewReadinessRunLog } from ".
 
 /**
  * Find the path to the latest run log for a given task.
- * Checks nested `.assignr/runs/<taskId>/` first, then flat `.assignr/runs/<timestamp>-<taskId>.md`.
+ * Checks nested `.manciple/runs/<taskId>/` first, then flat `.manciple/runs/<timestamp>-<taskId>.md`.
  * Among candidate files, prefers one with `- latest: true` in its metadata,
  * falling back to filename sort order for backward compatibility.
  */
 export function findLatestRunLogPath(cwd: string, taskId: string): string | undefined {
-  const runsDir = join(cwd, ".assignr", "runs");
+  const runsDir = join(cwd, ".manciple", "runs");
   const taskRunLogDir = join(runsDir, taskId);
 
   let candidates: string[] = [];

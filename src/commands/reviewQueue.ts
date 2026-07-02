@@ -273,7 +273,7 @@ function rel(cwd: string, path: string): string {
   return path.startsWith(`${cwd}/`) ? path.slice(cwd.length + 1) : path;
 }
 
-function assignrRootFrom(tasksDir: string): string {
+function mancipleRootFrom(tasksDir: string): string {
   const last = basename(tasksDir);
   const parent = dirname(tasksDir);
 
@@ -535,7 +535,7 @@ export function reviewQueueCommand(
   options: ReviewQueueCommandOptions = {}
 ): void {
   const mode = options.mode ?? "triage";
-  const generatedDir = options.generatedDir ?? join(assignrRootFrom(specsTasksDir), "prompts", "generated");
+  const generatedDir = options.generatedDir ?? join(mancipleRootFrom(specsTasksDir), "prompts", "generated");
   const budget = parseBudget(options.budget);
   const deepOnly = options.deepOnly;
 

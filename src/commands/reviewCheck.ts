@@ -104,7 +104,7 @@ export function reviewCheckCommand(
 
     if (taskId && report.taskReports.length === 0) {
       console.error(
-        `Task not found: ${taskId}\nRun "assignr list --status needs_review" to see review tasks.`
+        `Task not found: ${taskId}\nRun "manciple list --status needs_review" to see review tasks.`
       );
       process.exit(1);
     }
@@ -230,7 +230,7 @@ export function reviewCheckCommand(
 
   if (taskId && !tasks.some((task) => task.spec.id === taskId)) {
     console.error(
-      `Task not found: ${taskId}\nRun "assignr list --status needs_review" to see review tasks.`
+      `Task not found: ${taskId}\nRun "manciple list --status needs_review" to see review tasks.`
     );
     process.exit(1);
   }

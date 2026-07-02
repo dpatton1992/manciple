@@ -4,6 +4,6 @@ dist/
 *.d.ts.map
 .DS_Store
 
-# assignr
-.assignr/prompts/generated/
-.assignr/runs/
+# manciple
+.manciple/prompts/generated/
+.manciple/runs/

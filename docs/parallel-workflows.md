@@ -1,6 +1,6 @@
 # Parallel Workflows
 
-Assignr is designed for small tasks that can move through a coordinator without
+Manciple is designed for small tasks that can move through a coordinator without
 turning into long-lived branches. The dependency graph and path ownership fields
 make parallel work explicit before agents start editing files.
 
@@ -45,28 +45,28 @@ not create filesystem locks.
 ## Worktree Guidance
 
 Agents should start from the task worktree, usually
-`.assignr/worktrees/<task-id>`. That keeps implementation changes, test output,
+`.manciple/worktrees/<task-id>`. That keeps implementation changes, test output,
 and review evidence isolated until the coordinator decides the slice is ready
 to merge.
 
 ## Coordinator Owner Loop
 
-1. Run `assignr dispatch-plan` or call `assignr_dispatch_plan`.
+1. Run `manciple dispatch-plan` or call `manciple_dispatch_plan`.
 2. Spawn only the returned assignments, capped by available worker capacity.
 3. Leave deferred work in the queue when the plan reports dependencies, locks,
    unsafe areas, or stop conditions.
 4. Review run logs, changed files, and verification receipts for completed
    slices.
-5. Verify integration with `assignr verify --profile coordinator` or
-   `assignr_verify` profile `coordinator`.
+5. Verify integration with `manciple verify --profile coordinator` or
+   `manciple_verify` profile `coordinator`.
 6. Merge useful slices quickly when verification and receipts are strong.
 7. Send overlapping or under-evidenced work back as rework instead of stacking
    more branches on top.
 
-Workers should start from `assignr task-packet <task-id>` or
-`assignr_get_task_packet` and verify with `assignr verify --profile worker` or
-`assignr_verify` profile `worker`. Use `assignr format-task <task-id> --check`
-or `assignr_format_task` only when scoped task YAML formatting evidence is part
+Workers should start from `manciple task-packet <task-id>` or
+`manciple_get_task_packet` and verify with `manciple verify --profile worker` or
+`manciple_verify` profile `worker`. Use `manciple format-task <task-id> --check`
+or `manciple_format_task` only when scoped task YAML formatting evidence is part
 of the work.
 
 Every worker receipt should include files changed, verification receipt,

@@ -101,7 +101,7 @@ function emitDeprecation(name: string): void {
     shownDeprecation.add(name);
     const replacement = DEPRECATED_COMMANDS.get(name);
     if (replacement) {
-      console.error(`assignr ${name} -> assignr ${replacement}`);
+      console.error(`manciple ${name} -> manciple ${replacement}`);
     }
   }
 }
@@ -117,7 +117,7 @@ const p = getPaths(cwd, root);
 const program = new Command();
 
 program
-  .name("assignr")
+  .name("manciple")
   .description("A repo-native workflow layer for existing coding agents.")
   .version(version);
 
@@ -126,9 +126,9 @@ program.addHelpText("beforeAll", headerBanner());
 // init
 program
   .command("init")
-  .description("Initialize Assignr folder structure, MCP config, gitignore entries, and packaged agent skills/agents in this repo.")
+  .description("Initialize Manciple folder structure, MCP config, gitignore entries, and packaged agent skills/agents in this repo.")
   .option("--force", "Overwrite existing files.", false)
-  .option("--root <dir>", "Root directory for Assignr.", DEFAULT_ROOT)
+  .option("--root <dir>", "Root directory for Manciple.", DEFAULT_ROOT)
   .option("--mcp", "Only set up MCP config (.mcp.json), skip directory creation and agents.", false)
   .option("--agents", "Only install packaged agent skills and agents, skip directory creation and MCP.", false)
   .option("--verbose", "Show detailed per-directory and per-file output.", false)
@@ -228,7 +228,7 @@ program
 // handoff
 const handoff = program
   .command("handoff [task-id]")
-  .description("Compile a task prompt, or inspect the worker queue. See `assignr handoff --help`.")
+  .description("Compile a task prompt, or inspect the worker queue. See `manciple handoff --help`.")
   .option("--packet", "Print compact worker packet instead of compiled prompt.", false)
   .action((taskId: string | undefined, opts: { packet: boolean }) => {
     if (taskId) {
@@ -246,7 +246,7 @@ const handoff = program
 
 handoff
   .command("queue")
-  .description("Show runnable/deferred work (same as `assignr coordinator`). Use --json for dispatch plan (same as `assignr dispatch-plan`).")
+  .description("Show runnable/deferred work (same as `manciple coordinator`). Use --json for dispatch plan (same as `manciple dispatch-plan`).")
   .option("--json", "Print deterministic dispatch packet JSON.", false)
   .action((opts: { json: boolean }) => {
     handoffQueueCommand({
@@ -439,7 +439,7 @@ program
 // check
 const check = program
   .command("check")
-  .description("Health summary, validation, lifecycle check, and diagnostics. See `assignr check --help`.")
+  .description("Health summary, validation, lifecycle check, and diagnostics. See `manciple check --help`.")
   .action(() => {
     checkDefaultCommand({
       cwd,
@@ -455,7 +455,7 @@ const check = program
 
 check
   .command("tasks")
-  .description("Validate all task specs (same as `assignr validate`).")
+  .description("Validate all task specs (same as `manciple validate`).")
   .action(() => {
     checkTasksCommand({
       cwd,
@@ -471,7 +471,7 @@ check
 
 check
   .command("lifecycle")
-  .description("Run lifecycle placement check (same as `assignr check-lifecycle`).")
+  .description("Run lifecycle placement check (same as `manciple check-lifecycle`).")
   .action(() => {
     checkLifecycleSubCommand({
       cwd,
@@ -487,7 +487,7 @@ check
 
 check
   .command("verify")
-  .description("Run verification (same as `assignr verify`).")
+  .description("Run verification (same as `manciple verify`).")
   .requiredOption("--profile <profile>", "Verification profile: coordinator, worker, or review.")
   .action(async (opts: { profile: string }) => {
     await checkVerifyCommand(opts.profile, cwd);
@@ -495,7 +495,7 @@ check
 
 check
   .command("tokens <task-id>")
-  .description("Estimate token usage for a task (same as `assignr token-estimate`).")
+  .description("Estimate token usage for a task (same as `manciple token-estimate`).")
   .action((taskId: string) => {
     checkTokensCommand({
       cwd,
@@ -511,7 +511,7 @@ check
 
 check
   .command("cost")
-  .description("Summarize run costs (same as `assignr summarize-run-cost`).")
+  .description("Summarize run costs (same as `manciple summarize-run-cost`).")
   .action(() => {
     checkCostCommand({
       cwd,
@@ -629,7 +629,7 @@ program
 // token-estimate
 program
   .command("token-estimate <task-id>")
-  .description("Estimate Assignr handoff prompt size using a deterministic local heuristic.")
+  .description("Estimate Manciple handoff prompt size using a deterministic local heuristic.")
   .option("--budget <tokens>", "Estimated-token budget for risk reporting.", parseNumberOption, DEFAULT_TOKEN_BUDGET)
   .option("--include-review", "Include generated review prompt estimate.", false)
   .option("--include-run-log", "Include latest run log estimate.", false)
@@ -660,12 +660,12 @@ program
 // review command group
 const review = program
   .command("review [task-id]")
-  .description("Manage the review process. See `assignr review --help` for subcommands.")
+  .description("Manage the review process. See `manciple review --help` for subcommands.")
   .option("--include-run-log", "Include full latest run log content.", false)
   .option("--include-diff", "Include full git diff content.", false)
   .action((taskId: string | undefined, opts: { includeRunLog: boolean; includeDiff: boolean }) => {
     if (taskId) {
-      // Backward compat: `assignr review <task-id>` => same as `review prompt <task-id>`
+      // Backward compat: `manciple review <task-id>` => same as `review prompt <task-id>`
       reviewCommand(taskId, p.specsTasks, p.promptsGenerated, cwd, {
         includeRunLog: opts.includeRunLog,
         includeGitDiff: opts.includeDiff,
@@ -677,7 +677,7 @@ const review = program
 
 review
   .command("queue")
-  .description("Run review queue triage (same as `assignr review-queue`).")
+  .description("Run review queue triage (same as `manciple review-queue`).")
   .option("--mode <mode>", "Review queue mode: triage or deep.", "triage")
   .option("--all", "In deep mode, include tasks that passed triage.", false)
   .option("--budget <tokens>", "Positive integer review budget estimate for queued packets.")
@@ -699,7 +699,7 @@ review
 
 review
   .command("check [task-id]")
-  .description("Check review readiness (same as `assignr review-check`).")
+  .description("Check review readiness (same as `manciple review-check`).")
   .option("--deterministic", "Run local deterministic review gate checks.", false)
   .option("--machine", "Tab-delimited output for backward compatibility.", false)
   .action((taskId: string | undefined, opts: { deterministic: boolean; machine: boolean }) => {
@@ -715,7 +715,7 @@ review
 
 review
   .command("prompt <task-id>")
-  .description("Generate a review prompt (same as `assignr review <task-id>`).")
+  .description("Generate a review prompt (same as `manciple review <task-id>`).")
   .option("--include-run-log", "Include full latest run log content.", false)
   .option("--include-diff", "Include full git diff content.", false)
   .action((taskId: string, opts: { includeRunLog: boolean; includeDiff: boolean }) => {
@@ -727,7 +727,7 @@ review
 
 review
   .command("approve <task-id>")
-  .description("Approve and complete a task (same as `assignr approve`).")
+  .description("Approve and complete a task (same as `manciple approve`).")
   .action((taskId: string) => {
     approveCommand(taskId, {
       specsTasksDir: p.specsTasks,
@@ -739,7 +739,7 @@ review
 
 review
   .command("changes <task-id>")
-  .description("Request changes and return task to in_progress (same as `assignr request-changes`).")
+  .description("Request changes and return task to in_progress (same as `manciple request-changes`).")
   .requiredOption("--reason <text>", "Reason changes are required.")
   .action((taskId: string, opts: { reason: string }) => {
     requestChangesCommand(taskId, opts.reason, {
@@ -751,7 +751,7 @@ review
 
 review
   .command("block <task-id>")
-  .description("Block review for a task (same as `assignr block-review`).")
+  .description("Block review for a task (same as `manciple block-review`).")
   .requiredOption("--reason <text>", "Reason review is blocked.")
   .action((taskId: string, opts: { reason: string }) => {
     blockReviewCommand(taskId, opts.reason, {
@@ -829,7 +829,7 @@ program
 // worktree
 program
   .command("worktree <task-id>")
-  .description("Create or report a task-specific git worktree under .assignr/worktrees/.")
+  .description("Create or report a task-specific git worktree under .manciple/worktrees/.")
   .option("--force", "Remove a non-empty existing path before creating the task worktree.", false)
   .action((taskId: string, opts: { force: boolean }) => {
     worktreeCommand(taskId, {
@@ -842,7 +842,7 @@ program
 // doctor
 program
   .command("doctor")
-  .description("Check whether this repo is configured correctly for Assignr.")
+  .description("Check whether this repo is configured correctly for Manciple.")
   .action(() => {
     doctorCommand(cwd, root);
   });
@@ -850,8 +850,8 @@ program
 // mcp-config
 program
   .command("mcp-config")
-  .description("Create or update .mcp.json for the Assignr MCP server.")
-  .option("--force", "Overwrite an existing assignr MCP server entry.", false)
+  .description("Create or update .mcp.json for the Manciple MCP server.")
+  .option("--force", "Overwrite an existing manciple MCP server entry.", false)
   .action((opts: { force: boolean }) => {
     mcpConfigCommand({ cwd, force: opts.force });
   });
@@ -912,10 +912,10 @@ program.helpInformation = () => {
     // Append legacy command examples to the help footer
     help += "\nLegacy command examples:\n";
     for (const [old, replacement] of DEPRECATED_COMMANDS) {
-      help += `  assignr ${old.padEnd(20)} → assignr ${replacement}\n`;
+      help += `  manciple ${old.padEnd(20)} → manciple ${replacement}\n`;
     }
   } else {
-    help += "\nRun `assignr --help --all` to show all commands, including legacy/deprecated ones.\n";
+    help += "\nRun `manciple --help --all` to show all commands, including legacy/deprecated ones.\n";
   }
 
   // Colorize section headings.

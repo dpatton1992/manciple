@@ -10,7 +10,7 @@ run, files changed, result, and known risks.
 Record evidence after an agent finishes:
 
 ```bash
-assignr run-log build-login-page \
+manciple run-log build-login-page \
   --result complete \
   --agent Codex \
   --model gpt-5-codex \
@@ -32,15 +32,15 @@ Useful run logs include:
 Move the task to review and generate a reviewer prompt:
 
 ```bash
-assignr set-status build-login-page needs_review
-assignr review build-login-page
-assignr review-check build-login-page
+manciple set-status build-login-page needs_review
+manciple review build-login-page
+manciple review-check build-login-page
 ```
 
-`assignr review` generates a reviewer prompt with the task context, latest run
+`manciple review` generates a reviewer prompt with the task context, latest run
 log evidence, git diff, checklist items, and a decision section.
 
-`assignr review-check` is the quick readiness gate. It helps catch missing
+`manciple review-check` is the quick readiness gate. It helps catch missing
 evidence, unrecorded verification, and scope concerns before someone spends
 attention on a deeper review.
 
@@ -51,19 +51,19 @@ For batch triage and deep review, see [Review Queue](review-queue.md).
 Approve work that satisfies the task contract:
 
 ```bash
-assignr approve build-login-page
+manciple approve build-login-page
 ```
 
 Return work that needs changes:
 
 ```bash
-assignr request-changes build-login-page --reason "Missing password-reset test evidence."
+manciple request-changes build-login-page --reason "Missing password-reset test evidence."
 ```
 
 Block review when a dependency or external issue prevents a fair decision:
 
 ```bash
-assignr block-review build-login-page --reason "Depends on unresolved auth migration."
+manciple block-review build-login-page --reason "Depends on unresolved auth migration."
 ```
 
 ## Implementation And Integration Review

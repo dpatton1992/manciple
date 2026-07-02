@@ -30,8 +30,8 @@ export function getTemplate(type: TaskSpec["type"]): string {
 }
 
 export function loadDomainContext(specsTasksDir: string, domain: string, cwd: string): string | undefined {
-  const assignrRoot = relative(cwd, dirname(dirname(specsTasksDir)));
-  const domainPath = join(getPaths(cwd, assignrRoot).specsDomains, `${domain}.yaml`);
+  const mancipleRoot = relative(cwd, dirname(dirname(specsTasksDir)));
+  const domainPath = join(getPaths(cwd, mancipleRoot).specsDomains, `${domain}.yaml`);
 
   if (!existsSync(domainPath)) {
     console.error(

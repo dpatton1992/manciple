@@ -1,26 +1,27 @@
-# Assignr
+# Manciple
 
-Structured task management for coding agents.
+Repo-native task orchestration for coding agents.
 
-Assignr stores scoped YAML task specs, generated agent prompts, run logs, and
-review evidence inside your repo. It gives agents a clear contract: goal,
-allowed paths, acceptance criteria, verification commands, and the evidence
-reviewers need afterward.
+Manciple (formerly known as Assignr 🎼💜) stores scoped YAML task specifications, generated prompts, 
+run logs, and review evidence directly in your repository. Every task defines a clear
+contract—goal, allowed paths, acceptance criteria, verification commands, and
+required evidence—so agents can work independently while humans review with
+confidence.
 
 ## Demo
 
-Before Assignr, agent handoffs often start as a useful but risky blob:
+Before Manciple, agent handoffs often start as a useful but risky blob:
 
 > Can you clean up login? The errors are confusing, the tests are flaky, and
 > support says password reset broke after the session refactor. Please fix what
 > you find and make sure auth still works.
 
-After Assignr, that work becomes one scoped task an agent can run and a reviewer
+After Manciple, that work becomes one scoped task an agent can run and a reviewer
 can check in about 30 seconds:
 
 ```bash
-assignr new "Fix password reset session handling" --type implementation --domain auth --priority high
-assignr handoff fix-password-reset-session-handling
+manciple new "Fix password reset session handling" --type implementation --domain auth --priority high
+manciple handoff fix-password-reset-session-handling
 ```
 
 ```yaml
@@ -40,15 +41,15 @@ outputs_required:
   - risks
 ```
 
-![assignr task planning output](docs/images/planning-output.png)
+![manciple task planning output](docs/images/planning-output.png)
 
 ## Install
 
 Requires Node.js 18+.
 
 ```bash
-npm install -g assignr
-assignr --help
+npm install -g manciple
+manciple --help
 ```
 
 ## Quickstart
@@ -57,27 +58,27 @@ Initialize a repo, create a task, validate it, check the queue, and compile an
 agent prompt:
 
 ```bash
-assignr init
+manciple init
 ```
 
-![assignr init output](docs/images/init-output.png)
+![manciple init output](docs/images/init-output.png)
 
 ```bash
-assignr new "Build login page" --type implementation --domain auth --priority high
-assignr validate
-assignr status
-assignr handoff build-login-page
+manciple new "Build login page" --type implementation --domain auth --priority high
+manciple validate
+manciple status
+manciple handoff build-login-page
 ```
 
-The new task lives in `.assignr/tasks/active/build-login-page.yaml`. The
+The new task lives in `.manciple/tasks/active/build-login-page.yaml`. The
 compiled prompt is written to
-`.assignr/prompts/generated/build-login-page.md` and can be pasted into Claude
+`.manciple/prompts/generated/build-login-page.md` and can be pasted into Claude
 Code, Codex, Cursor, Aider, Goose, or another coding agent.
 
 After the agent runs, record evidence and move the task to review:
 
 ```bash
-assignr run-log build-login-page \
+manciple run-log build-login-page \
   --result complete \
   --agent Codex \
   --model gpt-5-codex \
@@ -85,17 +86,17 @@ assignr run-log build-login-page \
   --file "src/features/auth/LoginPage.tsx" \
   --risks "No known risks."
 
-assignr set-status build-login-page needs_review
-assignr review build-login-page
+manciple set-status build-login-page needs_review
+manciple review build-login-page
 ```
 
 For a more detailed first-run walkthrough, see
 [Getting Started](docs/getting-started.md).
 
-## What Assignr Creates
+## What Manciple Creates
 
 ```text
-.assignr/
+.manciple/
   config.yaml
   domains.yaml
   tasks/
@@ -133,20 +134,20 @@ outputs_required:
 
 ## Command Reference
 
-| Command | Purpose |
-|---|---|
-| `assignr init` | Initialize `.assignr/` in a repo. |
-| `assignr new <title>` | Create a task spec. Add `--interactive` to collect common fields through prompts. |
-| `assignr validate` | Validate task specs. |
-| `assignr handoff [task-id]` | Compile a task prompt, or inspect the worker queue. See `assignr handoff --help`. |
-| `assignr list` | List active task specs. |
-| `assignr status` | Show status counts and a suggested next task. |
-| `assignr run-log <task-id>` | Create a run log with commands, files, result, model, agent, and risks. |
-| `assignr set-status <task-id> <status>` | Update task status. |
-| `assignr review <task-id>` | Generate a reviewer prompt. |
-| `assignr review-check [task-id]` | Check review readiness evidence. |
-| `assignr doctor` | Check repo configuration. |
-| `assignr mcp-config` | Create or update `.mcp.json` for the Assignr MCP server. |
+| Command                                   | Purpose                                                                             |
+| ----------------------------------------- | ----------------------------------------------------------------------------------- |
+| `manciple init`                          | Initialize `.manciple/` in a repo.                                                 |
+| `manciple new <title>`                   | Create a task spec. Add `--interactive` to collect common fields through prompts.   |
+| `manciple validate`                      | Validate task specs.                                                                |
+| `manciple handoff [task-id]`             | Compile a task prompt, or inspect the worker queue. See `manciple handoff --help`. |
+| `manciple list`                          | List active task specs.                                                             |
+| `manciple status`                        | Show status counts and a suggested next task.                                       |
+| `manciple run-log <task-id>`             | Create a run log with commands, files, result, model, agent, and risks.             |
+| `manciple set-status <task-id> <status>` | Update task status.                                                                 |
+| `manciple review <task-id>`              | Generate a reviewer prompt.                                                         |
+| `manciple review-check [task-id]`        | Check review readiness evidence.                                                    |
+| `manciple doctor`                        | Check repo configuration.                                                           |
+| `manciple mcp-config`                    | Create or update `.mcp.json` for the Manciple MCP server.                          |
 
 ## Deeper Docs
 
@@ -160,16 +161,16 @@ outputs_required:
 - [Review Queue](docs/review-queue.md): triage and deep-review workflows for
   batches of `needs_review` tasks.
 - [MCP Server](docs/mcp-server.md): MCP setup and tool surface.
-- [OpenCode Agents](docs/opencode-agents.md): assignr-worker and
-  assignr-coordinator agents for OpenCode.
+- [OpenCode Agents](docs/opencode-agents.md): manciple-worker and
+  manciple-coordinator agents for OpenCode.
 - [Agent Skills](docs/agent-skills.md): Claude Code and Codex skill files for
-  Assignr workflows.
+  Manciple workflows.
 
 ## Package
 
-- npm: `assignr`
-- CLI: `assignr`
-- MCP binary: `assignr-mcp`
+- npm: `manciple`
+- CLI: `manciple`
+- MCP binary: `manciple-mcp`
 - Agent assets: packaged docs include [Agent Skills](docs/agent-skills.md) for
   `.codex/skills/` and `.claude/skills/`, plus
   [OpenCode Agents](docs/opencode-agents.md) for `.opencode/agents/`.

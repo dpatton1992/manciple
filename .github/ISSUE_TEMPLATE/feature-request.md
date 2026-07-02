@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: Suggest an idea for Assignr
+about: Suggest an idea for Manciple
 title: '[Feature] '
 labels: enhancement
 assignees: ''

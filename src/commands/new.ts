@@ -117,8 +117,8 @@ function writeTaskFile(title: string, options: NewTaskOptions, values?: NewTaskS
   console.log(`Created: ${filePath.replace(cwd + "/", "")}`);
   console.log(`\nNext steps:`);
   console.log(`  1. Edit the spec: ${filePath.replace(cwd + "/", "")}`);
-  console.log(`  2. Run: assignr validate`);
-  console.log(`  3. Run: assignr compile ${id}`);
+  console.log(`  2. Run: manciple validate`);
+  console.log(`  3. Run: manciple compile ${id}`);
 
   return filePath;
 }

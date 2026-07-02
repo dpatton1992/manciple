@@ -1,6 +1,6 @@
 # Review Queue
 
-`assignr review-queue` is a review-spend control workflow for batches of
+`manciple review-queue` is a review-spend control workflow for batches of
 `needs_review` tasks. Its value is not lowest raw token cost; it buys
 repeatability, auditability, resumability, and safer coordination by preserving
 the evidence behind every routing decision.
@@ -13,7 +13,7 @@ reserving deeper review for tasks whose evidence is risky or incomplete.
 Start with triage:
 
 ```bash
-assignr review-queue --mode triage
+manciple review-queue --mode triage
 ```
 
 Triage reads each active `needs_review` task, its latest run log, verification
@@ -38,7 +38,7 @@ problems are fixed.
 Escalate only the risky work:
 
 ```bash
-assignr review-queue --mode deep --deep-only risky
+manciple review-queue --mode deep --deep-only risky
 ```
 
 Deep mode generates review prompts for escalated tasks and includes a compact
@@ -48,7 +48,7 @@ evidence, acceptance coverage, risk flags, and one reviewer question.
 Add `--budget <tokens>` to cap the estimated packet budget for a queue run:
 
 ```bash
-assignr review-queue --mode deep --deep-only risky --budget 12000
+manciple review-queue --mode deep --deep-only risky --budget 12000
 ```
 
 The budget is a simple planning estimate, not provider-specific token
@@ -63,6 +63,6 @@ accounting.
 | Deep review queue | Higher, reserved for risky ambiguity | Focused on the tasks that need judgment | Review prompt plus compact packet | Reviewer follows the packet question and evidence |
 
 The review queue composes existing commands rather than replacing them.
-`assignr review-check` remains the source of readiness scoring and evidence
-checklist semantics. `assignr coordinator` remains the source of owner queue
+`manciple review-check` remains the source of readiness scoring and evidence
+checklist semantics. `manciple coordinator` remains the source of owner queue
 grouping, dependency usability, and path-conflict placement.

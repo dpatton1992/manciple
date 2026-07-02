@@ -1,13 +1,13 @@
 # Task Lifecycle
 
-Assignr keeps active work separate from audit history. New tasks start in
-`.assignr/tasks/active`, which is the default context agents use when listing,
+Manciple keeps active work separate from audit history. New tasks start in
+`.manciple/tasks/active`, which is the default context agents use when listing,
 compiling, validating, and choosing work.
 
 ## Task Directories
 
 ```text
-.assignr/tasks/
+.manciple/tasks/
   active/      # pending, in-progress, blocked, and needs-review work
   completed/   # accepted or finished task history
   archived/    # abandoned or superseded task history
@@ -33,40 +33,40 @@ with lifecycle-aware list flags.
 Move accepted or finished active work to completed history:
 
 ```bash
-assignr complete build-login-page
+manciple complete build-login-page
 ```
 
 Archive obsolete active work:
 
 ```bash
-assignr archive replace-legacy-router
+manciple archive replace-legacy-router
 ```
 
 Move a completed or archived task back into active work:
 
 ```bash
-assignr reopen replace-legacy-router
+manciple reopen replace-legacy-router
 ```
 
 Inspect lifecycle history when you need it:
 
 ```bash
-assignr list --completed
-assignr list --archived
-assignr list --all
+manciple list --completed
+manciple list --archived
+manciple list --all
 ```
 
 Validate that task files live in the directory matching their status:
 
 ```bash
-assignr check-lifecycle
+manciple check-lifecycle
 ```
 
 Repos that still use the old flat task layout can migrate task files into the
 lifecycle directories:
 
 ```bash
-assignr migrate-tasks
+manciple migrate-tasks
 ```
 
 For first-run setup, start with [Getting Started](getting-started.md).

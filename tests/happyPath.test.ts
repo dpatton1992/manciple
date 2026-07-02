@@ -29,16 +29,16 @@ let cwd: string;
 let p: ReturnType<typeof getPaths>;
 
 beforeEach(async () => {
-  cwd = mkdtempSync(join(tmpdir(), "assignr-happy-path-"));
-  p = getPaths(cwd, ".assignr");
-  await initCommand({ force: false, cwd, root: ".assignr" });
+  cwd = mkdtempSync(join(tmpdir(), "manciple-happy-path-"));
+  p = getPaths(cwd, ".manciple");
+  await initCommand({ force: false, cwd, root: ".manciple" });
 });
 
 afterEach(() => {
   rmSync(cwd, { recursive: true, force: true });
 });
 
-describe("assignr init", () => {
+describe("manciple init", () => {
   it("creates the canonical lifecycle directories", () => {
     expect(existsSync(p.tasksActive)).toBe(true);
     expect(existsSync(p.tasksCompleted)).toBe(true);
@@ -61,13 +61,13 @@ describe("assignr init", () => {
     expect(readFileSync(coreDomainPath, "utf-8")).toContain("id: core");
 
     writeFileSync(coreDomainPath, "id: core\nname: Custom Core\n", "utf-8");
-    await initCommand({ force: true, cwd, root: ".assignr" });
+    await initCommand({ force: true, cwd, root: ".manciple" });
 
     expect(readFileSync(coreDomainPath, "utf-8")).toBe("id: core\nname: Custom Core\n");
   });
 });
 
-describe("assignr new", () => {
+describe("manciple new", () => {
   it("creates a task YAML in tasks/active/", () => {
     newCommand("License expiration reminders", {
       type: "implementation",
@@ -210,8 +210,8 @@ describe("assignr new", () => {
   });
 });
 
-describe("assignr list", () => {
-  it("finds a task created by assignr new", () => {
+describe("manciple list", () => {
+  it("finds a task created by manciple new", () => {
     newCommand("License expiration reminders", {
       type: "implementation",
       domain: "credentialing",
@@ -244,7 +244,7 @@ describe("assignr list", () => {
   });
 });
 
-describe("assignr validate", () => {
+describe("manciple validate", () => {
   it("validates a clean-init core task with TODO warnings but no missing-domain error", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -389,7 +389,7 @@ describe("assignr validate", () => {
   });
 });
 
-describe("assignr compile", () => {
+describe("manciple compile", () => {
   it("compiles a clean-init core task without missing-domain warnings", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
@@ -455,7 +455,7 @@ describe("assignr compile", () => {
       const promptFile = join(p.promptsGenerated, "license-expiration-reminders.md");
       expect(existsSync(promptFile)).toBe(true);
       expect(logSpy).toHaveBeenCalledWith(
-        "  ✓ Compiled: .assignr/prompts/generated/license-expiration-reminders.md"
+        "  ✓ Compiled: .manciple/prompts/generated/license-expiration-reminders.md"
       );
 
       const content = readFileSync(promptFile, "utf-8");
@@ -552,7 +552,7 @@ describe("assignr compile", () => {
   });
 });
 
-describe("assignr review", () => {
+describe("manciple review", () => {
   it("creates a separate review prompt at prompts/generated/review-<id>.md", () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
 
@@ -578,7 +578,7 @@ describe("assignr review", () => {
         "review-license-expiration-reminders.md"
       );
       const implementationPromptPath =
-        ".assignr/prompts/generated/license-expiration-reminders.md";
+        ".manciple/prompts/generated/license-expiration-reminders.md";
 
       expect(existsSync(reviewPromptFile)).toBe(true);
       const logOutput = logSpy.mock.calls.flat().join("\n");
@@ -652,7 +652,7 @@ none
       writeFileSync(featureFile, "export const reminders = false;\n", "utf-8");
       spawnSync("git", ["init"], { cwd, encoding: "utf-8" });
       spawnSync("git", ["config", "user.email", "test@example.com"], { cwd, encoding: "utf-8" });
-      spawnSync("git", ["config", "user.name", "Assignr Test"], { cwd, encoding: "utf-8" });
+      spawnSync("git", ["config", "user.name", "Manciple Test"], { cwd, encoding: "utf-8" });
       spawnSync("git", ["add", "."], { cwd, encoding: "utf-8" });
       spawnSync("git", ["commit", "-m", "baseline"], { cwd, encoding: "utf-8" });
       writeFileSync(featureFile, "export const reminders = true;\n", "utf-8");
@@ -734,7 +734,7 @@ none
       writeFileSync(featureFile, "export const reminders = false;\n", "utf-8");
       spawnSync("git", ["init"], { cwd, encoding: "utf-8" });
       spawnSync("git", ["config", "user.email", "test@example.com"], { cwd, encoding: "utf-8" });
-      spawnSync("git", ["config", "user.name", "Assignr Test"], { cwd, encoding: "utf-8" });
+      spawnSync("git", ["config", "user.name", "Manciple Test"], { cwd, encoding: "utf-8" });
       spawnSync("git", ["add", "."], { cwd, encoding: "utf-8" });
       spawnSync("git", ["commit", "-m", "baseline"], { cwd, encoding: "utf-8" });
       writeFileSync(featureFile, "export const reminders = true;\n", "utf-8");
@@ -767,7 +767,7 @@ none
   });
 });
 
-describe("assignr set-status", () => {
+describe("manciple set-status", () => {
   it("updates the task status in tasks/active/", () => {
     newCommand("License expiration reminders", {
       type: "implementation",
@@ -895,7 +895,7 @@ describe("assignr set-status", () => {
   });
 });
 
-describe("assignr status", () => {
+describe("manciple status", () => {
   it("shows active counts separately from completed lifecycle tasks", () => {
     newCommand("Done task", {
       type: "implementation",
@@ -937,7 +937,7 @@ describe("assignr status", () => {
   });
 });
 
-describe("assignr complete", () => {
+describe("manciple complete", () => {
   it("marks an active task complete and moves it to tasks/completed/", () => {
     newCommand("License expiration reminders", {
       type: "implementation",
@@ -1017,7 +1017,7 @@ describe("assignr complete", () => {
       expect(readFileSync(completedFile, "utf-8")).toBe("already completed\n");
       expect(existsSync(join(p.tasksActive, "license-expiration-reminders.yaml"))).toBe(true);
       expect(errorSpy.mock.calls.flat().join("\n")).toBe(
-        "Task license-expiration-reminders already exists in completed. Use assignr reopen first."
+        "Task license-expiration-reminders already exists in completed. Use manciple reopen first."
       );
     } finally {
       errorSpy.mockRestore();
@@ -1026,7 +1026,7 @@ describe("assignr complete", () => {
   });
 });
 
-describe("assignr reopen", () => {
+describe("manciple reopen", () => {
   it("reopens a completed task into tasks/active/ with in_progress status", () => {
     newCommand("License expiration reminders", {
       type: "implementation",
@@ -1208,7 +1208,7 @@ describe("assignr reopen", () => {
   });
 });
 
-describe("assignr check-lifecycle", () => {
+describe("manciple check-lifecycle", () => {
   it("exits non-zero when task status does not match its lifecycle directory", () => {
     newCommand("Misplaced complete task", {
       type: "implementation",
@@ -1248,7 +1248,7 @@ describe("assignr check-lifecycle", () => {
       const output = errorSpy.mock.calls.flat().join("\n");
       expect(output).toContain("Lifecycle placement issues: 1");
       expect(output).toContain("misplaced-complete-task.yaml");
-      expect(output).toContain("belongs in .assignr/tasks/completed");
+      expect(output).toContain("belongs in .manciple/tasks/completed");
     } finally {
       errorSpy.mockRestore();
       exitSpy.mockRestore();

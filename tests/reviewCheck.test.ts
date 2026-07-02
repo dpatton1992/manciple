@@ -15,9 +15,9 @@ let cwd: string;
 let p: ReturnType<typeof getPaths>;
 
 beforeEach(async () => {
-  cwd = mkdtempSync(join(tmpdir(), "assignr-review-check-"));
-  p = getPaths(cwd, ".assignr");
-  await initCommand({ force: false, cwd, root: ".assignr" });
+  cwd = mkdtempSync(join(tmpdir(), "manciple-review-check-"));
+  p = getPaths(cwd, ".manciple");
+  await initCommand({ force: false, cwd, root: ".manciple" });
 });
 
 afterEach(() => {
@@ -159,7 +159,7 @@ describe("reviewCheckCommand", () => {
     appendTokenEstimateSection(
       "budget-warning-needs-attention",
       [
-        "Scope: estimates Assignr artifact/context bloat only.",
+        "Scope: estimates Manciple artifact/context bloat only.",
         "- estimated: true",
         "- method: ceil(characters / 4)",
         "Budget warning: over budget (15804/4000 estimated tokens).",

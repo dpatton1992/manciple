@@ -33,8 +33,8 @@ ${extra}
 }
 
 beforeEach(() => {
-  cwd = mkdtempSync(join(tmpdir(), "assignr-run-cost-"));
-  runsDir = join(cwd, ".assignr", "runs");
+  cwd = mkdtempSync(join(tmpdir(), "manciple-run-cost-"));
+  runsDir = join(cwd, ".manciple", "runs");
   mkdirSync(runsDir, { recursive: true });
 });
 
