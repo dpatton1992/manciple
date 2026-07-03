@@ -73,8 +73,8 @@ acceptance_criteria:
     changes in assertions).
 implementation_notes:
   - Do NOT change the .assignr/ references in test files — the directory was renamed to
-    .manciple/ in Task 1. Test files hardcode the paths via getPaths(testRoot,
-    .assignr) which should now say .manciple/.
+    .manciple/ in Task 1. Test files hardcode the paths via getPaths(testRoot, .assignr)
+    which should now say .manciple/.
   - Do NOT edit bin/, docs/, scripts/, .claude/, .codex/, .opencode/, .github/,
     .mcp.json, opencode.json, README.md, CONTRIBUTING.md, or AGENTS.md.
   - Preserve the actual behavior — only string references to the name assignr should

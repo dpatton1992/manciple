@@ -27,8 +27,8 @@ path_ownership:
   touched_paths: []
   locked_paths: []
   unsafe_parallel_areas: []
-goal: Manciple child-process execution paths avoid unnecessary shell execution and handle
-  command failures consistently.
+goal: Manciple child-process execution paths avoid unnecessary shell execution and
+  handle command failures consistently.
 acceptance_criteria:
   - "scripts/release.ts does not use shell: true for fixed git, npm, pnpm, or gh
     commands unless the run log documents a platform-specific reason for each retained

@@ -22,8 +22,8 @@ path_ownership:
   touched_paths: []
   locked_paths: []
   unsafe_parallel_areas: []
-goal: Package metadata no longer declares manciple as its own dependency, and the project
-  exposes a runnable lint script for routine local and CI checks.
+goal: Package metadata no longer declares manciple as its own dependency, and the
+  project exposes a runnable lint script for routine local and CI checks.
 acceptance_criteria:
   - package.json does not list a dependency, devDependency, optionalDependency, or
     peerDependency named manciple unless the run log documents a concrete packaging

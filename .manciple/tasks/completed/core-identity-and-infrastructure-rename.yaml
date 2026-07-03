@@ -50,8 +50,8 @@ path_ownership:
   locked_paths: []
   unsafe_parallel_areas: []
 goal: The npm package, CLI binary, CLI command, MCP server, program constants, path
-  resolution, config directory, and MCP config files all use manciple instead of
-  assignr as their identity.
+  resolution, config directory, and MCP config files all use manciple instead of assignr
+  as their identity.
 acceptance_criteria:
   - package.json name field is manciple, bin entries reference manciple.js and
     manciple-mcp.js, the self-dependency name and repository URLs use manciple.
@@ -77,8 +77,7 @@ acceptance_criteria:
   - opencode.json MCP server reference uses manciple-promptops and bin/manciple-mcp.js.
   - pnpm typecheck passes.
   - pnpm build succeeds.
-  - node bin/manciple.js --help shows the manciple CLI with correct name and
-    description.
+  - node bin/manciple.js --help shows the manciple CLI with correct name and description.
 implementation_notes:
   - Do NOT edit the .manciple/ internal file content (config.yaml, domain specs, task
     YAMLs, run logs, prompts) — those are handled by a separate task. Only rename the

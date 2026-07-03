@@ -59,8 +59,8 @@ acceptance_criteria:
   - package.json prepublishOnly references the new script names.
   - All .claude/skills/assignr-* directories are renamed to .claude/skills/manciple-*
     with all SKILL.md content updated.
-  - All .codex/skills/assignr-* directories are renamed to .codex/skills/manciple-*
-    with all SKILL.md content updated.
+  - All .codex/skills/assignr-* directories are renamed to .codex/skills/manciple-* with
+    all SKILL.md content updated.
   - .opencode/agents/assignr-coordinator.md is renamed to manciple-coordinator.md with
     content updated.
   - .opencode/agents/assignr-worker.md is renamed to manciple-worker.md with content
