@@ -16,6 +16,13 @@ import { getPaths } from "../src/utils/paths.js";
 let cwd: string;
 let p: ReturnType<typeof getPaths>;
 
+function runCli(args: string[]) {
+  return spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
+    cwd: process.cwd(),
+    encoding: "utf-8",
+  });
+}
+
 function createTaskInReview(title = "Review outcome test"): string {
   newCommand(title, {
     type: "implementation",
@@ -71,23 +78,10 @@ afterEach(() => {
 
 describe("review outcome commands", () => {
   it("documents review outcome commands and required reason options in CLI help", () => {
-    const root = process.cwd();
-    const mainHelp = spawnSync("pnpm", ["exec", "tsx", "src/cli.ts", "--help"], {
-      cwd: root,
-      encoding: "utf-8",
-    });
-    const allHelp = spawnSync("pnpm", ["exec", "tsx", "src/cli.ts", "--help", "--all"], {
-      cwd: root,
-      encoding: "utf-8",
-    });
-    const requestChangesHelp = spawnSync("pnpm", ["exec", "tsx", "src/cli.ts", "request-changes", "--help"], {
-      cwd: root,
-      encoding: "utf-8",
-    });
-    const blockReviewHelp = spawnSync("pnpm", ["exec", "tsx", "src/cli.ts", "block-review", "--help"], {
-      cwd: root,
-      encoding: "utf-8",
-    });
+    const mainHelp = runCli(["--help"]);
+    const allHelp = runCli(["--help", "--all"]);
+    const requestChangesHelp = runCli(["request-changes", "--help"]);
+    const blockReviewHelp = runCli(["block-review", "--help"]);
 
     // Default --help shows only 6 primary commands
     expect(mainHelp.status).toBe(0);

@@ -5,7 +5,7 @@
  * Testing strategy:
  * - Import command functions directly (not via CLI spawn) following happyPath.test.ts pattern.
  * - Use vi.spyOn to capture console.log/error and process.exit calls.
- * - Use spawnSync for CLI-level help output tests following reviewOutcomeCommands.test.ts pattern.
+ * - Use spawnSync for CLI-level help output and process-boundary deprecation tests.
  * - Focus on verifying delegation to existing command functions — do not re-test the
  *   underlying implementations, only the new wrapper wiring.
  */
@@ -52,6 +52,13 @@ import { loadTasks } from "../src/specs/loadTasks.js";
 
 let cwd: string;
 let p: ReturnType<typeof getPaths>;
+
+function runCli(args: string[]) {
+  return spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
+    cwd: process.cwd(),
+    encoding: "utf-8",
+  });
+}
 
 function createTask(title = "CLI workflow test"): string {
   newCommand(title, {
@@ -609,11 +616,7 @@ describe("manciple check subcommands", () => {
 
 describe("CLI --help output structure", () => {
   it("--help shows only the 6 primary commands", () => {
-    const root = process.cwd();
-    const result = spawnSync("pnpm", ["exec", "tsx", "src/cli.ts", "--help"], {
-      cwd: root,
-      encoding: "utf-8",
-    });
+    const result = runCli(["--help"]);
 
     expect(result.status).toBe(0);
 
@@ -643,11 +646,7 @@ describe("CLI --help output structure", () => {
   });
 
   it("--help --all shows legacy commands too", () => {
-    const root = process.cwd();
-    const result = spawnSync("pnpm", ["exec", "tsx", "src/cli.ts", "--help", "--all"], {
-      cwd: root,
-      encoding: "utf-8",
-    });
+    const result = runCli(["--help", "--all"]);
 
     expect(result.status).toBe(0);
 
@@ -674,22 +673,14 @@ describe("CLI --help output structure", () => {
 
 describe("Legacy command deprecation", () => {
   it("legacy compile command prints deprecation hint to stderr", () => {
-    const root = process.cwd();
-    const result = spawnSync("pnpm", ["exec", "tsx", "src/cli.ts", "compile"], {
-      cwd: root,
-      encoding: "utf-8",
-    });
+    const result = runCli(["compile"]);
 
     // stderr should have the deprecation hint
     expect(result.stderr).toContain("manciple compile -> manciple handoff");
   });
 
   it("legacy list command prints deprecation hint to stderr", () => {
-    const root = process.cwd();
-    const result = spawnSync("pnpm", ["exec", "tsx", "src/cli.ts", "list"], {
-      cwd: root,
-      encoding: "utf-8",
-    });
+    const result = runCli(["list"]);
 
     expect(result.stderr).toContain("manciple list -> manciple task list");
     // The command still works — stdout has output
@@ -697,41 +688,25 @@ describe("Legacy command deprecation", () => {
   });
 
   it("legacy new command prints deprecation hint to stderr", () => {
-    const root = process.cwd();
-    const result = spawnSync("pnpm", ["exec", "tsx", "src/cli.ts", "new"], {
-      cwd: root,
-      encoding: "utf-8",
-    });
+    const result = runCli(["new"]);
 
     expect(result.stderr).toContain("manciple new -> manciple task new");
   });
 
   it("legacy validate command prints deprecation hint to stderr", () => {
-    const root = process.cwd();
-    const result = spawnSync("pnpm", ["exec", "tsx", "src/cli.ts", "validate"], {
-      cwd: root,
-      encoding: "utf-8",
-    });
+    const result = runCli(["validate"]);
 
     expect(result.stderr).toContain("manciple validate -> manciple check tasks");
   });
 
   it("legacy doctor command prints deprecation hint to stderr", () => {
-    const root = process.cwd();
-    const result = spawnSync("pnpm", ["exec", "tsx", "src/cli.ts", "doctor"], {
-      cwd: root,
-      encoding: "utf-8",
-    });
+    const result = runCli(["doctor"]);
 
     expect(result.stderr).toContain("manciple doctor -> manciple check");
   });
 
   it("multiple legacy commands each emit their own deprecation hint once", () => {
-    const root = process.cwd();
-    const result = spawnSync("pnpm", ["exec", "tsx", "src/cli.ts", "validate"], {
-      cwd: root,
-      encoding: "utf-8",
-    });
+    const result = runCli(["validate"]);
 
     // Hint appears exactly once (the shownDeprecation set prevents duplicates)
     const matches = result.stderr.match(/manciple validate -> manciple check tasks/g);
