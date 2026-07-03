@@ -42,8 +42,8 @@
 		"access": "public"
 	},
 	"bin": {
-		"manciple": "./bin/manciple.js",
-		"manciple-mcp": "./bin/manciple-mcp.js"
+		"manciple": "bin/manciple.js",
+		"manciple-mcp": "bin/manciple-mcp.js"
 	},
 	"scripts": {
 		"build": "tsc",
