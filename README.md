@@ -149,6 +149,7 @@ outputs_required:
 | `manciple review-check [task-id]`        | Check review readiness evidence.                                                    |
 | `manciple doctor`                        | Check repo configuration.                                                           |
 | `manciple mcp-config`                    | Create or update `.mcp.json` for the Manciple MCP server.                          |
+| `manciple migrate-assignr`               | Migrate existing `.assignr/` repo artifacts and config to Manciple.                 |
 
 ## Deeper Docs
 

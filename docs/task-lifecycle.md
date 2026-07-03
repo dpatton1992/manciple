@@ -69,4 +69,14 @@ lifecycle directories:
 manciple migrate-tasks
 ```
 
+Repos that were initialized before the package rename can migrate `.assignr/`
+repo artifacts and MCP/agent config to Manciple:
+
+```bash
+manciple migrate-assignr --dry-run
+manciple migrate-assignr
+```
+
+Use `manciple migrate-assignr --yes` for non-interactive migration.
+
 For first-run setup, start with [Getting Started](getting-started.md).

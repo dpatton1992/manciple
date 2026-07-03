@@ -23,6 +23,7 @@ import { blockReviewCommand } from "./commands/blockReview.js";
 import { archiveCommand } from "./commands/archive.js";
 import { reopenCommand } from "./commands/reopen.js";
 import { checkLifecycleCommand } from "./commands/checkLifecycle.js";
+import { migrateAssignrCommand } from "./commands/migrateAssignr.js";
 import { migrateTasksCommand } from "./commands/migrateTasks.js";
 import { runLogCommand } from "./commands/runLog.js";
 import { summarizeRunCostCommand } from "./commands/summarizeRunCost.js";
@@ -554,6 +555,16 @@ program
       archivedDir: p.tasksArchived,
       cwd,
     });
+  });
+
+// migrate-assignr
+program
+  .command("migrate-assignr")
+  .description("One-time migration: rename Assignr repo artifacts and config to Manciple.")
+  .option("--yes", "Apply migration without prompting.", false)
+  .option("--dry-run", "Preview migration without changing files.", false)
+  .action(async (opts: { yes: boolean; dryRun: boolean }) => {
+    await migrateAssignrCommand({ cwd, yes: opts.yes, dryRun: opts.dryRun });
   });
 
 // run-log
