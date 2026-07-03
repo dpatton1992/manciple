@@ -39,6 +39,69 @@ afterEach(() => {
 });
 
 describe("manciple init", () => {
+  it("prints the Manciple crate banner", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    let output = "";
+
+    try {
+      await initCommand({ force: false, cwd, root: ".manciple" });
+      output = logSpy.mock.calls.flat().join("\n");
+    } finally {
+      logSpy.mockRestore();
+    }
+
+    expect(output).toContain("/   M A N C I P L E");
+    expect(output).toContain("|  tasks/        prompts/");
+    expect(output).toContain("|  runs/         reviews/");
+    expect(output).toContain("repo-native agent stewardship");
+  });
+
+  it("prompts before linking the source checkout CLI globally during init", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const confirmGlobalLink = vi.fn(() => true);
+    const linkPackageGlobally = vi.fn(() => ({ ok: true }));
+    let output = "";
+
+    try {
+      await initCommand({
+        force: false,
+        cwd,
+        root: ".manciple",
+        globalLink: { packageRoot: cwd, confirmGlobalLink, linkPackageGlobally },
+      });
+      output = logSpy.mock.calls.flat().join("\n");
+    } finally {
+      logSpy.mockRestore();
+    }
+
+    expect(confirmGlobalLink).toHaveBeenCalledOnce();
+    expect(linkPackageGlobally).toHaveBeenCalledWith(cwd);
+    expect(output).toContain("CLI linked globally");
+  });
+
+  it("skips global CLI linking when the prompt is declined", async () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const confirmGlobalLink = vi.fn(() => false);
+    const linkPackageGlobally = vi.fn(() => ({ ok: true }));
+    let output = "";
+
+    try {
+      await initCommand({
+        force: false,
+        cwd,
+        root: ".manciple",
+        globalLink: { packageRoot: cwd, confirmGlobalLink, linkPackageGlobally },
+      });
+      output = logSpy.mock.calls.flat().join("\n");
+    } finally {
+      logSpy.mockRestore();
+    }
+
+    expect(confirmGlobalLink).toHaveBeenCalledOnce();
+    expect(linkPackageGlobally).not.toHaveBeenCalled();
+    expect(output).toContain("CLI global link skipped");
+  });
+
   it("creates the canonical lifecycle directories", () => {
     expect(existsSync(p.tasksActive)).toBe(true);
     expect(existsSync(p.tasksCompleted)).toBe(true);

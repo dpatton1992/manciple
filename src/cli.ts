@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { Command } from "commander";
 import { createRequire } from "module";
+import { dirname, join, resolve } from "path";
+import { fileURLToPath } from "url";
 import { loadConfig } from "./config.js";
 import { getPaths } from "./utils/paths.js";
 import { DEFAULT_ROOT, STATUSES, TASK_TYPES, PRIORITIES } from "./constants.js";
@@ -108,6 +110,7 @@ function emitDeprecation(name: string): void {
 
 const require = createRequire(import.meta.url);
 const { version } = require("../package.json") as { version: string };
+const packageRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 
 const cwd = process.cwd();
 const config = loadConfig(cwd);
@@ -115,6 +118,12 @@ const root = config.root;
 const p = getPaths(cwd, root);
 
 const program = new Command();
+
+function shouldLinkGlobalOnInit(): boolean {
+	const invokedScript = process.argv[1];
+	if (!invokedScript) return false;
+	return resolve(invokedScript) === join(packageRoot, "bin", "manciple.js") && resolve(cwd) === packageRoot;
+}
 
 program
   .name("manciple")
@@ -133,7 +142,15 @@ program
   .option("--agents", "Only install packaged agent skills and agents, skip directory creation and MCP.", false)
   .option("--verbose", "Show detailed per-directory and per-file output.", false)
   .action(async (opts: { force: boolean; root: string; mcp: boolean; agents: boolean; verbose: boolean }) => {
-    await initCommand({ force: opts.force, cwd, root: opts.root, mcp: opts.mcp, agents: opts.agents, verbose: opts.verbose });
+    await initCommand({
+      force: opts.force,
+      cwd,
+      root: opts.root,
+      mcp: opts.mcp,
+      agents: opts.agents,
+      verbose: opts.verbose,
+      globalLink: shouldLinkGlobalOnInit() ? { packageRoot } : undefined,
+    });
   });
 
 // install-assets

@@ -7,10 +7,11 @@ import {
 	readdirSync,
 	statSync,
 } from 'fs';
+import { spawnSync } from 'child_process';
+import { createInterface } from 'readline/promises';
 import { join, relative } from 'path';
 import { getPaths } from '../utils/paths.js';
 import picocolors from 'picocolors';
-import { headerBanner } from '../utils/styling.js';
 import {
 	IMPLEMENTATION_TEMPLATE,
 	REVIEW_TEMPLATE,
@@ -59,6 +60,64 @@ const ASSET_LABELS: Record<string, string> = {
 	'.codex/skills': 'Codex skills',
 	'.opencode/agents': 'OpenCode agents',
 };
+
+const INIT_BANNER = String.raw`        _________________________________
+       /                                /|
+      /   M A N C I P L E              / |
+     /________________________________/  |
+     |                                |  |
+     |  tasks/        prompts/        |  |
+     |  runs/         reviews/        |  |
+     |                                |  |
+     |  repo-native agent stewardship |  /
+     |________________________________| /`;
+
+interface GlobalLinkResult {
+	ok: boolean;
+	skipped?: boolean;
+	detail?: string;
+}
+
+type LinkPackageGlobally = (packageRoot: string) => GlobalLinkResult;
+type ConfirmGlobalLink = () => boolean | Promise<boolean>;
+
+function linkPackageGlobally(packageRoot: string): GlobalLinkResult {
+	const result = spawnSync('pnpm', ['link', '--global'], {
+		cwd: packageRoot,
+		encoding: 'utf-8',
+	});
+
+	if (result.error) {
+		return { ok: false, detail: result.error.message };
+	}
+
+	if (result.status === 0) {
+		return { ok: true };
+	}
+
+	const detail = (result.stderr || result.stdout || `pnpm link --global exited with status ${result.status}`).trim();
+	return { ok: false, detail };
+}
+
+async function confirmGlobalLink(): Promise<boolean> {
+	if (!process.stdin.isTTY || !process.stdout.isTTY) {
+		return false;
+	}
+
+	const rl = createInterface({
+		input: process.stdin,
+		output: process.stdout,
+	});
+
+	try {
+		const answer = await rl.question(
+			`\n  Link this checkout globally so ${picocolors.cyan('manciple')} works on PATH? ${picocolors.dim('(y/N) ')}`,
+		);
+		return /^(y|yes)$/i.test(answer.trim());
+	} finally {
+		rl.close();
+	}
+}
 
 function updateGitignore(cwd: string, root: string, quiet: boolean = false): void {
 	const gitignorePath = join(cwd, '.gitignore');
@@ -134,14 +193,20 @@ export async function initCommand(options: {
 	mcp?: boolean;
 	agents?: boolean;
 	verbose?: boolean;
+	globalLink?: {
+		packageRoot: string;
+		linkPackageGlobally?: LinkPackageGlobally;
+		confirmGlobalLink?: ConfirmGlobalLink;
+	};
 }): Promise<void> {
-	const { force, cwd, root, mcp = false, agents = false, verbose = false } = options;
+	const { force, cwd, root, mcp = false, agents = false, verbose = false, globalLink } = options;
 	const runFullSetup = !mcp && !agents;
 	const p = getPaths(cwd, root);
 
 	let dirs: string[] = [];
 	const created: string[] = [];
 	const skipped: string[] = [];
+	let globalLinkResult: GlobalLinkResult | undefined;
 
 	// ── Execute all work first (quiet) ──────────────────────────────────
 
@@ -206,7 +271,17 @@ export async function initCommand(options: {
 
 	// ── 1. Branded header banner ────────────────────────────────────────
 
-	console.log(headerBanner().trimEnd());
+	console.log(picocolors.bold(picocolors.cyan(INIT_BANNER)));
+
+	if (globalLink) {
+		const shouldLink = await (globalLink.confirmGlobalLink ?? confirmGlobalLink)();
+		if (shouldLink) {
+			const linker = globalLink.linkPackageGlobally ?? linkPackageGlobally;
+			globalLinkResult = linker(globalLink.packageRoot);
+		} else {
+			globalLinkResult = { ok: false, skipped: true };
+		}
+	}
 
 	// ── 2. Success summary ──────────────────────────────────────────────
 
@@ -219,6 +294,16 @@ export async function initCommand(options: {
 	}
 	if (agents || runFullSetup) {
 		console.log(`  ${picocolors.green('✓')} ${picocolors.bold('Agent skills installed')}`);
+	}
+	if (globalLinkResult?.ok) {
+		console.log(`  ${picocolors.green('✓')} ${picocolors.bold('CLI linked globally')}`);
+	} else if (globalLinkResult?.skipped) {
+		console.log(`  ${picocolors.dim('-')} ${picocolors.dim('CLI global link skipped')}`);
+	} else if (globalLinkResult) {
+		console.log(`  ${picocolors.yellow('!')} ${picocolors.bold('CLI global link failed')}`);
+		if (globalLinkResult.detail) {
+			console.log(`     ${picocolors.dim(globalLinkResult.detail.split('\n')[0])}`);
+		}
 	}
 
 	// ── 3. Workflow / Next Steps ────────────────────────────────────────
