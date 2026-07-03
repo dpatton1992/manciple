@@ -19,7 +19,7 @@ manciple install-assets
 ```
 
 Both copy `.claude/skills/` and `.codex/skills/` from
-`node_modules/@dpatt/manciple/` into your repo root, plus the OpenCode agents
+`node_modules/manciple/` into your repo root, plus the OpenCode agents
 (see [OpenCode Agents](opencode-agents.md)).
 
 ## Available Skills

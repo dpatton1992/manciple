@@ -17,7 +17,7 @@ interface OpenCodeConfig {
 const SERVER_NAME = "manciple";
 
 function mancipleNpxArgs(): string[] {
-  return ["--yes", "--package", "@dpatt/manciple", "manciple-mcp"];
+  return ["--yes", "--package", "manciple", "manciple-mcp"];
 }
 
 /**
