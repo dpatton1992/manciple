@@ -1,0 +1,242 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta
+      name="description"
+      content="Manciple is repo-native task orchestration for coding agents, with scoped task specs, generated handoffs, run logs, and review evidence."
+    >
+    <title>Manciple - Repo-native task orchestration for coding agents</title>
+    <link rel="stylesheet" href="landing.css">
+    <script src="landing.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header" data-header>
+      <nav class="nav" aria-label="Primary navigation">
+        <a class="brand" href="#top" aria-label="Manciple home">
+          <span class="brand-mark" aria-hidden="true">M</span>
+          <span>Manciple</span>
+        </a>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav" data-nav-toggle>
+          <span class="nav-toggle-bars" aria-hidden="true"></span>
+          <span class="sr-only">Toggle navigation</span>
+        </button>
+        <div class="nav-links" id="site-nav" data-nav-links>
+          <a href="#workflow">Workflow</a>
+          <a href="#review">Review</a>
+          <a href="#integration">Integration</a>
+          <a href="#install">Install</a>
+          <a href="#docs">Docs</a>
+        </div>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero" id="top" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow">manciple.dev / command-line steward</p>
+          <h1 id="hero-title">Manciple</h1>
+          <p class="lede">
+            A repo-native quest ledger for coding agents. Turn loose requests into scoped
+            task charters with boundaries, verification commands, and review evidence.
+          </p>
+          <div class="hero-actions" aria-label="Primary actions">
+            <a class="button button-primary" href="#install">Install the CLI</a>
+            <a class="button button-secondary" href="https://github.com/dpatton1992/manciple">Open GitHub</a>
+            <a class="button button-secondary" href="getting-started.md">Read the field guide</a>
+          </div>
+          <div class="install-strip" aria-label="Quick install command">
+            <code>npm install -g manciple</code>
+            <button type="button" class="copy-button" data-copy="npm install -g manciple">Copy</button>
+          </div>
+        </div>
+
+        <div class="hero-media" aria-label="Manciple task planning screenshot">
+          <img
+            src="images/planning-output.png"
+            alt="Terminal output showing a Manciple task handoff with allowed paths, acceptance criteria, and verification commands."
+            width="2132"
+            height="1162"
+          >
+        </div>
+      </section>
+
+      <section class="proof-band" aria-label="Manciple benefits">
+        <div>
+          <strong>Task charters</strong>
+          <span>Goals, allowed paths, acceptance criteria, and required outputs are written before the agent rides out.</span>
+        </div>
+        <div>
+          <strong>Run ledgers</strong>
+          <span>Files changed, commands run, model details, and risks stay in the repo for inspection.</span>
+        </div>
+        <div>
+          <strong>Party-safe work</strong>
+          <span>Codex, Claude Code, Cursor, OpenCode, Aider, Goose, and MCP clients can follow the same contract.</span>
+        </div>
+      </section>
+
+      <section class="section" id="workflow" aria-labelledby="workflow-title">
+        <div class="section-heading">
+          <p class="eyebrow">Core workflow</p>
+          <h2 id="workflow-title">Write the charter. Send the agent. Inspect the proof.</h2>
+          <p>
+            Manciple keeps the agent workflow in your repository as plain files. A task starts as a
+            YAML contract, compiles into an agent-ready prompt, and ends with evidence a reviewer can check.
+          </p>
+        </div>
+        <div class="steps" aria-label="Manciple workflow steps">
+          <article>
+            <span class="step-number">01</span>
+            <h3>Write the task charter</h3>
+            <p>Define the goal, scope, acceptance criteria, verification commands, and required outputs.</p>
+          </article>
+          <article>
+            <span class="step-number">02</span>
+            <h3>Seal the handoff</h3>
+            <p>Generate a bounded prompt for the coding agent already working in your repo.</p>
+          </article>
+          <article>
+            <span class="step-number">03</span>
+            <h3>Record the run ledger</h3>
+            <p>Capture commands, changed files, risks, and results in a repo-local run log.</p>
+          </article>
+          <article>
+            <span class="step-number">04</span>
+            <h3>Review the receipts</h3>
+            <p>Move finished work to review with the original contract and receipts in one place.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section split" id="review" aria-labelledby="review-title">
+        <div class="section-copy">
+          <p class="eyebrow">Evidence and review</p>
+          <h2 id="review-title">Review from ledgers, not chat memory.</h2>
+          <p>
+            Manciple gives reviewers the original task, the worker's stated result, the files touched,
+            commands run, residual risks, and lifecycle status. Review readiness checks catch missing
+            evidence before a human spends attention on the diff.
+          </p>
+          <ul class="check-list">
+            <li>Allowed and forbidden paths stay visible during review.</li>
+            <li>Run logs describe what the agent claims changed.</li>
+            <li>Review prompts collect task context, evidence, and checklist items.</li>
+          </ul>
+          <a class="text-link" href="evidence-and-review.md">Read evidence and review docs</a>
+        </div>
+        <div class="terminal-panel" aria-label="Run log command example">
+          <div class="terminal-title">Run ledger evidence</div>
+          <pre><code>manciple run-log build-login-page \
+  --result complete \
+  --agent Codex \
+  --model gpt-5-codex \
+  --command "pnpm test -- auth" \
+  --file "src/features/auth/LoginPage.tsx" \
+  --risks "No known risks."</code></pre>
+        </div>
+      </section>
+
+      <section class="section split split-reversed" id="integration" aria-labelledby="integration-title">
+        <div class="image-panel">
+          <img
+            src="images/init-output.png"
+            alt="Terminal output from manciple init showing repo-local task, prompt, run, review, and agent skill folders."
+            width="842"
+            height="806"
+          >
+        </div>
+        <div class="section-copy">
+          <p class="eyebrow">MCP and agent integration</p>
+          <h2 id="integration-title">Equip the agent party you already run.</h2>
+          <p>
+            Manciple is the workflow layer, not a replacement runtime. The CLI creates repo-local task
+            state and can install MCP configuration, Codex skills, Claude Code skills, and OpenCode agents
+            so workers can load the same task contract through their native tools.
+          </p>
+          <div class="feature-grid">
+            <a href="mcp-server.md">MCP server</a>
+            <a href="agent-skills.md">Agent skills</a>
+            <a href="opencode-agents.md">OpenCode agents</a>
+            <a href="parallel-workflows.md">Parallel workflows</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section install-section" id="install" aria-labelledby="install-title">
+        <div class="section-heading">
+          <p class="eyebrow">Installation</p>
+          <h2 id="install-title">Summon it in one repo.</h2>
+          <p>Install the CLI, initialize Manciple at a repository root, and compile the first handoff.</p>
+        </div>
+        <div class="command-grid">
+          <article>
+            <h3>Install</h3>
+            <div class="command-row">
+              <code>npm install -g manciple</code>
+              <button type="button" class="copy-button" data-copy="npm install -g manciple">Copy</button>
+            </div>
+          </article>
+          <article>
+            <h3>Initialize</h3>
+            <div class="command-row">
+              <code>manciple init</code>
+              <button type="button" class="copy-button" data-copy="manciple init">Copy</button>
+            </div>
+          </article>
+          <article>
+            <h3>Create and hand off</h3>
+            <div class="command-row">
+              <code>manciple new "Build login page"</code>
+              <button type="button" class="copy-button" data-copy="manciple new &quot;Build login page&quot;">Copy</button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section docs-section" id="docs" aria-labelledby="docs-title">
+        <div class="section-heading">
+          <p class="eyebrow">Deeper docs</p>
+          <h2 id="docs-title">Follow the workflow in detail.</h2>
+        </div>
+        <div class="docs-grid">
+          <a href="https://github.com/dpatton1992/manciple/blob/main/docs/getting-started.md" rel="noopener" target="_blank">
+            <span>Getting Started</span>
+            <small>Install, initialize a repo, create a task, and record evidence.</small>
+          </a>
+          <a href="https://github.com/dpatton1992/manciple/blob/main/docs/task-lifecycle.md" rel="noopener" target="_blank">
+            <span>Task Lifecycle</span>
+            <small>Understand active, completed, archived, and review states.</small>
+          </a>
+          <a href="https://github.com/dpatton1992/manciple/blob/main/docs/evidence-and-review.md" rel="noopener" target="_blank">
+            <span>Evidence and Review</span>
+            <small>Run logs, review prompts, readiness checks, and reviewer decisions.</small>
+          </a>
+          <a href="https://github.com/dpatton1992/manciple/blob/main/docs/review-queue.md" rel="noopener" target="_blank">
+            <span>Review Queue</span>
+            <small>Triage and deep-review batches of work waiting for review.</small>
+          </a>
+          <a href="https://github.com/dpatton1992/manciple/blob/main/docs/mcp-server.md" rel="noopener" target="_blank">
+            <span>MCP Server</span>
+            <small>Tool calls for task packets, dispatch plans, verification, and run logs.</small>
+          </a>
+          <a href="https://github.com/dpatton1992/manciple/blob/main/docs/parallel-workflows.md" rel="noopener" target="_blank">
+            <span>Parallel Workflows</span>
+            <small>Dependencies, path ownership, worktrees, and coordinator loops.</small>
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>Manciple is formerly Assignr.</span>
+      <a href="https://github.com/dpatton1992/manciple/blob/main/README.md" rel="noopener" target="_blank">README</a>
+      <a href="https://www.npmjs.com/package/manciple" rel="noopener" target="_blank">npm package</a>
+      <a href="https://github.com/dpatton1992/manciple" rel="noopener" target="_blank">GitHub repository</a>
+    </footer>
+  </body>
+</html>

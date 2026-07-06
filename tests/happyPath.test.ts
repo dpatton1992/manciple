@@ -246,30 +246,63 @@ describe("manciple new", () => {
   });
 
   it("does not write a partial task when interactive prompting fails", async () => {
-    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: string | number | null) => {
-      throw new Error(`process.exit(${code})`);
-    }) as never);
+    await expect(newInteractiveCommand(undefined, {
+      type: "implementation",
+      domain: "core",
+      priority: "medium",
+      cwd,
+      activeDir: p.tasksActive,
+      question: async () => {
+        throw new Error("cancelled");
+      },
+    })).rejects.toThrow("Error: interactive task creation failed: cancelled");
 
-    try {
-      await expect(newInteractiveCommand(undefined, {
-        type: "implementation",
-        domain: "core",
-        priority: "medium",
-        cwd,
-        activeDir: p.tasksActive,
-        question: async () => {
-          throw new Error("cancelled");
-        },
-      })).rejects.toThrow("process.exit(1)");
+    expect(existsSync(join(p.tasksActive, "guided-onboarding-task.yaml"))).toBe(false);
+  });
 
-      expect(exitSpy).toHaveBeenCalledWith(1);
-      expect(existsSync(join(p.tasksActive, "guided-onboarding-task.yaml"))).toBe(false);
-      expect(errorSpy.mock.calls.flat().join("\n")).toContain("interactive task creation failed");
-    } finally {
-      errorSpy.mockRestore();
-      exitSpy.mockRestore();
-    }
+  it("throws without writing a task when --goal is empty", () => {
+    expect(() => newCommand("Empty goal task", {
+      type: "implementation",
+      domain: "core",
+      priority: "medium",
+      goal: "   ",
+      cwd,
+      activeDir: p.tasksActive,
+    })).toThrow("Error: --goal value must not be empty.");
+
+    expect(existsSync(join(p.tasksActive, "empty-goal-task.yaml"))).toBe(false);
+  });
+
+  it("throws without writing a task when the title cannot generate an id", () => {
+    expect(() => newCommand("!!!", {
+      type: "implementation",
+      domain: "core",
+      priority: "medium",
+      cwd,
+      activeDir: p.tasksActive,
+    })).toThrow("Error: could not generate a valid id from the provided title.");
+  });
+
+  it("throws without overwriting a duplicate task spec", () => {
+    const created = newCommand("Duplicate task", {
+      type: "implementation",
+      domain: "core",
+      priority: "medium",
+      goal: "Create the first copy.",
+      cwd,
+      activeDir: p.tasksActive,
+    });
+
+    expect(() => newCommand("Duplicate task", {
+      type: "implementation",
+      domain: "core",
+      priority: "medium",
+      goal: "Create the second copy.",
+      cwd,
+      activeDir: p.tasksActive,
+    })).toThrow("Error: task spec already exists at .manciple/tasks/active/duplicate-task.yaml");
+
+    expect(readFileSync(created, "utf-8")).toContain("Create the first copy.");
   });
 });
 

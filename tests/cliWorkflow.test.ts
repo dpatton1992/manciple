@@ -693,6 +693,20 @@ describe("Legacy command deprecation", () => {
     expect(result.stderr).toContain("manciple new -> manciple task new");
   });
 
+  it("legacy new command exits nonzero for missing title at the CLI boundary", () => {
+    const result = runCli(["new"]);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("error: missing required argument 'title'");
+  });
+
+  it("legacy new command exits nonzero for task creation errors at the CLI boundary", () => {
+    const result = runCli(["new", "Empty goal from cli", "--goal", " "]);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("Error: --goal value must not be empty.");
+  });
+
   it("legacy validate command prints deprecation hint to stderr", () => {
     const result = runCli(["validate"]);
 

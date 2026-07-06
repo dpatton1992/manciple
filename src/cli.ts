@@ -67,6 +67,17 @@ function parseNumberOption(value: string): number {
   return parsed;
 }
 
+async function runCliAction(action: () => void | Promise<void>): Promise<void> {
+  // Command modules should throw; Commander actions translate failures to stderr and exit codes.
+  try {
+    await action();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(message);
+    process.exit(1);
+  }
+}
+
 const RUN_LOG_RESULTS = ["complete", "partial", "blocked", "failed"];
 
 // === Deprecation system for legacy commands ===
@@ -173,21 +184,18 @@ program
   .option("--goal <goal>", "Pre-fill the goal field.")
   .option("--implementation-note <note>", "Behavior, product, or design constraint. May be repeated.", collect, [])
   .option("--interactive", "Prompt for task fields.", false)
-  .action(async (title: string | undefined, opts: { type: string; domain: string; priority: string; goal?: string; implementationNote: string[]; interactive: boolean }) => {
+  .action((title: string | undefined, opts: { type: string; domain: string; priority: string; goal?: string; implementationNote: string[]; interactive: boolean }) => runCliAction(async () => {
     if (!title && !opts.interactive) {
-      console.error("error: missing required argument 'title'");
-      process.exit(1);
+      throw new Error("error: missing required argument 'title'");
     }
 
     const type = opts.type as TaskType;
     const priority = opts.priority as Priority;
     if (!TASK_TYPES.includes(type)) {
-      console.error(`Invalid type: "${type}". Allowed: ${TASK_TYPES.join(", ")}`);
-      process.exit(1);
+      throw new Error(`Invalid type: "${type}". Allowed: ${TASK_TYPES.join(", ")}`);
     }
     if (!PRIORITIES.includes(priority)) {
-      console.error(`Invalid priority: "${priority}". Allowed: ${PRIORITIES.join(", ")}`);
-      process.exit(1);
+      throw new Error(`Invalid priority: "${priority}". Allowed: ${PRIORITIES.join(", ")}`);
     }
     if (opts.interactive) {
       await newInteractiveCommand(title, { type, domain: opts.domain, priority, goal: opts.goal, cwd, activeDir: p.tasksActive });
@@ -202,7 +210,7 @@ program
       activeDir: p.tasksActive,
       implementationNotes: opts.implementationNote,
     });
-  });
+  }));
 
 // validate
 program

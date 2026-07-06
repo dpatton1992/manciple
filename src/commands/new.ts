@@ -36,6 +36,13 @@ interface NewTaskSpecValues {
   notes: string[];
 }
 
+export class TaskCreationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TaskCreationError";
+  }
+}
+
 const defaultSpecValues: NewTaskSpecValues = {
   acceptanceCriteria: ["TODO: add acceptance criteria"],
   verificationCommands: ["TODO: add verification commands"],
@@ -62,8 +69,7 @@ function createTaskSpec(
     ? (() => {
         const trimmed = goal.trim();
         if (!trimmed) {
-          console.error("Error: --goal value must not be empty.");
-          process.exit(1);
+          throw new TaskCreationError("Error: --goal value must not be empty.");
         }
         return trimmed;
       })()
@@ -95,22 +101,24 @@ function writeTaskFile(title: string, options: NewTaskOptions, values?: NewTaskS
   const id = slugify(title);
 
   if (!id) {
-    console.error("Error: could not generate a valid id from the provided title.");
-    process.exit(1);
+    throw new TaskCreationError("Error: could not generate a valid id from the provided title.");
   }
 
   const filePath = join(activeDir, `${id}.yaml`);
 
   if (existsSync(filePath)) {
-    console.error(`Error: task spec already exists at ${filePath.replace(cwd + "/", "")}`);
-    process.exit(1);
+    throw new TaskCreationError(`Error: task spec already exists at ${filePath.replace(cwd + "/", "")}`);
   }
 
   if (!existsSync(activeDir)) {
     mkdirSync(activeDir, { recursive: true });
   }
 
-  const spec = createTaskSpec(title, id, options, values);
+  const spec = createTaskSpec(title, id, {
+    ...options,
+    type: validateChoice(options.type, TASK_TYPES, "type"),
+    priority: validateChoice(options.priority, PRIORITIES, "priority"),
+  }, values);
   const yaml = formatYamlDocument(spec);
   writeFileSync(filePath, yaml, "utf-8");
 
@@ -127,8 +135,7 @@ function validateChoice<T extends readonly string[]>(value: string, allowed: T, 
   if (allowed.includes(value)) {
     return value as T[number];
   }
-  console.error(`Invalid ${label}: "${value}". Allowed: ${allowed.join(", ")}`);
-  process.exit(1);
+  throw new TaskCreationError(`Invalid ${label}: "${value}". Allowed: ${allowed.join(", ")}`);
 }
 
 async function askRequired(question: PromptQuestion, prompt: string): Promise<string> {
@@ -163,14 +170,14 @@ async function askList(question: PromptQuestion, label: string, required: boolea
   }
 }
 
-export function newCommand(title: string, options: NewTaskOptions): void {
-  writeTaskFile(title, options);
+export function newCommand(title: string, options: NewTaskOptions): string {
+  return writeTaskFile(title, options);
 }
 
 export async function newInteractiveCommand(
   title: string | undefined,
   options: NewTaskInteractiveOptions,
-): Promise<void> {
+): Promise<string> {
   const readline = options.question
     ? undefined
     : createInterface({
@@ -197,7 +204,7 @@ export async function newInteractiveCommand(
       notes: await askList(question, "Note", false),
     };
 
-    writeTaskFile(interactiveTitle, {
+    return writeTaskFile(interactiveTitle, {
       ...options,
       goal,
       type: validateChoice(typeValue, TASK_TYPES, "type"),
@@ -205,9 +212,11 @@ export async function newInteractiveCommand(
       priority: validateChoice(priorityValue, PRIORITIES, "priority"),
     }, values);
   } catch (error) {
+    if (error instanceof TaskCreationError) {
+      throw error;
+    }
     const message = error instanceof Error ? error.message : String(error);
-    console.error(`Error: interactive task creation failed: ${message}`);
-    process.exit(1);
+    throw new TaskCreationError(`Error: interactive task creation failed: ${message}`);
   } finally {
     readline?.close();
   }

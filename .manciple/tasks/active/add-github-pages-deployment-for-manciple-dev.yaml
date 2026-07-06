@@ -1,0 +1,71 @@
+id: add-github-pages-deployment-for-manciple-dev
+title: Add GitHub Pages deployment for manciple.dev
+status: needs_review
+type: implementation
+domain: core
+priority: high
+depends_on:
+  - build-static-manciple-dev-landing-page
+blocks: []
+conflicts_with: []
+can_run_independently: false
+allowed_paths:
+  - docs/CNAME
+  - .github/workflows/pages.yml
+  - .github/workflows/pages.yaml
+forbidden_paths:
+  - src/**
+  - tests/**
+  - bin/**
+  - dist/**
+  - node_modules/**
+  - .manciple/prompts/generated/**
+  - .manciple/tasks/completed/**
+  - .manciple/tasks/archived/**
+  - docs/index.html
+  - docs/landing.css
+  - docs/landing.js
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas:
+    - .github/workflows/pages.yml
+    - .github/workflows/pages.yaml
+goal: Configure the repository to publish the static docs landing page to GitHub Pages
+  for manciple.dev.
+acceptance_criteria:
+  - docs/CNAME exists and contains exactly manciple.dev with no protocol or path.
+  - A GitHub Actions workflow publishes the docs directory as a static GitHub Pages
+    artifact on pushes to the main branch and supports manual workflow_dispatch runs.
+  - The workflow uses GitHub Pages permissions and concurrency settings appropriate for
+    pages deployments.
+  - The deployment workflow runs the existing baseline checks before uploading the site
+    artifact, or documents why deployment should not be gated on them.
+  - The workflow does not require frontend build dependencies or generated dist output
+    for the static landing page.
+implementation_notes:
+  - Prefer the official actions/configure-pages, actions/upload-pages-artifact, and
+    actions/deploy-pages flow unless an existing repository convention points elsewhere.
+  - Assume docs/ is the publish directory created by
+    build-static-manciple-dev-landing-page.
+  - Do not change DNS records; repo changes should only prepare the custom-domain file
+    and GitHub Pages deployment workflow.
+  - Preserve existing unit-test and pack-install workflows.
+verification:
+  commands:
+    - test "$(cat docs/CNAME)" = "manciple.dev"
+    - test -f .github/workflows/pages.yml -o -f .github/workflows/pages.yaml
+    - rg -n "configure-pages|upload-pages-artifact|deploy-pages|manciple.dev"
+      .github/workflows docs/CNAME
+    - pnpm typecheck
+    - pnpm test
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+  - decisions_made
+notes:
+  - This task depends on build-static-manciple-dev-landing-page so the publish directory
+    exists before deployment wiring is reviewed.
+  - The allowed paths intentionally exclude the landing page files to avoid overlapping
+    product/design work with deployment configuration.

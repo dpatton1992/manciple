@@ -52,11 +52,12 @@
 		"format:yaml": "tsx scripts/formatMancipleYaml.ts",
 		"check:manciple-yaml": "tsx scripts/formatMancipleYaml.ts --check",
 		"check:manciple-lifecycle": "tsx scripts/checkMancipleLifecycle.ts",
+		"lint": "pnpm run check:manciple-yaml && pnpm run typecheck",
 		"test": "NO_COLOR=1 tsx scripts/runVitest.ts --silent",
 		"test:verbose": "NO_COLOR=1 tsx scripts/runVitest.ts",
 		"test:watch": "vitest",
 		"typecheck": "tsc --noEmit",
-		"prepublishOnly": "pnpm run check:manciple-yaml && pnpm run build && pnpm run test"
+		"prepublishOnly": "pnpm run lint && pnpm run build && pnpm run test"
 	},
 	"dependencies": {
 		"@modelcontextprotocol/sdk": "^1.29.0",

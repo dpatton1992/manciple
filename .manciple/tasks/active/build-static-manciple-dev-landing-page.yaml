@@ -1,0 +1,79 @@
+id: build-static-manciple-dev-landing-page
+title: Build static manciple.dev landing page
+status: needs_review
+type: implementation
+domain: core
+priority: high
+depends_on: []
+blocks:
+  - add-github-pages-deployment-for-manciple-dev
+conflicts_with: []
+can_run_independently: true
+allowed_paths:
+  - docs/index.html
+  - docs/landing.css
+  - docs/landing.js
+  - docs/images/**
+  - README.md
+forbidden_paths:
+  - src/**
+  - tests/**
+  - bin/**
+  - dist/**
+  - node_modules/**
+  - .manciple/prompts/generated/**
+  - .manciple/tasks/completed/**
+  - .manciple/tasks/archived/**
+  - .github/**
+path_ownership:
+  touched_paths: []
+  locked_paths: []
+  unsafe_parallel_areas:
+    - docs/index.html
+    - docs/landing.css
+    - docs/landing.js
+goal: Create a polished static landing page that can serve as the first screen for
+  manciple.dev.
+acceptance_criteria:
+  - docs/index.html exists and presents Manciple as repo-native task orchestration for
+    coding agents in the first viewport.
+  - The first viewport includes the Manciple name, a concise value proposition, and
+    direct calls to install the npm package and view the GitHub repository or docs.
+  - The page includes sections for the core workflow, evidence/review benefits, MCP or
+    agent integration, installation, and links into the existing deeper docs.
+  - The page uses existing project screenshots from docs/images/ or new lightweight
+    static assets committed under docs/images/; it is not text-only.
+  - The layout is responsive across mobile and desktop widths without overlapping text,
+    clipped controls, or horizontal scrolling.
+  - The implementation is static HTML/CSS with optional small vanilla JavaScript only;
+    do not add a frontend framework or runtime dependency unless the run log documents a
+    concrete reason.
+  - README.md links to docs/index.html or otherwise makes the website entry point
+    discoverable without replacing the current README quickstart.
+implementation_notes:
+  - Treat README.md as source material for product wording, but write landing-page copy
+    for prospective users who have not read the repo README.
+  - Keep the design utilitarian and product-focused rather than a marketing-only splash
+    page; the first screen should show what Manciple is and how to try it.
+  - Prefer a static page that works from GitHub Pages with relative asset paths.
+  - Use accessible semantic HTML, visible focus states, descriptive alt text, and color
+    contrast suitable for a public documentation site.
+  - Do not edit generated dist output or Manciple task history.
+verification:
+  commands:
+    - test -f docs/index.html
+    - rg -n "manciple.dev|Manciple|npm install -g manciple|manciple init"
+      docs/index.html README.md
+    - rg -n "docs/images|<img|<picture" docs/index.html
+    - pnpm typecheck
+    - pnpm test
+outputs_required:
+  - files_changed
+  - tests_run
+  - risks
+  - decisions_made
+notes:
+  - Existing completed task restructure-readme-as-assignr-landing-page reshaped the
+    README only; this task creates a real static website entry point for manciple.dev.
+  - This task intentionally excludes deployment workflow and custom-domain wiring, which
+    is handled by add-github-pages-deployment-for-manciple-dev.
