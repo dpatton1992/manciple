@@ -1,13 +1,16 @@
 import { spawnSync } from "child_process";
+import { resolve } from "path";
+import { fileURLToPath } from "url";
 
 const args = process.argv.slice(2).filter((arg) => arg !== "--");
-const result = spawnSync("vitest", ["run", ...args], {
+const repoRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
+const vitestCli = resolve(repoRoot, "node_modules", "vitest", "vitest.mjs");
+const result = spawnSync(process.execPath, [vitestCli, "run", ...args], {
   stdio: "inherit",
-  shell: process.platform === "win32",
 });
 
 if (result.error) {
-  console.error(result.error.message);
+  console.error(`Failed to start vitest: ${result.error.message}`);
   process.exit(1);
 }
 

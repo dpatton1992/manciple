@@ -66,6 +66,15 @@ body.nav-open {
   overflow: hidden;
 }
 
+main {
+  position: relative;
+}
+
+main > section {
+  position: relative;
+  z-index: 1;
+}
+
 a {
   color: inherit;
 }
@@ -312,6 +321,29 @@ h3 {
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.75);
 }
 
+.hero-ascii-lockup {
+  width: min(100%, 620px);
+  margin: 1.25rem 0 0;
+  overflow: hidden;
+  border: 1px solid rgba(214, 161, 61, 0.45);
+  border-radius: 4px;
+  background: rgba(11, 15, 13, 0.58);
+  color: rgba(243, 234, 210, 0.88);
+  font-size: clamp(0.42rem, 1.06vw, 0.67rem);
+  line-height: 1.08;
+  padding: 0.8rem 0.9rem;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.85);
+  white-space: pre;
+  box-shadow:
+    inset 0 0 0 1px rgba(8, 7, 5, 0.75),
+    0 18px 50px rgba(0, 0, 0, 0.22);
+}
+
+.hero-ascii-lockup code {
+  display: block;
+  min-width: 0;
+}
+
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
@@ -438,7 +470,31 @@ h3 {
   padding: 6rem 0 0;
 }
 
+.ascii-backdrop {
+  position: fixed;
+  top: 72px;
+  right: max(-14vw, -10rem);
+  bottom: 0;
+  z-index: 0;
+  width: min(118vw, 1320px);
+  max-height: none;
+  margin: 0;
+  overflow: hidden;
+  color: rgba(214, 161, 61, 0.18);
+  font-family: var(--font-mono);
+  font-size: 0.44rem;
+  line-height: 0.86;
+  pointer-events: none;
+  white-space: pre;
+  -webkit-mask-image: radial-gradient(ellipse at center, black 0%, black 58%, transparent 82%);
+  mask-image: radial-gradient(ellipse at center, black 0%, black 58%, transparent 82%);
+  opacity: 0.64;
+  transform: rotate(-1deg);
+}
+
 .section-heading {
+  position: relative;
+  z-index: 1;
   max-width: 780px;
 }
 
@@ -449,6 +505,8 @@ h3 {
 }
 
 .steps {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1rem;
@@ -690,6 +748,13 @@ h3 {
     inset: 14px;
   }
 
+  .ascii-backdrop {
+    right: -42vw;
+    width: 150vw;
+    font-size: 0.34rem;
+    opacity: 0.46;
+  }
+
   h1 {
     font-size: 4.2rem;
   }
@@ -726,6 +791,18 @@ h3 {
 
   .hero-copy {
     padding: 3.25rem 0.5rem 3rem;
+  }
+
+  .hero-ascii-lockup {
+    font-size: clamp(0.34rem, 1.7vw, 0.45rem);
+    padding: 0.65rem;
+  }
+
+  .ascii-backdrop {
+    right: -76vw;
+    width: 190vw;
+    font-size: 0.26rem;
+    opacity: 0.34;
   }
 
   h1 {

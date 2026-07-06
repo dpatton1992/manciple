@@ -1,4 +1,5 @@
 import type { Command } from "commander";
+import { STATUSES } from "../constants.js";
 import type { Status } from "../constants.js";
 import { runLogCommand } from "./runLog.js";
 import { setStatusCommand } from "./setStatus.js";
@@ -10,6 +11,14 @@ const RUN_LOG_RESULTS = ["complete", "partial", "blocked", "failed"];
 function collect(value: string, previous: string[]): string[] {
   previous.push(value);
   return previous;
+}
+
+function parseNumberOption(value: string): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error(`Expected a non-negative number, got "${value}".`);
+  }
+  return parsed;
 }
 
 export function registerSubmitCommand(program: Command, p: ManciplePaths, cwd: string): void {
@@ -102,5 +111,83 @@ export function registerSubmitCommand(program: Command, p: ManciplePaths, cwd: s
         // result=complete without --complete → needs_review
         setStatusCommand(taskId, "needs_review" as Status, p.specsTasks, cwd);
       }
+    });
+
+  program
+    .command("run-log <task-id>")
+    .description("Create a run log for a task.")
+    .option("--result <result>", "Outcome: complete, partial, blocked, or failed.")
+    .option("--task-status <status>", `Final task status to record. Allowed: ${STATUSES.join(", ")}.`)
+    .option("--model <model>", "Model that performed the work.")
+    .option("--agent <agent>", "Agent harness or tool used.")
+    .option("--harness <harness>", "Agent harness or tool used.")
+    .option("--input-tokens <count>", "Input token count recorded by the agent or harness.", parseNumberOption)
+    .option("--output-tokens <count>", "Output token count recorded by the agent or harness.", parseNumberOption)
+    .option("--total-tokens <count>", "Total token count recorded by the agent or harness.", parseNumberOption)
+    .option("--cost-usd <amount>", "Run cost in USD recorded by the agent or harness.", parseNumberOption)
+    .option("--command <command>", "Command executed during the run. May be repeated.", collect, [])
+    .option("--commands-run <command>", "Command executed during the run. May be repeated.", collect, [])
+    .option("--test <command>", "Test command or test receipt executed during the run. May be repeated.", collect, [])
+    .option("--tests-run <command>", "Test command or test receipt executed during the run. May be repeated.", collect, [])
+    .option("--file <path>", "Changed file path. May be repeated; otherwise git status is used.", collect, [])
+    .option("--files-changed <path>", "Changed file path. May be repeated; otherwise git status is used.", collect, [])
+    .option("--acceptance-evidence <evidence>", "Acceptance criteria evidence line. May be repeated.", collect, [])
+    .option("--verify-receipt <receipt>", "Deterministic verify receipt text or compact JSON.")
+    .option("--decision <decision>", "Decision made during the run. May be repeated.", collect, [])
+    .option("--follow-up <followUp>", "Follow-up task or note. May be repeated.", collect, [])
+    .option("--risks <risks>", "Risks or residual concerns.")
+    .option("--notes <notes>", "Free-form notes.")
+    .action((taskId: string, opts: {
+      result?: string;
+      taskStatus?: string;
+      model?: string;
+      agent?: string;
+      harness?: string;
+      inputTokens?: number;
+      outputTokens?: number;
+      totalTokens?: number;
+      costUsd?: number;
+      command: string[];
+      commandsRun: string[];
+      test: string[];
+      testsRun: string[];
+      file: string[];
+      filesChanged: string[];
+      acceptanceEvidence: string[];
+      verifyReceipt?: string;
+      decision: string[];
+      followUp: string[];
+      risks?: string;
+      notes?: string;
+    }) => {
+      if (opts.result && !RUN_LOG_RESULTS.includes(opts.result)) {
+        console.error(`Invalid result: "${opts.result}". Allowed: ${RUN_LOG_RESULTS.join(", ")}`);
+        process.exit(1);
+      }
+      if (opts.taskStatus && !STATUSES.includes(opts.taskStatus as Status)) {
+        console.error(`Invalid task status: "${opts.taskStatus}". Allowed: ${STATUSES.join(", ")}`);
+        process.exit(1);
+      }
+
+      runLogCommand(taskId, p.specsTasks, p.runs, p.promptsGenerated, cwd, {
+        result: opts.result,
+        taskStatus: opts.taskStatus,
+        model: opts.model,
+        agent: opts.agent,
+        harness: opts.harness,
+        inputTokens: opts.inputTokens,
+        outputTokens: opts.outputTokens,
+        totalTokens: opts.totalTokens,
+        costUsd: opts.costUsd,
+        commandsRun: [...opts.command, ...opts.commandsRun],
+        testsRun: [...opts.test, ...opts.testsRun],
+        filesChanged: [...opts.file, ...opts.filesChanged],
+        decisionsMade: opts.decision,
+        followUps: opts.followUp,
+        acceptanceCriteriaEvidence: opts.acceptanceEvidence,
+        verifyReceipt: opts.verifyReceipt,
+        risks: opts.risks,
+        notes: opts.notes,
+      });
     });
 }

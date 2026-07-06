@@ -3,6 +3,7 @@ import {
   mkdirSync,
   existsSync,
 } from "fs";
+import type { Command } from "commander";
 import { spawnSync } from "child_process";
 import { join } from "path";
 import { loadTasks } from "../specs/loadTasks.js";
@@ -19,6 +20,12 @@ import {
   colorForStatus,
   statusSymbol,
 } from "../utils/styling.js";
+import type { ManciplePaths } from "../utils/paths.js";
+import { reviewCheckCommand } from "./reviewCheck.js";
+import { reviewQueueCommand } from "./reviewQueue.js";
+import { approveCommand } from "./approve.js";
+import { requestChangesCommand } from "./requestChanges.js";
+import { blockReviewCommand } from "./blockReview.js";
 
 function formatList(items: string[] | undefined): string {
   if (!items || items.length === 0) return "_None specified._";
@@ -258,4 +265,182 @@ export function reviewCommand(
       implementationPromptFilename(taskId)
     ).replace(cwd + "/", "")}.`
   );
+}
+
+export function registerReviewCommands(program: Command, p: ManciplePaths, cwd: string): void {
+  const review = program
+    .command("review [task-id]")
+    .description("Manage the review process. See `manciple review --help` for subcommands.")
+    .option("--include-run-log", "Include full latest run log content.", false)
+    .option("--include-diff", "Include full git diff content.", false)
+    .action((taskId: string | undefined, opts: { includeRunLog: boolean; includeDiff: boolean }) => {
+      if (taskId) {
+        reviewCommand(taskId, p.specsTasks, p.promptsGenerated, cwd, {
+          includeRunLog: opts.includeRunLog,
+          includeGitDiff: opts.includeDiff,
+        });
+      } else {
+        review.help();
+      }
+    });
+
+  review
+    .command("queue")
+    .description("Run review queue triage (same as `manciple review-queue`).")
+    .option("--mode <mode>", "Review queue mode: triage or deep.", "triage")
+    .option("--all", "In deep mode, include tasks that passed triage.", false)
+    .option("--budget <tokens>", "Positive integer review budget estimate for queued packets.")
+    .option("--deep-only <filter>", "In deep mode, emit only tasks matching the filter: risky.")
+    .option("--machine", "Tab-delimited output for backward compatibility.", false)
+    .action((opts: { mode: string; all: boolean; budget?: string; deepOnly?: string; machine: boolean }) => {
+      reviewQueueCommand(p.tasksActive, cwd, {
+        mode: opts.mode as "triage" | "deep",
+        all: opts.all,
+        budget: opts.budget,
+        deepOnly: opts.deepOnly,
+        machine: opts.machine,
+        generatedDir: p.promptsGenerated,
+        activeDir: p.tasksActive,
+        completedDir: p.tasksCompleted,
+        archivedDir: p.tasksArchived,
+      });
+    });
+
+  review
+    .command("check [task-id]")
+    .description("Check review readiness (same as `manciple review-check`).")
+    .option("--deterministic", "Run local deterministic review gate checks.", false)
+    .option("--machine", "Tab-delimited output for backward compatibility.", false)
+    .action((taskId: string | undefined, opts: { deterministic: boolean; machine: boolean }) => {
+      reviewCheckCommand(p.tasksActive, cwd, taskId, {
+        deterministic: opts.deterministic,
+        machine: opts.machine,
+        generatedDir: p.promptsGenerated,
+        activeDir: p.tasksActive,
+        completedDir: p.tasksCompleted,
+        archivedDir: p.tasksArchived,
+      });
+    });
+
+  review
+    .command("prompt <task-id>")
+    .description("Generate a review prompt (same as `manciple review <task-id>`).")
+    .option("--include-run-log", "Include full latest run log content.", false)
+    .option("--include-diff", "Include full git diff content.", false)
+    .action((taskId: string, opts: { includeRunLog: boolean; includeDiff: boolean }) => {
+      reviewCommand(taskId, p.specsTasks, p.promptsGenerated, cwd, {
+        includeRunLog: opts.includeRunLog,
+        includeGitDiff: opts.includeDiff,
+      });
+    });
+
+  review
+    .command("approve <task-id>")
+    .description("Approve and complete a task (same as `manciple approve`).")
+    .action((taskId: string) => {
+      approveCommand(taskId, {
+        specsTasksDir: p.specsTasks,
+        completedDir: p.tasksCompleted,
+        runsDir: p.runs,
+        cwd,
+      });
+    });
+
+  review
+    .command("changes <task-id>")
+    .description("Request changes and return task to in_progress (same as `manciple request-changes`).")
+    .requiredOption("--reason <text>", "Reason changes are required.")
+    .action((taskId: string, opts: { reason: string }) => {
+      requestChangesCommand(taskId, opts.reason, {
+        specsTasksDir: p.specsTasks,
+        runsDir: p.runs,
+        cwd,
+      });
+    });
+
+  review
+    .command("block <task-id>")
+    .description("Block review for a task (same as `manciple block-review`).")
+    .requiredOption("--reason <text>", "Reason review is blocked.")
+    .action((taskId: string, opts: { reason: string }) => {
+      blockReviewCommand(taskId, opts.reason, {
+        specsTasksDir: p.specsTasks,
+        runsDir: p.runs,
+        cwd,
+      });
+    });
+
+  program
+    .command("review-check [task-id]")
+    .description("Check review readiness evidence for active needs_review tasks.")
+    .option("--deterministic", "Run local deterministic review gate checks.", false)
+    .option("--machine", "Tab-delimited output for backward compatibility.", false)
+    .action((taskId: string | undefined, opts: { deterministic: boolean; machine: boolean }) => {
+      reviewCheckCommand(p.tasksActive, cwd, taskId, {
+        deterministic: opts.deterministic,
+        machine: opts.machine,
+        generatedDir: p.promptsGenerated,
+        activeDir: p.tasksActive,
+        completedDir: p.tasksCompleted,
+        archivedDir: p.tasksArchived,
+      });
+    });
+
+  program
+    .command("review-queue")
+    .description("Triage active needs_review tasks for deeper review.")
+    .option("--mode <mode>", "Review queue mode: triage or deep.", "triage")
+    .option("--all", "In deep mode, include tasks that passed triage.", false)
+    .option("--budget <tokens>", "Positive integer review budget estimate for queued packets.")
+    .option("--deep-only <filter>", "In deep mode, emit only tasks matching the filter: risky.")
+    .option("--machine", "Tab-delimited output for backward compatibility.", false)
+    .action((opts: { mode: string; all: boolean; budget?: string; deepOnly?: string; machine: boolean }) => {
+      reviewQueueCommand(p.tasksActive, cwd, {
+        mode: opts.mode as "triage" | "deep",
+        all: opts.all,
+        budget: opts.budget,
+        deepOnly: opts.deepOnly,
+        machine: opts.machine,
+        generatedDir: p.promptsGenerated,
+        activeDir: p.tasksActive,
+        completedDir: p.tasksCompleted,
+        archivedDir: p.tasksArchived,
+      });
+    });
+
+  program
+    .command("approve <task-id>")
+    .description("Approve a task in needs_review, record the outcome, and move it to tasks/completed.")
+    .action((taskId: string) => {
+      approveCommand(taskId, {
+        specsTasksDir: p.specsTasks,
+        completedDir: p.tasksCompleted,
+        runsDir: p.runs,
+        cwd,
+      });
+    });
+
+  program
+    .command("request-changes <task-id>")
+    .description("Request changes for a task in needs_review and return it to in_progress.")
+    .requiredOption("--reason <text>", "Reason changes are required.")
+    .action((taskId: string, opts: { reason: string }) => {
+      requestChangesCommand(taskId, opts.reason, {
+        specsTasksDir: p.specsTasks,
+        runsDir: p.runs,
+        cwd,
+      });
+    });
+
+  program
+    .command("block-review <task-id>")
+    .description("Block review for a task in needs_review and record the blocking reason.")
+    .requiredOption("--reason <text>", "Reason review is blocked.")
+    .action((taskId: string, opts: { reason: string }) => {
+      blockReviewCommand(taskId, opts.reason, {
+        specsTasksDir: p.specsTasks,
+        runsDir: p.runs,
+        cwd,
+      });
+    });
 }

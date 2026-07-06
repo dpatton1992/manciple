@@ -1,10 +1,12 @@
 import { readFileSync } from "fs";
 import type { Command } from "commander";
-import { TASK_TYPES, PRIORITIES } from "../constants.js";
+import { TASK_TYPES, PRIORITIES, STATUSES } from "../constants.js";
 import type { TaskType, Priority, Status } from "../constants.js";
-import { newCommand } from "./new.js";
+import { newCommand, newInteractiveCommand } from "./new.js";
 import { listCommand } from "./list.js";
+import { statusCommand } from "./status.js";
 import { setStatusCommand } from "./setStatus.js";
+import { completeCommand } from "./complete.js";
 import { archiveCommand } from "./archive.js";
 import { reopenCommand } from "./reopen.js";
 import { loadTasks } from "../specs/loadTasks.js";
@@ -15,7 +17,16 @@ function collect(value: string, previous: string[]): string[] {
   return previous;
 }
 
-export function registerTaskCommands(program: Command, p: ManciplePaths, cwd: string): void {
+export interface RegisterTaskCommandsOptions {
+  runCliAction?: (action: () => void | Promise<void>) => Promise<void>;
+}
+
+export function registerTaskCommands(
+  program: Command,
+  p: ManciplePaths,
+  cwd: string,
+  options: RegisterTaskCommandsOptions = {}
+): void {
   const task = program
     .command("task")
     .description("Manage tasks. See `manciple task --help` for subcommands.")
@@ -163,6 +174,131 @@ export function registerTaskCommands(program: Command, p: ManciplePaths, cwd: st
   task
     .command("reopen <task-id>")
     .description("Reopen a task (same as `manciple reopen`).")
+    .action((taskId: string) => {
+      reopenCommand(taskId, {
+        specsTasksDir: p.specsTasks,
+        activeDir: p.tasksActive,
+        cwd,
+      });
+    });
+
+  program
+    .command("new [title]")
+    .description("Create a new task spec.")
+    .option("--type <type>", `Task type (${TASK_TYPES.join(", ")})`, "implementation")
+    .option("--domain <domain>", "Domain for this task.", "core")
+    .option("--priority <priority>", `Priority (${PRIORITIES.join(", ")})`, "medium")
+    .option("--goal <goal>", "Pre-fill the goal field.")
+    .option("--implementation-note <note>", "Behavior, product, or design constraint. May be repeated.", collect, [])
+    .option("--interactive", "Prompt for task fields.", false)
+    .action((title: string | undefined, opts: {
+      type: string;
+      domain: string;
+      priority: string;
+      goal?: string;
+      implementationNote: string[];
+      interactive: boolean;
+    }) => {
+      const action = async () => {
+        if (!title && !opts.interactive) {
+          throw new Error("error: missing required argument 'title'");
+        }
+
+        const type = opts.type as TaskType;
+        const priority = opts.priority as Priority;
+        if (!TASK_TYPES.includes(type)) {
+          throw new Error(`Invalid type: "${type}". Allowed: ${TASK_TYPES.join(", ")}`);
+        }
+        if (!PRIORITIES.includes(priority)) {
+          throw new Error(`Invalid priority: "${priority}". Allowed: ${PRIORITIES.join(", ")}`);
+        }
+        if (opts.interactive) {
+          await newInteractiveCommand(title, { type, domain: opts.domain, priority, goal: opts.goal, cwd, activeDir: p.tasksActive });
+          return;
+        }
+        newCommand(title!, {
+          type,
+          domain: opts.domain,
+          priority,
+          goal: opts.goal,
+          cwd,
+          activeDir: p.tasksActive,
+          implementationNotes: opts.implementationNote,
+        });
+      };
+
+      if (options.runCliAction) {
+        return options.runCliAction(action);
+      }
+      return action();
+    });
+
+  program
+    .command("list")
+    .description("List task specs in a compact table.")
+    .option("--status <status>", "Show only tasks with this exact status (case-sensitive).")
+    .option("--domain <domain>", "Show only tasks in this exact domain (case-sensitive).")
+    .option("--completed", "Show completed tasks. Mutually exclusive with --archived and --all.")
+    .option("--archived", "Show archived tasks. Mutually exclusive with --completed and --all.")
+    .option("--all", "Show active, completed, and archived tasks. Mutually exclusive with --completed and --archived.")
+    .option("--group-by <field>", 'Group tasks by "status", "domain", or "tier".')
+    .action((opts: {
+      status?: string;
+      domain?: string;
+      completed?: boolean;
+      archived?: boolean;
+      all?: boolean;
+      groupBy?: string;
+    }) => {
+      listCommand(p.specsTasks, cwd, {
+        status: opts.status,
+        domain: opts.domain,
+        completed: opts.completed,
+        archived: opts.archived,
+        all: opts.all,
+        groupBy: opts.groupBy as "status" | "domain" | "tier" | undefined,
+      });
+    });
+
+  program
+    .command("status")
+    .description("Show task status summary.")
+    .action(() => {
+      statusCommand(p.specsTasks, cwd);
+    });
+
+  program
+    .command("set-status <task-id> <status>")
+    .description(`Update task status. Allowed: ${STATUSES.join(", ")}`)
+    .action((taskId: string, status: string) => {
+      setStatusCommand(taskId, status as Status, p.specsTasks, cwd);
+    });
+
+  program
+    .command("complete <task-id>")
+    .description("Mark an active task complete and move it to tasks/completed.")
+    .action((taskId: string) => {
+      completeCommand(taskId, {
+        specsTasksDir: p.specsTasks,
+        completedDir: p.tasksCompleted,
+        cwd,
+      });
+    });
+
+  program
+    .command("archive <task-id>")
+    .description("Archive an active task and move it to tasks/archived.")
+    .action((taskId: string) => {
+      archiveCommand(taskId, {
+        specsTasksDir: p.specsTasks,
+        archivedDir: p.tasksArchived,
+        cwd,
+      });
+    });
+
+  program
+    .command("reopen <task-id>")
+    .description("Reopen a completed or archived task, searching completed first, and move it to tasks/active.")
     .action((taskId: string) => {
       reopenCommand(taskId, {
         specsTasksDir: p.specsTasks,

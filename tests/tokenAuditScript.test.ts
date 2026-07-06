@@ -22,6 +22,20 @@ describe("manciple-token-audit script", () => {
     expect(result.stdout).toContain("Risk: within budget");
   });
 
+  it("preserves token-estimate failures and exit codes", () => {
+    const result = spawnSync(
+      process.execPath,
+      ["scripts/manciple-token-audit.mjs", "missing-token-audit-task"],
+      {
+        cwd: process.cwd(),
+        encoding: "utf-8",
+      },
+    );
+
+    expect(result.status).not.toBe(0);
+    expect(`${result.stdout}\n${result.stderr}`).toContain("missing-token-audit-task");
+  });
+
   it("keeps release agent assets and token audit tooling included", () => {
     const packageJson = JSON.parse(readFileSync(join(process.cwd(), "package.json"), "utf-8")) as {
       files?: string[];

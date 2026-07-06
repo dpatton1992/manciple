@@ -4,6 +4,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const tsxCli = resolve(repoRoot, "node_modules", "tsx", "dist", "cli.mjs");
 const args = process.argv.slice(2);
 
 if (args.length === 0 || args.includes("--help") || args.includes("-h")) {
@@ -17,8 +18,8 @@ generated output.`);
 }
 
 const result = spawnSync(
-  "pnpm",
-  ["exec", "tsx", "src/cli.ts", "token-estimate", ...args],
+  process.execPath,
+  [tsxCli, "src/cli.ts", "token-estimate", ...args],
   {
     cwd: repoRoot,
     stdio: "inherit",

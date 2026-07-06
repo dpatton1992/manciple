@@ -36,4 +36,23 @@
       }, 1800);
     });
   });
+
+  const asciiTexture = document.querySelector("[data-ascii-texture]");
+
+  if (asciiTexture) {
+    fetch("ascii-art.txt")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("ASCII texture unavailable");
+        }
+
+        return response.text();
+      })
+      .then((text) => {
+        asciiTexture.textContent = text;
+      })
+      .catch(() => {
+        asciiTexture.remove();
+      });
+  }
 })();

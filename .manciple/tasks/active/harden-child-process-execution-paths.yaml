@@ -1,6 +1,6 @@
 id: harden-child-process-execution-paths
 title: Harden child process execution paths
-status: pending
+status: needs_review
 type: hardening
 domain: core
 priority: medium

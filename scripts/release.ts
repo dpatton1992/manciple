@@ -22,35 +22,41 @@ const PKG_PATH = resolve(REPO_ROOT, "package.json");
 
 const VALID_BUMPS = ["patch", "minor", "major"] as const;
 type BumpType = (typeof VALID_BUMPS)[number];
+type CommandOptions = {
+  stdio?: "inherit" | "pipe";
+};
 
 // ── Helpers ────────────────────────────────────────────────────────
 
-function run(command: string): void {
-  const result = spawnSync(command, [], {
+function run(command: string, args: string[], options: CommandOptions = {}): void {
+  const result = spawnSync(command, args, {
     cwd: REPO_ROOT,
-    stdio: "inherit",
-    shell: true,
+    stdio: options.stdio ?? "inherit",
   });
   if (result.error || result.status !== 0) {
+    if (result.error) {
+      console.error(`Failed to start ${command}: ${result.error.message}`);
+    }
     process.exit(result.status ?? 1);
   }
 }
 
-function runCapture(command: string): string {
-  const result = spawnSync(command, [], {
+function runCapture(command: string, args: string[]): string {
+  const result = spawnSync(command, args, {
     cwd: REPO_ROOT,
     encoding: "utf-8",
-    shell: true,
+    stdio: ["ignore", "pipe", "pipe"],
   });
   if (result.error || result.status !== 0) {
-    throw new Error(result.stderr?.toString().trim() || `Command failed: ${command}`);
+    const printableCommand = [command, ...args].join(" ");
+    throw new Error(result.stderr?.toString().trim() || result.error?.message || `Command failed: ${printableCommand}`);
   }
   return result.stdout.trim();
 }
 
 function getLastTag(): string | null {
   try {
-    return runCapture("git describe --tags --abbrev=0 2>/dev/null");
+    return runCapture("git", ["describe", "--tags", "--abbrev=0"]);
   } catch {
     return null;
   }
@@ -72,8 +78,8 @@ function bumpVersion(version: string, bump: BumpType): string {
 function generateReleaseNotes(newVersion: string): string {
   const lastTag = getLastTag();
   const log = lastTag
-    ? runCapture(`git log --oneline --no-decorate ${lastTag}..HEAD`)
-    : runCapture("git log --oneline --no-decorate");
+    ? runCapture("git", ["log", "--oneline", "--no-decorate", `${lastTag}..HEAD`])
+    : runCapture("git", ["log", "--oneline", "--no-decorate"]);
   const date = new Date().toISOString().slice(0, 10);
   const lines = log.split("\n").filter(Boolean).map((l) => `- ${l}`).join("\n");
   return `## v${newVersion} (${date})\n\n${lines}\n`;
@@ -121,7 +127,9 @@ function main(): void {
 
   // Step 1: Preflight
   console.log("Running preflight checks...");
-  run("pnpm typecheck && pnpm test && pnpm build");
+  run("pnpm", ["typecheck"]);
+  run("pnpm", ["test"]);
+  run("pnpm", ["build"]);
 
   // Step 2: Bump version
   console.log(`\nUpdating package.json: v${currentVersion} -> v${newVersion}`);
@@ -130,20 +138,20 @@ function main(): void {
 
   // Step 3: Rebuild
   console.log("Building with updated version...");
-  run("pnpm build");
+  run("pnpm", ["build"]);
 
   // Step 4: Publish
-  const publishCmd = `npm publish${otp ? ` --otp ${otp}` : ""}`;
-  console.log(`Publishing: ${publishCmd}`);
-  run(publishCmd);
+  const publishArgs = ["publish", ...(otp ? ["--otp", otp] : [])];
+  console.log(`Publishing: npm ${publishArgs.join(" ")}`);
+  run("npm", publishArgs);
 
   // Step 5: Git tag
   console.log(`Creating annotated git tag v${newVersion}...`);
-  run(`git tag -a v${newVersion} -m "Release v${newVersion}"`);
+  run("git", ["tag", "-a", `v${newVersion}`, "-m", `Release v${newVersion}`]);
 
   // Step 6: Push tag
   console.log(`Pushing tag v${newVersion} to origin...`);
-  run(`git push origin v${newVersion}`);
+  run("git", ["push", "origin", `v${newVersion}`]);
 
   // Step 7: GitHub release
   console.log("Creating GitHub release...");
@@ -151,7 +159,7 @@ function main(): void {
   const notesFile = join(tmpDir, "RELEASE_NOTES.md");
   writeFileSync(notesFile, notes, "utf-8");
   try {
-    run(`gh release create v${newVersion} --title "v${newVersion}" --notes-file "${notesFile}"`);
+    run("gh", ["release", "create", `v${newVersion}`, "--title", `v${newVersion}`, "--notes-file", notesFile]);
   } finally {
     rmSync(tmpDir, { recursive: true, force: true });
   }
