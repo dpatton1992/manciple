@@ -486,8 +486,8 @@ h3 {
   line-height: 0.86;
   pointer-events: none;
   white-space: pre;
-  -webkit-mask-image: radial-gradient(ellipse at center, black 0%, black 58%, transparent 82%);
-  mask-image: radial-gradient(ellipse at center, black 0%, black 58%, transparent 82%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 0%, black 58%, transparent 87%);
+  mask-image: radial-gradient(ellipse at center, black 0%, black 58%, transparent 87%);
   opacity: 0.64;
   transform: rotate(-1deg);
 }
